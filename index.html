@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="referrer" content="no-referrer" />
+  <title>尽欢</title>
+  <meta name="description" content="摸鱼片刻，尽欢就好。看图、回应、收藏、解密领红包。" />
+  <!-- 品牌资产来自 Jinhuan_Brand_Kit_v1：/logo.svg 符号、/wordmark.svg 字标、favicon 全套、/og-card-1200x630.png -->
+  <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/favicon-32.png?v=3" type="image/png" sizes="32x32" />
+  <link rel="icon" href="/favicon-16.png?v=3" type="image/png" sizes="16x16" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#F7F6F0" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#14261F" media="(prefers-color-scheme: dark)" />
+  <script>
+    (function () {
+      var t = localStorage.getItem('theme')
+      if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      document.documentElement.dataset.theme = t
+      // 伪装：首屏就换好标题和图标，别闪出原样
+      var skin = localStorage.getItem('skin')
+      var cover = { feishu: ['飞书', '/disguise/feishu.svg'], linuxdo: ['【持续更新】每天摸鱼时收集的图，欢迎佬友补充 - 搞七捻三 - LINUX DO', '/disguise/linuxdo.svg'] }[skin]
+      if (cover) {
+        document.documentElement.dataset.skin = skin
+        document.title = cover[0]
+        document.querySelectorAll('link[rel~="icon"], link[rel="apple-touch-icon"]').forEach(function (l) {
+          l.dataset.origHref = l.getAttribute('href')
+          l.dataset.origType = l.getAttribute('type') || ''
+          l.setAttribute('href', cover[1])
+          l.setAttribute('type', 'image/svg+xml')
+        })
+      }
+      try {
+        var lk = JSON.parse(localStorage.getItem('look') || '{}')
+        if (lk.kind === 'preset' && lk.id) document.documentElement.dataset.bg = lk.id
+      } catch (e) {}
+    })()
+  </script>
+  <link rel="stylesheet" href="/style.css?v=2f2c7798" />
+  <link rel="stylesheet" href="/skin.css?v=f56c23de" />
+  <link rel="stylesheet" href="/chat.css?v=622bb383" />
+  <link rel="stylesheet" href="/linuxdo.css?v=9b853320" />
+</head>
+<body>
+  <div id="bg" aria-hidden="true"><div class="bg-img"></div></div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="logo" href="/" data-link aria-label="尽欢 首页">
+        <span class="logo-mark" aria-hidden="true"></span>
+        <span class="logo-text" aria-hidden="true"></span>
+      </a>
+      <nav class="mainnav" aria-label="主导航">
+        <a href="/" data-link data-nav="wall">图廊</a>
+        <a href="/series" data-link data-nav="series">图集</a>
+        <a href="/chat" data-link data-nav="chat">群聊<i class="nav-badge" data-chat-badge hidden></i></a>
+        <a href="/road" data-link data-nav="road">鞭打</a>
+      </nav>
+      <form class="search" id="search" role="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input name="q" type="search" placeholder="搜索图片或标签" autocomplete="off" aria-label="搜索图片或标签" />
+      </form>
+      <nav class="actions" id="actions"></nav>
+    </div>
+  </header>
+  <main id="main" class="page" tabindex="-1"></main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js?v=95ff2603"></script>
+</body>
+</html>
