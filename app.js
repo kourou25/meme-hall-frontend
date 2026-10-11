@@ -2330,19 +2330,28 @@ async function renderWall(base) {
     }
     document.addEventListener('keydown', onKey)
     onPageLeave(() => document.removeEventListener('keydown', onKey))
-    // 横向一帖一帖地看：一帖露出 60% 以上就算看过
+    // 横向一帖一帖地看：一帖露出 60% 以上、停留 800ms 才算看过
+    // （点日期标签平滑跳转、快速横滑时途经的帖子只是一闪而过，不记）
+    const hzTimers = new Map()
     const hzIO = new IntersectionObserver((es) => {
       for (const en of es) {
-        if (!en.isIntersecting || en.intersectionRatio < 0.6) continue
         const el = en.target
-        const m = ITEMS.get(Number(el.dataset.id))
-        if (!m || (wantBlur(m) && el.querySelector('[data-blur].blur'))) continue
-        hzIO.unobserve(el)
-        markSeen(m)
+        if (en.isIntersecting && en.intersectionRatio >= 0.6) {
+          if (!hzTimers.has(el)) hzTimers.set(el, setTimeout(() => {
+            hzTimers.delete(el)
+            const m = ITEMS.get(Number(el.dataset.id))
+            if (!m || (wantBlur(m) && el.querySelector('[data-blur].blur'))) return
+            hzIO.unobserve(el)
+            markSeen(m)
+          }, 800))
+        } else {
+          clearTimeout(hzTimers.get(el))
+          hzTimers.delete(el)
+        }
       }
-    }, { root: days, threshold: [0.6] })
+    }, { root: days, threshold: [0, 0.6] })
     st.hzSeen = (card) => { if (card.matches('.card[data-id]')) hzIO.observe(card) }
-    onPageLeave(() => hzIO.disconnect())
+    onPageLeave(() => { hzIO.disconnect(); hzTimers.forEach((t) => clearTimeout(t)); hzTimers.clear() })
     // 标签条跟着横向位置高亮当天
     let raf = 0
     days.addEventListener('scroll', () => {
@@ -2509,6 +2518,7 @@ function daySection(st, d) {
     toggle.setAttribute('aria-expanded', on ? 'false' : 'true')
     toggle.replaceChildren(on ? '展开' : '收起', icon('chevD', 'i tiny'))
   }
+  sec.setFold = setFold
   const toggle = h('button', { class: 'day-toggle', type: 'button', onclick: () => {
     setFold(!sec.collapsed)
     saveDayFold(sec.day, sec.collapsed)
@@ -2561,6 +2571,8 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
       st.ids.add(m.id)
       const card = memeCard(m, { stack: st.hz })
       sec.cols.add(card)
+      // 要定位的帖子在折叠起来的那天：临时展开（不写回 DAY_FOLD），不然卡片是隐藏的，定位和高亮都落空
+      if (m.id === focus && sec.collapsed) sec.setFold(false)
       if (m.id === focus && st.restore) {
         const top = st.restore.top
         requestAnimationFrame(() => {
@@ -2792,9 +2804,9 @@ function roadMedia(media) {
   if (!media?.length) return null
   const pics = media.filter((x) => x.k !== 'f'), files = media.filter((x) => x.k === 'f')
   return h('div', { class: 'rd-media' },
-    pics.length && h('div', { class: 'rd-pics' }, pics.map((im, i) => h('button', { class: 'rd-pic', type: 'button', 'aria-label': `看第 ${i + 1} 张图`,
+    pics.length > 0 && h('div', { class: 'rd-pics' }, pics.map((im, i) => h('button', { class: 'rd-pic', type: 'button', 'aria-label': `看第 ${i + 1} 张图`,
       onclick: () => openViewer({ images: pics, image: pics[0].u }, i) }, h('img', { src: im.u, alt: '', loading: 'lazy', width: im.w || null, height: im.h || null })))),
-    files.length && h('div', { class: 'cm-files' }, files.map((f) =>
+    files.length > 0 && h('div', { class: 'cm-files' }, files.map((f) =>
       h('a', { class: 'cm-file', href: f.u + '?n=' + encodeURIComponent(f.n || '文件'), download: f.n || '文件', target: '_blank', rel: 'noopener' },
         h('span', { class: 'cm-file-ic' }, icon('doc')), h('span', { class: 'cm-file-main' }, h('strong', null, f.n || '文件'), h('span', { class: 'muted' }, fmtBytes(f.s || 0)))))))
 }
@@ -8015,7 +8027,7 @@ async function groupPanel(g, { outside } = {}) {
     // 手机上右侧按钮组收起，换成「⋯」菜单（CSS 控制显示哪一个）
     const key = 'gpm' + u.id
     const item = (label, ic, fn, cls = '') => h('button', { class: 'menu-item ' + cls, type: 'button', role: 'menuitem', onclick: () => { closePop(); fn() } }, icon(ic), label)
-    const more = acts.length && h('button', { class: 'btn-icon ghost sm gp-more', type: 'button', title: '更多操作', 'aria-label': `${who} 的更多操作`, 'aria-haspopup': 'menu', 'data-pop': key,
+    const more = acts.length > 0 && h('button', { class: 'btn-icon ghost sm gp-more', type: 'button', title: '更多操作', 'aria-label': `${who} 的更多操作`, 'aria-haspopup': 'menu', 'data-pop': key,
       onclick: (e) => openPop(e.currentTarget, h('div', { class: 'menu-list', role: 'menu' },
         item('查看资料', 'user', () => userCard(u.username, more)),
         canLimit(u) && item('限制…', 'lock', () => memberAdmin(u.username)),
@@ -8028,7 +8040,7 @@ async function groupPanel(g, { outside } = {}) {
         h('span', { class: 'muted gp-sub' }, '@' + u.username, ' · TL', u.trust_level, u.joined_at ? ` · ${fmtDay(u.joined_at)}进群` : '')),
       h('span', { class: 'gp-tags' }, tier(u) === 0 && h('span', { class: 'role-tag admin' }, '群主'), roleTag(u)),
       h('span', { class: 'gp-seen' + (on ? ' on' : '') }, seen || '—'),
-      acts.length && h('span', { class: 'gp-acts' }, acts),
+      acts.length > 0 && h('span', { class: 'gp-acts' }, acts),
       more)
   }
   const drawList = () => {
@@ -9419,7 +9431,17 @@ function fpAttach(input, kind, opts = {}) {
       ...(kind === 'time'
         ? { enableTime: true, noCalendar: true, time_24hr: true, dateFormat: 'H:i', minuteIncrement: opts.minuteStep || 5, minTime: opts.min, maxTime: opts.max }
         : { dateFormat: 'Y-m-d', minDate: opts.min, maxDate: opts.max }),
-      onOpen: (_, __, f) => { FP_OPEN.add(f); f.calendarContainer.classList.toggle('fp-touch', coarse) },
+      onOpen: (_, __, f) => {
+        FP_OPEN.add(f)
+        const box = f.calendarContainer
+        box.classList.toggle('fp-touch', coarse)
+        // 输入框靠屏幕边时，居中对齐的面板会伸出屏幕：往里挪回来，左右各留 8px
+        requestAnimationFrame(() => {
+          const r = box.getBoundingClientRect()
+          const dx = r.left < 8 ? 8 - r.left : r.right > innerWidth - 8 ? innerWidth - 8 - r.right : 0
+          if (dx) { box.style.left = (box.offsetLeft + dx) + 'px'; box.style.right = 'auto' }
+        })
+      },
       onClose: (_, __, f) => FP_OPEN.delete(f),
       onChange: (_, str) => opts.onChange?.(str, input),
     })

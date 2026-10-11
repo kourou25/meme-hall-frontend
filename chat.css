@@ -852,7 +852,7 @@ body.split-drag iframe, body.split-drag img, body.split-drag video { pointer-eve
 .ucard-badges { display: flex; flex-wrap: wrap; gap: 4px; }
 .ucard-badges .u-badge { margin: 0; }
 /* 徽章墙：卡片网格 */
-.badge-wall-box { display: flex; flex-direction: column; gap: 10px; }
+.badge-wall-box { display: flex; flex-direction: column; gap: 10px; align-self: stretch; } /* 父级 .set-sec 是 align-items: flex-start，不撑开就只剩两列 */
 .bw-sum { font-size: 13px; font-weight: 700; color: var(--text); }
 .bw-sum .muted { font-weight: 400; font-size: 12px; }
 .badge-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
@@ -1064,6 +1064,11 @@ button.notif-row { width: 100%; border: 0; background: none; font: inherit; text
 .flatpickr-calendar.fp-jh.fp-touch .flatpickr-time .numInputWrapper span { opacity: 1; width: 26px; }
 .flatpickr-calendar.fp-jh.fp-touch .flatpickr-time .numInputWrapper span.arrowUp, .flatpickr-calendar.fp-jh.fp-touch .flatpickr-time .numInputWrapper span.arrowDown { height: 50%; }
 .flatpickr-calendar.fp-jh.fp-touch .flatpickr-day { height: 42px; line-height: 42px; max-width: 42px; }
+/* 打开时 flatpickr 会选中「时」的文字：选区用主题色，深色下也看得清；去掉时间栏顶上那条浅色分隔线 */
+.flatpickr-calendar.fp-jh .flatpickr-time input::selection { background: var(--primary); color: var(--primary-ink); }
+.flatpickr-calendar.fp-jh .flatpickr-time { border-top: 0; }
+.flatpickr-calendar.fp-jh.fp-touch.fp-jh-time { width: 240px; }
+.flatpickr-calendar.fp-jh.fp-touch .flatpickr-time, .flatpickr-calendar.fp-jh.fp-touch .flatpickr-time input { height: 64px; max-height: 64px; line-height: 64px; }
 @media (max-width: 400px) {
   .flatpickr-calendar.fp-jh.fp-jh-date { width: calc(100vw - 16px); }
   .flatpickr-calendar.fp-jh.fp-jh-date .flatpickr-innerContainer, .flatpickr-calendar.fp-jh.fp-jh-date .flatpickr-rContainer, .flatpickr-calendar.fp-jh.fp-jh-date .flatpickr-days, .flatpickr-calendar.fp-jh.fp-jh-date .dayContainer { width: 100%; min-width: 0; max-width: none; }

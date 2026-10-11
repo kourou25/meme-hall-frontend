@@ -1400,6 +1400,9 @@ span.img-broken:hover { color: var(--text-2); }
 .cmt-node[data-depth="1"] > .cmt-kids { margin-left: 30px; }
 .cmt-node[data-depth="1"] .avatar, .cmt-node[data-depth="2"] .avatar { width: 24px; height: 24px; }
 .comment.gone { font-size: 12px; padding: 2px 0; }
+/* 缩进后头部放不下（昵称 + 称号 + TL + 时间 + 删除）时换行，别把「删除」挤出栏外 */
+.cmt-kids .comment-head { flex-wrap: wrap; row-gap: 2px; }
+.cmt-kids .comment-head .btn-text { flex: none; }
 @media (max-width: 640px) {
   .cmt-node > .cmt-kids { margin-left: 14px; padding-left: 8px; }
   .cmt-node[data-depth="1"] > .cmt-kids { margin-left: 8px; }
@@ -1796,9 +1799,11 @@ html[data-skin] .site-notice { display: none; }
 @media (max-width: 760px) {
   .wall.hz { --hz-h: calc(100vh - 54px - var(--tb-h, 56px) - 52px); --hz-h: calc(100dvh - 54px - var(--tb-h, 56px) - 52px); }
   .hz-tabs { top: calc(54px + var(--tb-h, 56px)); margin: 0 -10px; padding: 6px 10px 8px; }
-  .wall.hz .days { gap: 10px; margin: 0 -10px; padding: 0 5vw 6px; scroll-padding: 0 5vw; }
+  .wall.hz .days { gap: 10px; margin: 0 -10px; padding: 0 10px 6px; scroll-padding: 0 10px; }
   .wall.hz .day, .wall.hz .day-body, .wall.hz .feed { gap: 10px; }
-  .wall.hz .card { width: 90vw; scroll-snap-align: center; scroll-snap-stop: always; }
-  .wall.hz .day-head { width: 60px; padding: 8px 6px; }
+  .wall.hz .card { width: calc(100vw - 20px); scroll-snap-stop: always; }
+  .wall.hz .day-head { width: 64px; padding: 8px 6px; }
+  .wall.hz .day-date { font-size: 15px; }
+  .wall.hz .day-toggle { white-space: nowrap; font-size: 12px; }
 }
-@media (pointer: coarse) { .hz-nav { display: none; } }
+@media (pointer: coarse), (max-width: 760px) { .hz-nav { display: none; } }
