@@ -1,15 +1,24 @@
 // 按需加载。所有 DOM 挂到入口所在文档，普通群聊 / 分屏 / 小窗共用。
-const MODES = { open: ['開', '直接开', '好梗不用等，点开就有'], phrase: ['言', '群聊口令', '先在群里对暗号'], cipher: ['解', '解密游戏', '脑洞到账，凭本事拆'], image: ['图', '图片寻谜', '只露一角，猜出这个梗'] }
-const GAMES = { reverse: ['倒放咒语', '从右往左读，倒放才能听懂。'], pairs: ['错位电波', '每相邻两个字交换位置，落单的字不动。'], tiles: ['弹幕拼字', '弹幕被打散了，点字块拼回完整谜底。'] }
+const MODES = { open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' }
+const GAMES = { reverse: ['倒放咒语', '从右往左读。'], pairs: ['错位电波', '每两个字交换，落单的字不动。'], tiles: ['弹幕拼字', '点字块，拼出谜底。'] }
+// 自绘简笔图标：同一只信封小猫贯穿发包、消息与拆包。
+const DOODLES = {
+  open: '<path d="M7 15 8 6l8 6a25 25 0 0 1 16 0l8-6 1 9v19c0 5-6 8-17 8S7 39 7 34Z" fill="var(--rpk-paper)"/><path d="m8 24 16 10 16-10M13 29l-5 7m27-7 5 7"/><path d="M17 19v2m14-2v2m-10 3q3 3 6 0"/><path d="m11 23-4-1m30 1 4-1"/>',
+  phrase: '<path d="M8 8q16-5 31 0l1 22q-10 4-21 1l-9 8 1-10-5-2Z" fill="var(--rpk-paper)"/><path d="M16 17v3m14-3v3m-10 4q3 3 6 0M15 8l2-5m13 5-1-5"/>',
+  cipher: '<path d="m12 15 4-7 7 5 8-3 6 8-1 18-9 5-16-6-3-11Z" fill="var(--rpk-paper)"/><path d="M20 20q1-7 7-4t-2 9v3m0 6h.1M7 10l-3-3m36 25 4 2"/>',
+  image: '<rect x="7" y="8" width="34" height="30" rx="5" fill="var(--rpk-paper)" transform="rotate(-5 24 23)"/><path d="m9 32 10-12 8 9 7-6 6 9M30 15h.1"/><path d="m16 21 1-6 5 5m9 13 1-4 4 3"/>',
+  happy: '<path d="M8 18 10 5l10 8h9L39 5l1 14v13q-1 11-16 11T8 32Z" fill="var(--rpk-paper)"/><path d="m14 24 5-2m-4 0 4 2m10 0 5-2m-5 0 5 2m-14 6q4 6 8 0m-14-1-5-1m25 1 5-1M4 15l-3-3m42 0 3-3"/>',
+}
 
 export function openRedpacket({ anchor, group, message, onSent, onUpdate, h, icon, api }) {
   const doc = anchor.ownerDocument, win = doc.defaultView
   if (doc.querySelector('.rpk-dialog')) return
   const content = h('div', { class: 'rpk-content' })
-  const title = h('h2', { id: 'rpk-dialog-title' }, group ? '发一个红包' : '尽欢红包')
+  const doodle = (name, cls = '') => h('span', { class: 'rpk-doodle ' + cls, 'aria-hidden': 'true', html: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${DOODLES[name]}</svg>` })
+  const title = h('h2', { id: 'rpk-dialog-title' }, group ? '发红包' : '拆红包')
   const close = h('button', { type: 'button', class: 'rpk-close', 'aria-label': '关闭红包', autofocus: true, onclick: () => dialog.close() }, icon('close'))
   const dialog = h('dialog', { class: 'rpk-dialog', 'aria-labelledby': 'rpk-dialog-title' },
-    h('header', { class: 'rpk-head' }, h('span', { class: 'rpk-mark', 'aria-hidden': 'true' }, '福'), h('div', null, title, h('p', null, group ? `发到「${group.name}」· 藏一个谜底` : '拆开的是红包，装着的是脑洞')), close), content)
+    h('header', { class: 'rpk-head' }, doodle('open', 'rpk-mascot'), h('div', null, title, group && h('p', null, '给「' + group.name + '」')), close), content)
   const resize = () => {
     const vv = win.visualViewport
     dialog.style.setProperty('--rpk-height', Math.max(120, (vv?.height || win.innerHeight) - 16) + 'px')
@@ -54,25 +63,25 @@ export function openRedpacket({ anchor, group, message, onSent, onUpdate, h, ico
   function create() {
     let mode = 'open', selected = null, selectedIndex = 0, mask = 4, searchSeq = 0, busy = false
     const nonce = crypto.randomUUID()
-    const secret = input('红包谜底', { placeholder: '比如：恭喜你今天不用加班', maxlength: 72 })
-    const count = h('small', { class: 'rpk-count' }, '0 / 18 字符')
-    secret.addEventListener('input', () => { count.textContent = `${[...secret.value.normalize('NFC').trim()].length} / 18 字符` })
-    const hint = input('红包线索', { placeholder: '留一句提示，也可以玩个梗', maxlength: 240 })
-    const phrase = input('群聊口令', { placeholder: '比如：老板不在我先开', maxlength: 160 })
+    const secret = input('红包谜底', { placeholder: '藏点什么？6–18 个字', maxlength: 72 })
+    const count = h('span', { class: 'rpk-count' })
+    secret.addEventListener('input', () => { const n = [...secret.value.normalize('NFC').trim()].length; count.textContent = n ? `${n} / 18` : '' })
+    const hint = input('红包线索', { placeholder: '给个提示（可不填）', maxlength: 240 })
+    const phrase = input('群聊口令', { placeholder: '在群里说哪句？', maxlength: 160 })
     const game = h('select', { class: 'rpk-input', 'aria-label': '解密玩法' }, Object.entries(GAMES).map(([key, v]) => h('option', { value: key }, v[0])))
     const gameHelp = h('p', { class: 'rpk-help' }, GAMES.reverse[1])
-    game.addEventListener('change', () => { gameHelp.textContent = GAMES[game.value][1] })
-    const phraseField = field('群里要说的口令', phrase, '开包者需在红包发出后，亲自在本群发送完整口令。')
-    const gameField = h('div', null, field('选一个脑洞', game), gameHelp)
+    game.addEventListener('change', () => { gameHelp.textContent = GAMES[game.value][1]; sync() })
+    const phraseField = field('暗号', phrase)
+    const gameField = h('div', null, field('玩法', game), gameHelp)
     const results = h('div', { class: 'rpk-post-results' }), chosen = h('div', { class: 'rpk-chosen' })
     const search = input('搜索帖子', { placeholder: '输入帖子编号或关键词', inputmode: 'search' })
     const searchBtn = btn('找图', findPosts)
     search.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); findPosts() } })
-    const sourceField = h('div', null, field('从帖子里藏线索', h('div', { class: 'rpk-search-row' }, search, searchBtn)), results, chosen)
+    const sourceField = h('div', null, field('选张图', h('div', { class: 'rpk-search-row' }, search, searchBtn)), results, chosen)
     const modes = h('div', { class: 'rpk-modes', role: 'group', 'aria-label': '开包方式' }, Object.entries(MODES).map(([key, v]) => btn(
-      [h('b', { 'aria-hidden': 'true' }, v[0]), h('span', null, h('strong', null, v[1]), h('small', null, v[2]))], () => { mode = key; sync() }, 'rpk-mode')))
+      [doodle(key), h('strong', null, v)], () => { mode = key; sync() }, 'rpk-mode')))
     const msg = status()
-    const submit = h('button', { class: 'rpk-primary', type: 'submit' }, '封好红包，发到群里')
+    const submit = h('button', { class: 'rpk-primary', type: 'submit' }, '塞好，发出去！')
     const form = h('form', { class: 'rpk-form', onsubmit: async e => {
       e.preventDefault(); if (busy) return
       const value = secret.value.normalize('NFC').trim(), n = [...value].length
@@ -87,12 +96,14 @@ export function openRedpacket({ anchor, group, message, onSent, onUpdate, h, ico
         onSent?.(d.message); dialog.close()
       } catch (e) { msg.textContent = e.message }
       finally { busy = false; submit.disabled = false }
-    } }, modes, field('谜底', secret, '6–18 个字符，解锁后才能看到。每个人都可以独立开包。'), count,
-      field('一句线索', hint, '拼字与图片玩法必填；其他玩法可不填。'), phraseField, gameField, sourceField, msg, submit)
+    } }, modes, field(['谜底', count], secret), field('提示', hint), phraseField, gameField, sourceField, msg, submit)
     content.replaceChildren(form); sync()
     function sync() {
       [...modes.children].forEach((b, i) => b.setAttribute('aria-pressed', String(Object.keys(MODES)[i] === mode)))
       phraseField.hidden = mode !== 'phrase'; gameField.hidden = mode !== 'cipher'; sourceField.hidden = mode !== 'image'
+      const needed = mode === 'image' || (mode === 'cipher' && game.value === 'tiles')
+      hint.placeholder = needed ? '给个提示，让大家有迹可循' : '给个提示（可不填）'
+      hint.setAttribute('aria-required', String(needed))
       msg.textContent = ''
     }
     async function findPosts() {
@@ -125,43 +136,44 @@ export function openRedpacket({ anchor, group, message, onSent, onUpdate, h, ico
       }))
       chosen.replaceChildren(h('strong', null, `已选 No.${selected.id}`), images,
         preview({ u: selected.images[selectedIndex].u, nsfw: selected.sensitive || selected.spoiler, mask }),
-        h('div', { class: 'rpk-window-row' }, h('p', { class: 'rpk-help' }, '只露这一格，其余模糊。选一个有梗的角落。'), windows))
+        h('div', { class: 'rpk-window-row' }, h('p', { class: 'rpk-help' }, '露出哪一格？'), windows))
     }
   }
 
   async function load() {
-    content.replaceChildren(h('p', { class: 'rpk-help' }, '红包正在赶来…'))
+    content.replaceChildren(h('p', { class: 'rpk-help' }, '加载中…'))
     try { const d = await api(`/chat/messages/${message.id}/redpack`); if (dialog.isConnected) render(d.packet) }
     catch (e) { if (dialog.isConnected) content.replaceChildren(h('p', { class: 'rpk-status', role: 'alert' }, e.message), btn('重试', load)) }
   }
   function render(p) {
-    title.textContent = MODES[p.mode][1] + '红包'
-    const tagline = h('p', { class: 'rpk-tagline' }, p.prompt || MODES[p.mode][2])
+    title.textContent = p.solved ? '拆到啦！' : MODES[p.mode]
+    const tagline = p.prompt ? h('p', { class: 'rpk-tagline' }, p.prompt) : null
     if (p.solved) {
-      content.replaceChildren(...[h('div', { class: 'rpk-win' }, h('span', { class: 'rpk-win-seal', 'aria-hidden': 'true' }, '開'),
-        h('h3', null, '脑洞已到账'), h('div', { class: 'rpk-secret' }, p.secret), h('p', null, `${p.opened} 人已解锁 · 好运可以重复看`)),
+      content.replaceChildren(...[h('div', { class: 'rpk-win' }, doodle('happy', 'rpk-celebrate'),
+        h('div', { class: 'rpk-secret' }, p.secret), h('p', null, `${p.opened} 人拆过`)),
         p.image && preview(p.image, true), p.post_id && h('a', { class: 'rpk-secondary rpk-source', href: `/m/${p.post_id}`, target: '_blank', rel: 'noopener' }, `查看原帖 No.${p.post_id}`), btn('收好红包', () => dialog.close(), 'rpk-primary')].filter(Boolean))
       return
     }
-    if (p.unavailable) { content.replaceChildren(tagline, h('p', { class: 'rpk-status' }, '关联帖子暂不可用，无法继续解锁。请联系发包人。')); return }
+    if (p.unavailable) { content.replaceChildren(h('p', { class: 'rpk-status' }, '图片暂不可用，请联系发包人。')); return }
     const info = status(), answer = input('输入谜底', { placeholder: `${p.length} 个字符，输入完整谜底`, maxlength: 72 })
-    const submit = h('button', { type: 'submit', class: 'rpk-primary' }, p.mode === 'open' ? '開 · 拆开红包' : p.mode === 'phrase' ? '我已说出口令，开包' : '谜底就这个，开包')
+    const submit = h('button', { type: 'submit', class: 'rpk-primary' }, p.mode === 'open' ? '拆！' : p.mode === 'phrase' ? '说好了，开！' : '就这个！')
     const extras = []
-    if (p.mode === 'phrase') extras.push(h('p', { class: 'rpk-help' }, '先回到这个群里，亲自发送下面这句口令，然后再来开包。'),
+    if (p.mode === 'open') extras.push(doodle('open', 'rpk-waiting'))
+    if (p.mode === 'phrase') extras.push(h('p', { class: 'rpk-help' }, '先在群里说出这句暗号：'),
       h('blockquote', { class: 'rpk-cipher' }, p.phrase), btn('回群里说口令', () => dialog.close()))
     if (p.mode === 'cipher') {
       extras.push(h('h3', { class: 'rpk-game-title' }, GAMES[p.game][0]), h('p', { class: 'rpk-help' }, GAMES[p.game][1]))
       if (p.clue.text) extras.push(h('div', { class: 'rpk-cipher' }, p.clue.text))
       if (p.clue.tiles) {
-        const picked = [], slots = h('div', { class: 'rpk-slots', 'aria-live': 'polite' }, '点击下方字块，接住这条弹幕')
+        const picked = [], slots = h('div', { class: 'rpk-slots', 'aria-live': 'polite' }, '谜底拼在这里')
         const tiles = h('div', { class: 'rpk-tiles' })
-        const refresh = () => { answer.value = picked.map(i => p.clue.tiles[i]).join(''); slots.textContent = answer.value || '点击下方字块，接住这条弹幕'; [...tiles.children].forEach((b, i) => { b.disabled = picked.includes(i) }) }
+        const refresh = () => { answer.value = picked.map(i => p.clue.tiles[i]).join(''); slots.textContent = answer.value || '谜底拼在这里'; [...tiles.children].forEach((b, i) => { b.disabled = picked.includes(i) }) }
         tiles.append(...p.clue.tiles.map((ch, i) => btn(ch === ' ' ? '␣' : ch, () => { picked.push(i); refresh() }, 'rpk-tile')))
         extras.push(slots, tiles, h('div', { class: 'rpk-game-tools' }, btn('退一个字', () => { picked.pop(); refresh() }), btn('重新拼', () => { picked.length = 0; refresh() })))
         answer.readOnly = true
       }
     }
-    if (p.mode === 'image') extras.push(preview(p.image), h('p', { class: 'rpk-help' }, '看清这一角，猜出发包人藏的梗。'))
+    if (p.mode === 'image') extras.push(preview(p.image))
     let busy = false
     const form = h('form', { class: 'rpk-form', onsubmit: async e => {
       e.preventDefault(); if (busy) return
@@ -171,7 +183,7 @@ export function openRedpacket({ anchor, group, message, onSent, onUpdate, h, ico
         onUpdate?.(d.message); if (dialog.isConnected) render(d.packet)
       } catch (e) { info.textContent = e.message }
       finally { busy = false; submit.disabled = false }
-    } }, tagline, extras, !['open', 'phrase'].includes(p.mode) && field('猜谜底', answer, '区分大小写，首尾空格忽略。'), info, submit)
+    } }, tagline, extras, !['open', 'phrase'].includes(p.mode) && p.game !== 'tiles' && field('谜底', answer), info, submit)
     content.replaceChildren(form)
   }
 }

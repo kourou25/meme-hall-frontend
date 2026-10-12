@@ -91,7 +91,7 @@ const ICON = {
   rocket: '<svg viewBox="0 0 24 24"><path d="M14 4c3-1 6-1 6-1s0 3-1 6l-6 6-5-5Z"/><path d="m8 10-3 1-2 3 4 1M14 16l-1 3-3 2-1-4M6 18c-1 1-1.5 2.5-1.5 2.5S6 20 7 19"/><circle cx="15.5" cy="8.5" r="1.3"/></svg>',
   users: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14a6.5 6.5 0 0 1 3.5 6"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
-  redpack: '<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M5 7c4 5 10 5 14 0M9 16h6M12 13v6"/></svg>',
+  redpack: '<svg viewBox="0 0 24 24"><path d="M4 8 5 3l4 4h6l4-4 1 5v11c0 2-3 3-8 3s-8-1-8-3Z"/><path d="m4 14 8 5 8-5M9 10v1m6-1v1m-4 2q1 1 2 0"/></svg>',
 }
 const icon = (name, cls = 'i') => h('span', { class: cls, html: ICON[name], 'aria-hidden': 'true' })
 
@@ -7798,7 +7798,7 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=294e0f90')
+    const { openRedpacket } = await import('/redpacket.js?v=3a351da3')
     if (anchor.isConnected) openRedpacket({ anchor, ...options, h, icon, api })
   } catch (e) { toast(e.message, 'err') }
 }
@@ -7831,10 +7831,10 @@ function chatMsg(m, { cont, pane, pending } = {}) {
     if (m.road_id) body.push(h('a', { class: 'cm-road', href: `/road?item=${m.road_id}`, 'data-link': '' }, `已转到鞭打 #${m.road_id}`))
     if (m.redpack) body.push(h('button', { type: 'button', class: 'cm-redpack' + (m.redpack.solved ? ' is-open' : ''), 'aria-label': '打开红包',
       onclick: (e) => redpackDialog(e.currentTarget, { message: m, onUpdate: (fresh) => pane?.update(fresh) }) },
-      h('span', { class: 'cm-redpack-seal', 'aria-hidden': 'true' }, m.redpack.solved ? '✓' : '開'),
-      h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || ({ open: '开门见喜，好梗在里', phrase: '对上暗号，接住好运', cipher: '脑洞到账，请查收', image: '这张图，懂的都懂' })[m.redpack.mode]),
-        h('span', null, `${({ open: '直接开', phrase: '群聊口令', cipher: '解密游戏', image: '图片寻谜' })[m.redpack.mode]} · ${m.redpack.solved ? '已解锁' : '待开启'}`)),
-      h('span', { class: 'cm-redpack-foot' }, '尽欢红包', h('span', null, `${m.redpack.opened} 人已开`))))
+      h('span', { class: 'cm-redpack-seal', 'aria-hidden': 'true' }, icon('redpack')),
+      h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || '给你一个红包'),
+        h('span', null, `${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆' : ''}`)),
+      h('span', { class: 'cm-redpack-foot' }, m.redpack.solved ? '拆到啦' : '戳我拆开', h('span', null, `${m.redpack.opened} 人拆过`))))
     if (!m.redpack && m.body && !lnk?.only) body.push(h('div', { class: 'cm-text' + (stkOnly(m.body) ? ' stk-only' : bubbleCls(m.user)) }, richBody(m.body, { md: 'lite' }), edited))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited, lnk.only))
     const all = m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
