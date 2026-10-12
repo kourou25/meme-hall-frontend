@@ -91,6 +91,7 @@ const ICON = {
   rocket: '<svg viewBox="0 0 24 24"><path d="M14 4c3-1 6-1 6-1s0 3-1 6l-6 6-5-5Z"/><path d="m8 10-3 1-2 3 4 1M14 16l-1 3-3 2-1-4M6 18c-1 1-1.5 2.5-1.5 2.5S6 20 7 19"/><circle cx="15.5" cy="8.5" r="1.3"/></svg>',
   users: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14a6.5 6.5 0 0 1 3.5 6"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  redpack: '<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M5 7c4 5 10 5 14 0M9 16h6M12 13v6"/></svg>',
 }
 const icon = (name, cls = 'i') => h('span', { class: cls, html: ICON[name], 'aria-hidden': 'true' })
 
@@ -7580,6 +7581,7 @@ function chatPane(g, { onHead } = {}) {
           insertAtCursor(ta, k.includes(':') ? `[${k}]` : k)
         }), { key, cls: 'pop-stk', up: true }), { 'data-pop': key }),
         tb('image', '发图片 / 视频', () => att.pick()),
+        tb('redpack', '发红包', (e) => redpackDialog(e.currentTarget, { group: g, onSent: (message) => { closeHist(); add([message], 'live'); toBottom(false) } }), { class: 'cm-ibtn cm-redpack-btn' }),
         tb('doc', '发文件（20MB 以内）', () => fileIn.click()),
         tb('at', '@ 某人', () => { insertAtCursor(ta, (/\S$/.test(ta.value.slice(0, ta.selectionStart)) ? ' ' : '') + '@') }),
         tb('quote', '引用', () => { const m = st.reply || st.items[st.items.length - 1]; if (m) quoteMsg(m) }),
@@ -7793,6 +7795,13 @@ function cmImgBox(w, h, max = 320) {
 }
 
 // 一条消息（参考 Discord）：回复的原文在最上面一行，左边一根弯线从头像那一列接上来；下面头像 · 名字 时间 · 正文 / 图 · 表情 · 悬停工具
+async function redpackDialog(anchor, options) {
+  try {
+    closePop()
+    const { openRedpacket } = await import('/redpacket.js?v=294e0f90')
+    if (anchor.isConnected) openRedpacket({ anchor, ...options, h, icon, api })
+  } catch (e) { toast(e.message, 'err') }
+}
 function chatMsg(m, { cont, pane, pending } = {}) {
   const who = m.user.name || m.user.username
   // 点头像看资料卡；点名字、右键（手机长按）头像 = 在输入框里 @TA。自己的名字点了还是看资料
@@ -7820,7 +7829,13 @@ function chatMsg(m, { cont, pane, pending } = {}) {
     const lnk = m.body ? bodyImgUrl(m.body) : null
     const edited = m.edited_at && h('span', { class: 'cm-edited', title: '编辑于 ' + new Date(m.edited_at * 1000).toLocaleString('zh-CN', { hour12: false }) }, '（已编辑）')
     if (m.road_id) body.push(h('a', { class: 'cm-road', href: `/road?item=${m.road_id}`, 'data-link': '' }, `已转到鞭打 #${m.road_id}`))
-    if (m.body && !lnk?.only) body.push(h('div', { class: 'cm-text' + (stkOnly(m.body) ? ' stk-only' : bubbleCls(m.user)) }, richBody(m.body, { md: 'lite' }), edited))
+    if (m.redpack) body.push(h('button', { type: 'button', class: 'cm-redpack' + (m.redpack.solved ? ' is-open' : ''), 'aria-label': '打开红包',
+      onclick: (e) => redpackDialog(e.currentTarget, { message: m, onUpdate: (fresh) => pane?.update(fresh) }) },
+      h('span', { class: 'cm-redpack-seal', 'aria-hidden': 'true' }, m.redpack.solved ? '✓' : '開'),
+      h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || ({ open: '开门见喜，好梗在里', phrase: '对上暗号，接住好运', cipher: '脑洞到账，请查收', image: '这张图，懂的都懂' })[m.redpack.mode]),
+        h('span', null, `${({ open: '直接开', phrase: '群聊口令', cipher: '解密游戏', image: '图片寻谜' })[m.redpack.mode]} · ${m.redpack.solved ? '已解锁' : '待开启'}`)),
+      h('span', { class: 'cm-redpack-foot' }, '尽欢红包', h('span', null, `${m.redpack.opened} 人已开`))))
+    if (!m.redpack && m.body && !lnk?.only) body.push(h('div', { class: 'cm-text' + (stkOnly(m.body) ? ' stk-only' : bubbleCls(m.user)) }, richBody(m.body, { md: 'lite' }), edited))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited, lnk.only))
     const all = m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
     const files = all.filter((x) => x.k === 'f')
