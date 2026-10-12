@@ -1770,6 +1770,7 @@ function openViewer(m, start = 0, { doc = document } = {}) {
   }
   // now：换图时立刻拿掉（不做淡出），免得新旧两层同时在
   const close = (now) => {
+    clearTimeout(tapT)
     if (doc.fullscreenElement === root) doc.exitFullscreen().catch(() => {})
     root.classList.remove('in')
     if (now === true) root.remove()
@@ -1816,7 +1817,8 @@ function openViewer(m, start = 0, { doc = document } = {}) {
   }, { passive: false })
   doc.body.append(root)
   doc.body.classList.add('lock')
-  requestAnimationFrame(() => root.classList.add('in'))
+  // 主页面在后台时动画帧可能暂停；小窗看图使用小窗自己的时钟。
+  doc.defaultView.requestAnimationFrame(() => root.classList.add('in'))
   S.viewer = { close, go, root, zoom: () => zoom(), zoomKey, doc }
   show()
   if ((m.image_count || 1) > imgs.length) {
@@ -1919,7 +1921,7 @@ const NOTIF_TABS = [['all', '全部', null], ['like', '喜欢', ['like']], ['rx'
   ['at', '@我', ['mention', 'chat_at', 'post_at']], ['chat', '群聊', ['chat_at', 'chat_reply', 'join_req']], ['post', '新帖', ['post']]]
 const isChatNotif = (n) => n.kind === 'chat_at' || n.kind === 'chat_reply'
 // 提醒设置：后端存，登录时随 /me 带回来
-const NOTIF_PREFS = [['like', '有人喜欢我的图'], ['emoji', '有人给我的图回应表情'], ['reply', '有人给我的图一句回应'], ['comment', '有人评论我的图'], ['creply', '有人回复我的评论'], ['post', '有人发了新帖'], ['mention', '有人在评论里 @ 我'], ['chat_at', '有人在群聊里 @ 我'], ['chat_reply', '有人在群聊里回复我'], ['chat', '群聊新消息（红点和标签页计数）'],
+const NOTIF_PREFS = [['like', '有人喜欢我的图'], ['emoji', '有人给我的图回应表情'], ['reply', '有人给我的图一句回应'], ['comment', '有人评论我的图'], ['creply', '有人回复我的评论'], ['post', '有人发了新帖'], ['mention', '有人在评论里 @ 我'], ['chat_at', '有人在群聊里 @ 我'], ['chat_reply', '有人在群聊里回复我'],
   ['post_at', '有人在帖子里 @ 我'], ['badge', '我拿到了新徽章'], ['join_req', '有人申请回到群聊（群管理才有）']]
 const notifOn = (k) => S.me?.notif_prefs?.[k] !== false
 function syncNotifBadge() {
@@ -1928,7 +1930,6 @@ function syncNotifBadge() {
   document.querySelectorAll('.notif-btn').forEach((b) => b.setAttribute('aria-label', n ? `互动提醒，${n} 条未读` : '互动提醒'))
   syncTab()
 }
-// 标签页标题前面的 (N)：互动提醒 + 群聊未读（群聊可在设置里关掉）
 // 标签页标题上的数：只算通知（群聊有自己的角标，不往铃铛里算）
 const tabCount = () => (S.me ? NOTIF.unread : 0)
 async function loadNotifs() {
@@ -1938,6 +1939,7 @@ async function loadNotifs() {
     const d = await api('/notifs')
     Object.assign(NOTIF, { unread: d.unread, items: d.items })
     syncNotifBadge()
+    if (POP?.key === 'notif') NOTIF.draw?.()
   } catch {}
 }
 setInterval(() => { if (S.me && !document.hidden && Date.now() - NOTIF.at > 60000) loadNotifs() }, 15000)
@@ -1959,6 +1961,7 @@ function chatNotifSeen(gid, upto) {
   syncNotifBadge()
   // 打开着的提醒面板也跟着变
   document.querySelectorAll('.notif-row.unread').forEach((r) => { if (r.dataset.gid == gid && Number(r.dataset.mid) <= upto) r.classList.remove('unread') })
+  if (POP?.key === 'notif') NOTIF.draw?.()
 }
 // 群聊提醒：打开那个群并跳到那条消息（已经开着就直接跳）
 function openChatMsg(gid, id) {
@@ -1973,7 +1976,7 @@ function notifRow(n) {
   // 徽章：系统发的，不跳页，点开设置看徽章墙
   if (n.kind === 'badge') {
     const b = BADGES[n.val]
-    return h('button', { class: 'notif-row notif-badge' + (n.unread ? ' unread' : ''), type: 'button', onclick: () => { readNotif(n); closePop(); meSettings() } },
+    return h('button', { class: 'notif-row notif-badge' + (n.unread ? ' unread' : ''), type: 'button', onclick: () => { readNotif(n); closePop(); meSettings('badges') } },
       h('i', { class: 'notif-dot', 'aria-hidden': 'true' }),
       h('span', { class: 'notif-bd' }, badgeChip(n.val, true)),
       h('div', { class: 'notif-main' },
@@ -2023,12 +2026,22 @@ async function notifPanel(anchor) {
     h('div', { class: 'notif-head' }, h('strong', null, '互动提醒'),
       h('span', { class: 'row-end' }, allRead,
         h('button', { class: 'btn-icon sm', type: 'button', title: '提醒设置', 'aria-label': '提醒设置', onclick: () => notifSettings(list, draw) }, icon('gear')))),
-    h('div', { class: 'notif-tabs', role: 'tablist' }), list)
+    h('div', { class: 'notif-tabs', role: 'tablist' }),
+    h('div', { class: 'notif-read-filter segs small', role: 'group', 'aria-label': '已读状态' }), list)
   const tabsEl = box.querySelector('.notif-tabs')
+  const readFilter = box.querySelector('.notif-read-filter')
   const draw = () => {
+    if (!box.isConnected) return
+    NOTIF.draw = draw
     const all = NOTIF.items || []
     const tab = NOTIF_TABS.find((t) => t[0] === NOTIF.tab) || NOTIF_TABS[0]
-    const items = tab[2] ? all.filter((n) => tab[2].includes(n.kind)) : all
+    const items = all.filter((n) => (!tab[2] || tab[2].includes(n.kind)) && (!NOTIF.onlyUnread || n.unread))
+      .sort((a, b) => Number(b.unread) - Number(a.unread) || b.at - a.at)
+    readFilter.hidden = false
+    readFilter.replaceChildren(...[[false, '全部'], [true, '未读']].map(([v, label]) => h('button', {
+      class: 'seg' + (!!NOTIF.onlyUnread === v ? ' on' : ''), type: 'button', 'aria-pressed': String(!!NOTIF.onlyUnread === v),
+      onclick: () => { NOTIF.onlyUnread = v; draw() },
+    }, label)))
     allRead.hidden = !all.some((n) => n.unread)
     tabsEl.hidden = false
     tabsEl.replaceChildren(...NOTIF_TABS.filter((t) => !t[2] || t[0] === NOTIF.tab || all.some((n) => t[2].includes(n.kind))).map(([k, label, kinds]) => {
@@ -2036,7 +2049,7 @@ async function notifPanel(anchor) {
       return h('button', { class: 'notif-tab' + (k === tab[0] ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(k === tab[0]),
         onclick: () => { NOTIF.tab = k; draw() } }, label, un > 0 && h('i', { class: 'notif-tab-n' }, un > 99 ? '99+' : un))
     }))
-    list.replaceChildren(...(items.length ? items.map(notifRow) : [h('p', { class: 'muted notif-empty' }, NOTIF.items ? (tab[2] ? '这一类暂时没有提醒' : '暂无提醒') : '加载中…')]))
+    list.replaceChildren(...(items.length ? items.map(notifRow) : [h('p', { class: 'muted notif-empty' }, NOTIF.items ? (NOTIF.onlyUnread ? '没有未读提醒' : tab[2] ? '这一类暂时没有提醒' : '暂无提醒') : '加载中…')]))
   }
   if (!openPop(anchor, box, { key: 'notif', align: 'right', cls: 'pop-notif' })) return
   if (NOTIF.items?.length) draw()
@@ -2047,6 +2060,7 @@ async function notifPanel(anchor) {
 }
 // 提醒设置：在提醒面板里就地切换
 function notifSettings(list, back) {
+  NOTIF.draw = null
   const prefs = { ...(S.me.notif_prefs || {}) }
   const row = ([k, label]) => {
     const cb = h('input', { type: 'checkbox', checked: prefs[k] !== false })
@@ -2060,7 +2074,8 @@ function notifSettings(list, back) {
     })
     return h('label', { class: 'switch notif-pref' }, cb, h('span', { class: 'switch-ui' }), h('span', null, label))
   }
-  list.previousElementSibling?.classList.contains('notif-tabs') && (list.previousElementSibling.hidden = true)
+  const box = list.closest('.notif-pop')
+  box?.querySelectorAll('.notif-tabs, .notif-read-filter').forEach((x) => { x.hidden = true })
   list.replaceChildren(h('div', { class: 'notif-prefs' },
     h('div', { class: 'muted sm' }, '接收哪些提醒'),
     NOTIF_PREFS.map(row),
@@ -2303,6 +2318,11 @@ async function renderWall(base) {
   const sentinel = h('div', { class: 'sentinel' })
   // 横向：日期标签条（点一下跳到那天）+ 左右翻帖按钮；哨兵放进横向滚动条的末尾
   const hzTabs = st.hz && st.byDay ? h('nav', { class: 'hz-tabs', 'aria-label': '按日期跳转' }) : null
+  // 日期条：上一天 / 标签（可横滑）/ 下一天，吸顶
+  const hzDates = hzTabs && h('div', { class: 'hz-dates' },
+    h('button', { class: 'hz-day prev', type: 'button', 'aria-label': '上一天', title: '上一天（[）', onclick: () => hzDayStep(st, -1) }, icon('chevL', 'i tiny')),
+    hzTabs,
+    h('button', { class: 'hz-day next', type: 'button', 'aria-label': '下一天', title: '下一天（]）', onclick: () => hzDayStep(st, 1) }, icon('chevR', 'i tiny')))
   const hzStep = (d) => {
     const card = days.querySelector('.card')
     days.scrollBy({ left: d * ((card?.offsetWidth || days.clientWidth) + 16), behavior: REDUCED.matches ? 'auto' : 'smooth' })
@@ -2318,7 +2338,7 @@ async function renderWall(base) {
       !st.series && h('a', { class: 'tool-btn', href: '/series', 'data-link': '' }, icon('apps', 'i tiny'), h('span', { class: 'lbl' }, '全部图集'))),
     conds.length > 0 && h('div', { class: 'conds' }, conds),
     (st.plain || st.tag) && tagsRow,
-    notice, hzTabs, days, !st.hz && sentinel,
+    notice, hzDates, days, !st.hz && sentinel,
     st.hz && [
       h('button', { class: 'hz-nav prev', type: 'button', 'aria-label': '上一帖', onclick: () => hzStep(-1) }, icon('chevL')),
       h('button', { class: 'hz-nav next', type: 'button', 'aria-label': '下一帖', onclick: () => hzStep(1) }, icon('chevR'))])
@@ -2328,11 +2348,13 @@ async function renderWall(base) {
     days.setAttribute('aria-label', '横向浏览：左右切换帖子')
     // ←/→ 翻帖：输入框里、看大图时、弹层开着时不抢
     const onKey = (e) => {
-      if (S.viewer || POP || S.modal || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
-      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
-      if (e.target.closest?.('input, textarea, select, [contenteditable], .car-track')) return
+      if (S.viewer || POP || S.modal || e.altKey || e.ctrlKey || e.metaKey) return
+      const day = e.key === '[' || e.key === ']'
+      if (!day && (e.shiftKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight'))) return
+      if (e.target.isContentEditable || e.target.closest?.('input, textarea, select, [contenteditable], .car-track')) return
       e.preventDefault()
-      hzStep(e.key === 'ArrowLeft' ? -1 : 1)
+      if (day) { if (hzTabs) hzDayStep(st, e.key === '[' ? -1 : 1) }
+      else hzStep(e.key === 'ArrowLeft' ? -1 : 1)
     }
     document.addEventListener('keydown', onKey)
     onPageLeave(() => document.removeEventListener('keydown', onKey))
@@ -2368,9 +2390,20 @@ async function renderWall(base) {
         if (!hzTabs) return
         const x = days.getBoundingClientRect().left + 40
         const cur = st.sections.find((s) => s.el.getBoundingClientRect().right > x)
-        for (const s of st.sections) s.tab?.classList.toggle('on', s === cur)
+        if (cur && !st.hzGoing) hzMarkDay(st, cur.day)
       })
     }, { passive: true })
+    // 翻帖按钮是 fixed 的：按 #main 剩下的内容区定位（分屏时让开右边群聊列），拖分屏条时跟着走
+    const place = () => {
+      const r = main.getBoundingClientRect()
+      wrap.style.setProperty('--hz-l', Math.max(0, r.left) + 'px')
+      wrap.style.setProperty('--hz-r', Math.max(0, innerWidth - r.right) + 'px')
+      wrap.style.setProperty('--hz-width', r.width + 'px')
+    }
+    const pro = new ResizeObserver(place)
+    pro.observe(main)
+    addEventListener('resize', place)
+    onPageLeave(() => { pro.disconnect(); removeEventListener('resize', place) })
   }
   main.replaceChildren(wrap)
   // 每天的标题吸在工具栏下面；工具栏换行时高度会变，实时量一下
@@ -2485,24 +2518,106 @@ async function initDays(st) {
   }
   if (!list.length) return st.sentinel.replaceChildren(wallEmpty(st))
   st.sentinel.replaceChildren()
+  if (st.hzTabs) hzBuildTabs(st)
   await loadNextDay(st)
+}
+
+// 横向日期条：每天一个标签，没加载到的那天点了也能直接去（按需往后接着加载再定位）
+function hzBuildTabs(st) {
+  st.hzTabMap = new Map()
+  st.hzTabs.replaceChildren(...st.dayList.map((d, i) => {
+    const lb = dayLabel(d.day)
+    const tab = h('button', { class: 'hz-tab' + (DAY_FOLD.has(d.day) ? ' folded' : ''), type: 'button', title: `${lb.main} ${lb.sub} · ${d.n} 张`, onclick: () => hzGoDay(st, i) },
+      h('strong', null, lb.main), h('span', null, d.n),
+      !st.unseen && S.me && d.unseen > 0 && h('i', { class: 'dot', 'aria-label': `${d.unseen} 未看` }))
+    st.hzTabMap.set(d.day, tab)
+    return tab
+  }))
+  hzMarkDay(st, st.dayList[st.di]?.day)
+}
+// 高亮当天标签，并把它滚到日期条的可见范围里
+function hzMarkDay(st, day) {
+  if (!st.hzTabMap || st.hzCur === day) return
+  st.hzCur = day
+  const index = st.dayList.findIndex((d) => d.day === day)
+  st.wrap.querySelector('.hz-day.prev').disabled = index <= 0
+  st.wrap.querySelector('.hz-day.next').disabled = index >= st.dayList.length - 1
+  let on = null
+  for (const [k, t] of st.hzTabMap) {
+    t.classList.toggle('on', k === day)
+    t.setAttribute('aria-current', k === day ? 'true' : 'false')
+    if (k === day) on = t
+  }
+  if (!on) return
+  const nr = st.hzTabs.getBoundingClientRect(), tr = on.getBoundingClientRect()
+  if (tr.left < nr.left + 8 || tr.right > nr.right - 8) {
+    st.hzTabs.scrollTo({ left: st.hzTabs.scrollLeft + tr.left - nr.left - (nr.width - tr.width) / 2, behavior: 'instant' })
+  }
+}
+async function hzGoDay(st, i) {
+  const d = st.dayList?.[i]
+  if (!d || st.hzGoing) return
+  st.hzGoing = true
+  const tab = st.hzTabMap.get(d.day)
+  tab?.classList.add('busy')
+  st.hzTabs.setAttribute('aria-busy', 'true')
+  try {
+    const sec = await loadHzDay(st, i)
+    if (!sec || S.wall !== st) return
+    hzMarkDay(st, d.day)
+    // 只滚动图廊，保持页面及分屏聊天的位置不动。
+    const left = sec.el.getBoundingClientRect().left - st.days.getBoundingClientRect().left + st.days.scrollLeft
+    st.days.scrollTo({ left: Math.max(0, left - (innerWidth <= 760 ? 10 : 24)), behavior: 'instant' })
+    st.di = Math.max(st.di, i + 1)
+  } finally {
+    st.hzGoing = false
+    tab?.classList.remove('busy')
+    st.hzTabs.removeAttribute('aria-busy')
+  }
+}
+async function loadHzDay(st, i) {
+  const d = st.dayList[i]
+  let sec = st.sections.find((s) => s.day === d.day)
+  if (!sec) {
+    sec = daySection(st, d)
+    const next = st.sections.find((s) => s !== sec && s.day < d.day)
+    st.days.insertBefore(sec.el, next?.el || st.sentinel)
+    st.sections.sort((a, b) => b.day.localeCompare(a.day))
+  }
+  if (sec.pending) await sec.pending
+  if (!sec.loaded) {
+    sec.pending = loadDayChunk(st, sec, { first: true })
+    await sec.pending
+    sec.pending = null
+  }
+  return sec // 加载失败时仍定位到目标日的重试按钮。
+}
+function hzDayStep(st, dir) {
+  if (!st.dayList) return
+  const i = st.dayList.findIndex((d) => d.day === st.hzCur)
+  const j = Math.min(st.dayList.length - 1, Math.max(0, (i < 0 ? 0 : i) + dir))
+  if (j !== i) hzGoDay(st, j)
 }
 
 async function loadNextDay(st) {
   if (st.loading || S.wall !== st || !st.dayList || st.di >= st.dayList.length) return
   st.loading = true
+  while (st.di < st.dayList.length && st.sections.some((s) => s.day === st.dayList[st.di].day)) st.di++
+  if (st.di >= st.dayList.length) { st.loading = false; return }
   const d = st.dayList[st.di++]
   const sec = daySection(st, d)
   if (st.hz) st.sentinel.before(sec.el)
   else st.days.append(sec.el)
   try {
-    await loadDayChunk(st, sec, { first: true, focus: d.day === st.from ? st.focus : 0 })
+    sec.pending = loadDayChunk(st, sec, { first: true, focus: d.day === st.from ? st.focus : 0 })
+    await sec.pending
+    sec.pending = null
   } finally {
     st.loading = false
   }
   if (S.wall !== st) return
   if (st.di >= st.dayList.length) st.sentinel.replaceChildren(h('div', { class: 'end' }, '— 到底了，起来走两步 —'))
-  else if (nearEnd(st)) loadNextDay(st)
+  else if (!st.hzGoing && nearEnd(st)) loadNextDay(st)
 }
 
 function daySection(st, d) {
@@ -2540,14 +2655,8 @@ function daySection(st, d) {
     h('span', { class: 'grow' }),
     toggle)
   sec.el = h('section', { class: 'day' }, sec.head, h('div', { class: 'day-body' }, sec.top, grid, sec.more))
-  if (st.hzTabs) {
-    sec.tab = h('button', { class: 'hz-tab', type: 'button', title: `${lb.main} ${lb.sub} · ${d.n} 张`,
-      onclick: () => sec.el.scrollIntoView({ inline: 'start', block: 'nearest', behavior: REDUCED.matches ? 'auto' : 'smooth' }) },
-    h('strong', null, lb.main), h('span', null, d.n),
-    !st.unseen && S.me && d.unseen > 0 && h('i', { class: 'dot', 'aria-label': `${d.unseen} 未看` }))
-    if (!st.sections.length) sec.tab.classList.add('on')
-    st.hzTabs.append(sec.tab)
-  }
+  // 横向的日期标签在拿到日期目录时就全建好了（hzBuildTabs），这里挂上
+  sec.tab = st.hzTabMap?.get(d.day)
   setFold(sec.collapsed)
   st.sections.push(sec)
   return sec
@@ -2573,6 +2682,7 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
       sec.cols.add(h('div', { class: 'feed-sep' }, h('span', null, `第 ${data.offset + 1}–${data.offset + data.items.length} 张 / 共 ${sec.n} 张`)))
     }
     sec.offset = data.offset + data.items.length
+    sec.loaded = true
     for (const m of data.items) {
       if (st.ids.has(m.id) || (st.unseen && !S.me && st.seenSnap.has(m.id))) continue
       st.ids.add(m.id)
@@ -2598,7 +2708,9 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
         `这天还有 ${left} 张`, h('span', { class: 'muted' }, ` · 再看 ${Math.min(DAY_STEP, left)} 张`), icon('chevD', 'i tiny'))
       : '')
   } catch (e) {
-    sec.more.replaceChildren(h('button', { class: 'btn-text', onclick: () => loadDayChunk(st, sec, { first, focus }) }, e.message + ' · 重试'))
+    sec.more.replaceChildren(h('button', { class: 'btn-text', onclick: () => st.hz && first
+      ? hzGoDay(st, st.dayList.findIndex((d) => d.day === sec.day))
+      : loadDayChunk(st, sec, { first, focus }) }, e.message + ' · 重试'))
   }
 }
 
@@ -2821,7 +2933,7 @@ const ROAD_KIND = { feature: ['需求', 'rocket'], bug: ['Bug', 'search'], idea:
 const ROAD_ST = { open: '待评估', planned: '计划中', doing: '进行中', done: '已上线', declined: '暂不做' }
 async function renderRoad() {
   const p = new URLSearchParams(location.search)
-  const st = { kind: p.get('kind') || '', status: p.get('status') || '', sort: p.get('sort') === 'new' ? 'new' : 'hot' }
+  const st = { kind: p.get('kind') || '', status: p.get('status') || '', sort: p.get('sort') === 'new' ? 'new' : 'hot', item: p.get('item') || '' }
   const list = loadingBox()
   const setQ = () => {
     const q = new URLSearchParams(Object.entries(st).filter(([k, v]) => v && !(k === 'sort' && v === 'hot')))
@@ -2838,8 +2950,26 @@ async function renderRoad() {
     seg('sort', [['hot', '票多的'], ['new', '新提的']], '排序'))
   bar()
   const openForm = () => { if (requireLogin('提需求')) roadForm(load) }
+  const backfillStatus = h('span', { class: 'muted sm', role: 'status', 'aria-live': 'polite' })
+  let backfillAfter = 0, backfillUpto = null, scanned = 0, matched = 0
+  const backfill = S.me?.is_admin && h('button', { class: 'btn btn-ghost sm road-backfill', type: 'button', onclick: async () => {
+    if (!confirm('将群聊历史中带 #需求 / #bug 的消息转入鞭打，内容与图片会在鞭打公开显示。确认回填？')) return
+    backfill.disabled = true
+    try {
+      let more
+      do {
+        const r = await api('/road/backfill-chat', { method: 'POST', body: { after: backfillAfter, ...(backfillUpto === null ? {} : { upto: backfillUpto }) } })
+        backfillAfter = r.after; backfillUpto = r.upto; scanned += r.scanned; matched += r.matched; more = r.more
+        backfillStatus.textContent = `已扫描 ${scanned} 条，匹配 ${matched} 条反馈${more ? '…' : '，回填完成'}`
+      } while (more && backfill.isConnected)
+      if (backfill.isConnected) await load()
+    } catch (e) { backfillStatus.textContent = e.message + '；再次点击可从已完成位置继续' }
+    finally { backfill.disabled = false }
+  } }, '回填历史反馈')
   main.replaceChildren(pageHead('鞭打模块', '想要什么功能、遇到什么 Bug、哪里用着别扭，都来鞭打站长；可以附截图和文件，大家投票，票多的先做',
-    h('button', { class: 'btn btn-primary sm', type: 'button', onclick: openForm }, icon('plus', 'i tiny'), '提一条')), filters, list)
+    h('button', { class: 'btn btn-primary sm', type: 'button', onclick: openForm }, icon('plus', 'i tiny'), '提一条')), filters,
+    st.item && h('div', { class: 'notice-bar' }, `正在查看鞭打 #${st.item}`, h('a', { class: 'btn-text', href: '/road', 'data-link': '' }, '查看全部')),
+    backfill && h('div', { class: 'road-backfill-bar' }, backfill, backfillStatus), list)
   let seq = 0
   async function load() {
     const my = ++seq
@@ -2883,7 +3013,7 @@ function roadCard(it, reload) {
     if (!confirm(`删除「${it.title}」？`)) return
     try { await api(`/road/${it.id}`, { method: 'DELETE' }); reload() } catch (e) { toast(e.message, 'err') }
   } }, '删除'))
-  return h('article', { class: 'rd-card st-' + it.status },
+  return h('article', { class: 'rd-card st-' + it.status, id: 'road-' + it.id },
     h('div', { class: 'rd-vote' }, up, score, down),
     h('div', { class: 'rd-main' },
       h('div', { class: 'rd-head' },
@@ -2891,6 +3021,8 @@ function roadCard(it, reload) {
         h('span', { class: 'rd-st s-' + it.status }, ROAD_ST[it.status] || it.status),
         h('h3', null, it.title)),
       it.body && h('div', { class: 'rd-body' }, richBody(it.body, { md: 'lite' })),
+      it.source_msg_id && h('button', { class: 'rd-source', type: 'button', 'data-msg': it.source_msg_id, onclick: () => openChatMsg(it.source_group_id, it.source_msg_id) },
+        icon('chat', 'i tiny'), `来自群聊 · 查看原消息 #${it.source_msg_id}`),
       roadMedia(it.media),
       it.reply && h('div', { class: 'rd-reply' }, h('strong', null, '站长回复：'), richText(it.reply)),
       h('div', { class: 'rd-foot muted sm' },
@@ -5838,12 +5970,12 @@ document.addEventListener('visibilitychange', () => {
   loadGroups()
 })
 function syncChatBadges() {
-  const n = notifOn('chat') ? chatUnread() : 0
+  const n = chatUnread()
   syncTab()
   document.querySelectorAll('[data-chat-badge]').forEach((el) => { el.textContent = n > 99 ? '99+' : n; el.hidden = !n })
 }
 onChat(syncChatBadges)
-const chatBadge = (cls = 'chat-badge') => { const n = notifOn('chat') ? chatUnread() : 0; return h('i', { class: cls, 'data-chat-badge': '', hidden: !n }, n > 99 ? '99+' : n) }
+const chatBadge = (cls = 'chat-badge') => { const n = chatUnread(); return h('i', { class: cls, 'data-chat-badge': '', hidden: !n }, n > 99 ? '99+' : n) }
 
 // 正文：[quote="名字, msg:id"]…[/quote] 引用块 + 折叠 / 遮挡 / 链接 / 表情；站内图片链接下面附一张预览卡
 const QUOTE_RE = /\[quote(?:="([^"]*)")?\]([\s\S]*?)\[\/quote\]/g
@@ -7121,13 +7253,23 @@ function chatPane(g, { onHead } = {}) {
     const nk = NICKS.get(b.dataset.at)
     if (nk && b.textContent.startsWith('@')) b.textContent = `${nk}(${b.textContent})`
   })).catch(() => {})
-  function markRead() {
-    if (!S.me || scroller.ownerDocument.hidden || !scroller.offsetParent || st.last <= st.sentRead) return
-    st.sentRead = st.last
-    api(`/chat/groups/${g.id}/read`, { method: 'POST', body: { id: st.last } }).catch(() => {})
-    const gg = findGroup(g.id)
-    if (gg?.unread) { gg.unread = 0; CHAT.subs.forEach((fn) => fn()) }
-    chatNotifSeen(g.id, st.last)
+  async function markRead() {
+    if (!S.me || scroller.ownerDocument.hidden || !scroller.offsetParent || histEl || st.after || !nearBottom() || st.reading || st.last <= st.sentRead) return
+    const upto = st.last
+    st.reading = true
+    try {
+      await api(`/chat/groups/${g.id}/read`, { method: 'POST', body: { id: upto } })
+      st.sentRead = upto
+      const gg = findGroup(g.id)
+      if (gg) {
+        const left = st.items.filter((m) => !m.mine && !m.deleted && m.id > upto)
+        gg.last_read = Math.max(gg.last_read || 0, upto)
+        gg.unread = left.length
+        gg.at_me = left.filter((m) => meRe()?.test(stripQuotes(m.body || ''))).length
+        CHAT.subs.forEach((fn) => fn())
+      }
+      chatNotifSeen(g.id, upto)
+    } catch {} finally { st.reading = false }
   }
   scroller.addEventListener('scroll', () => {
     st.stick = nearBottom() && !st.after
@@ -7546,6 +7688,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
     // 正文里贴了图片直链：显示成图；整条只有这个链接时就不再画文字气泡
     const lnk = m.body ? bodyImgUrl(m.body) : null
     const edited = m.edited_at && h('span', { class: 'cm-edited', title: '编辑于 ' + new Date(m.edited_at * 1000).toLocaleString('zh-CN', { hour12: false }) }, '（已编辑）')
+    if (m.road_id) body.push(h('a', { class: 'cm-road', href: `/road?item=${m.road_id}`, 'data-link': '' }, `已转到鞭打 #${m.road_id}`))
     if (m.body && !lnk?.only) body.push(h('div', { class: 'cm-text' + (stkOnly(m.body) ? ' stk-only' : bubbleCls(m.user)) }, richBody(m.body, { md: 'lite' }), edited))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited, lnk.only))
     const all = m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
@@ -8389,7 +8532,7 @@ async function chatPopout(g0, { pip = false } = {}) {
     if (x) { setTitle(); bar.querySelector('.pip-name').textContent = x.name }
     else if (CHAT.loaded) bar.querySelector('.pip-name').textContent = g.name + '（已不在群里）'
   })
-  win.addEventListener('pagehide', () => { pane.destroy(); PIPS.delete(win); off() })
+  win.addEventListener('pagehide', () => { if (S.viewer?.doc === doc) S.viewer.close(true); pane.destroy(); PIPS.delete(win); off() })
   win.focus()
   pane.focus()
   dockMin()
@@ -9698,7 +9841,7 @@ Object.assign(ICON, {
   fish: '<svg viewBox="0 0 24 24"><path d="M3 12c3-5 9-6 13-3l4-3v12l-4-3c-4 3-10 2-13-3z"/><circle cx="8" cy="11" r=".8"/></svg>',
   clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
 })
-function meSettings() {
+function meSettings(section) {
   const panel = openModalShell('me-settings')
   S.modal.kind = 'settings'
   const close = () => closeModal(false)
@@ -9766,7 +9909,7 @@ function meSettings() {
   panel.replaceChildren(
     h('header', { class: 'compose-head' }, h('h2', null, '设置'), h('button', { class: 'btn-icon', 'aria-label': '关闭', onclick: close }, icon('close'))),
     h('div', { class: 'set-wrap' }, nav, body))
-  const want = localStorage.getItem('setTab')
+  const want = typeof section === 'string' ? section : localStorage.getItem('setTab')
   go(secs.some((x) => x[0] === want) ? want : 'profile')
   dock.addEventListener('change', () => { saveDock({ on: dock.checked }); dockSync() })
 }

@@ -456,6 +456,7 @@ body.chat-pip > .cm-pane { flex: 1; min-height: 0; }
 .pip-btn.on { background: var(--primary-soft); color: var(--primary); }
 body.chat-pip .cm-msg { padding: 5px 12px; }
 body.chat-pip .cm-compose { margin: 0 8px 8px; }
+.cm-road { display: block; width: fit-content; font-size: 11.5px; color: var(--primary); margin: 3px 0; }
 body.lock .chat-dock { visibility: hidden; }
 
 /* 成员管理 / 设置 / 引导 */
