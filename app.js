@@ -1391,8 +1391,27 @@ function ucssCls(css, base) {
   return ' ' + UCSS.get(key)
 }
 const userCss = (u, k, base, where) => { const d = decoAt(u, where); return d?.[k] && !decoHidden(u, 'css') ? ucssCls(d[k], base) : '' }
+// 内置简笔徽章；仅目录中且由服务端返回的佩戴项生效。
+const OFFICIAL_ART = {
+  serene: '<ellipse cx="16" cy="6" rx="9" ry="3"/><path d="M7 16q9 14 18 0M9 15l4 1m6 0 4-1M16 23v4m-4-1h8"/>',
+  gentleman: '<path d="M7 10 4 3l9 4m12 3 3-7-9 4M16 27S3 20 3 13c0-7 10-8 13-2 3-6 13-5 13 2 0 7-13 14-13 14Z"/><path d="m8 16 4 2m8 0 4-2m-12 6q4 2 8 0"/>',
+  coder: '<rect x="3" y="5" width="26" height="22" rx="3"/><path d="M3 11h26M7 8h1m3 0h1m-1 7-4 4 4 4m10-8 4 4-4 4m-3-9-4 10"/>',
+  banana: '<path d="M23 4C30 19 17 31 5 25c9-1 16-8 17-18l-1-3Zm-1 5C17 18 10 19 5 18m0 0 3 7M7 8 5 6m4-1V2"/><path d="m18 18 1 1m3-3 1 1m-5 5q3 2 5-2"/>',
+  peach: '<path d="M16 10C7 4 1 13 5 22s15 9 21 1c7-9-1-17-10-13Z"/><path d="M16 10c-3 4-3 8 0 11M16 8c1-6 8-6 8-6-1 6-8 6-8 6M8 17h2m12 0h2m-13 7q5 3 10-1"/>',
+  oracle: '<rect x="7" y="7" width="18" height="18" rx="5"/><path d="M11 2v5m10-5v5M11 25v5m10-5v5M2 11h5m-5 10h5m18-10h5m-5 10h5M16 10l2 4 4 2-4 2-2 4-2-4-4-2 4-2Z"/>',
+  whale: '<path d="M3 20c0-9 17-14 20-3l6-3-1 9-5-1C19 31 5 29 3 20ZM12 9V4m0 0L8 6m4-2 4 2"/><circle cx="8" cy="19" r="1"/><path d="M11 23q4 2 7-1"/>',
+  diver: '<path d="M5 13h22v9a7 7 0 0 1-7 7h-8a7 7 0 0 1-7-7ZM20 13V5h7v5h-3v3M4 8l3-2m-5 6 3-1"/><rect x="8" y="16" width="16" height="7" rx="3"/><path d="M12 19h1m6 0h1"/>',
+  reborn: '<path d="M5 11l5 4 6-10 6 10 5-4-2 15H7ZM8 22h16M12 18h1m6 0h1M3 5l2 2m22-2 2-2"/>',
+}
+const officialById = id => (S.officialTitles || []).find(t => t.id === id && OFFICIAL_ART[id])
+const officialOf = (u, where) => officialById(decoAt(u, where)?.ot)
+const officialArt = id => h('span', { class: 'ot-art', 'aria-hidden': 'true', html: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${OFFICIAL_ART[id] || ''}</svg>` })
+const officialFrame = (u, where) => { const t = officialOf(u, where); return t ? ' ot-frame ot-' + t.id : '' }
+const officialChip = (t, mini = false) => h('span', { class: 'ot-badge ot-' + t.id, title: `站长授予 · ${t.name}`, 'aria-label': '官方徽章：' + t.name }, officialArt(t.id), !mini && h('span', null, t.name))
 function titleEl(u, where) {
   const d = decoAt(u, where)
+  const official = officialOf(u, where)
+  if (official && !decoHidden(u, 'title')) return h('span', { class: 'u-title ot-title ot-' + official.id, title: '站长授予 · ' + official.mood }, official.name)
   if (!d?.t || decoHidden(u, 'title')) return null
   return h('span', { class: `u-title sh-${d.sh || 'pill'} fl-${d.fill || 'solid'} fx-${d.fx || 'none'}${d.f ? ' ft-' + d.f : ''}${userCss(u, 'csst', 'u-title', where)}`, title: '称号',
     style: { '--t1': d.c || '#ffffff', '--t2': d.c2 || '#16a34a', '--t3': d.bc || d.c2 || '#16a34a' } }, h('span', { class: 'u-title-t' }, d.t)) // 包一层，放不下时文字能出省略号
@@ -1419,6 +1438,8 @@ const badgeLv = (id, n) => id === 'elder' ? 5 : n > 0 ? BADGE_LV.filter((x) => n
 const badgeLvText = (id, lv) => id === 'elder' ? '唯一' : lv ? `Lv${lv} ${BADGE_LV_NAME[lv]}` : '未获得'
 // 佩戴的徽章：群聊里只显示小图标（不挤消息），别处图标 + 名字；鼠标悬停 / 长按看说明。等级用 deco.bn（服务端同步的次数）
 function badgeEl(u, where, full) {
+  const official = officialOf(u, where)
+  if (official && !decoHidden(u, 'badge')) return officialChip(official, true)
   const d = u?.deco
   const b = d?.bd && BADGES[d.bd]
   if (!b || decoHidden(u, 'badge')) return null
@@ -1481,6 +1502,8 @@ function compactIdentity(u, where, name, ...meta) {
 }
 // 气泡类名：预设气泡 + 自己写的气泡样式（只作用在这个人自己的 .cm-text 上）
 const bubbleCls = (u) => {
+  const official = officialOf(u, 'chat')
+  if (official && !decoHidden(u, 'bubble')) return ' ot-bubble ot-' + official.id
   const b = decoAt(u, 'chat')?.bb
   return (b && !decoHidden(u, 'bubble') ? ' bb bb-' + b : '') + userCss(u, 'cssb', 'cm-text', 'chat')
 }
@@ -1503,7 +1526,8 @@ function decoEditor() {
     preview.replaceChildren(
       h('div', { class: 'dp-row' }, avatar(S.me.avatar, S.me.name || S.me.username, 28), uName('strong', u, {}, S.me.name || S.me.username, 'card')),
       h('div', { class: 'dp-row dp-chat cm-head' }, h('span', { class: 'cm-name' }, S.me.name || S.me.username), titleEl(u, 'chat'), badgeEl(u, 'chat')),
-      h('div', { class: 'dp-row' }, h('div', { class: 'cm-text' + bubbleCls(u) }, '来看看我的气泡 No.1 #梗图')))
+      h('div', { class: 'dp-row' }, h('div', { class: 'cm-text' + bubbleCls(u) }, '来看看我的气泡 No.1 #梗图')),
+      h('div', { class: 'rp-form' + officialFrame(u, 'post') }, icon('rocket'), h('input', { class: 'rp-input', placeholder: '回应框预览', 'aria-label': '回应框预览' })))
   }
   const seg = (k, opts) => {
     const box = h('div', { class: 'segs small wrap', role: 'radiogroup' })
@@ -1551,9 +1575,15 @@ function decoEditor() {
   const wall = h('div')
   const drawW = () => wall.replaceChildren(badgeWall(S.me.badges, (id) => { d.bd = d.bd === id ? undefined : id; drawW(); draw() }, d.bd))
   drawW()
+  const officialOptions = h('div', { class: 'ot-options' })
+  const drawOfficial = () => officialOptions.replaceChildren(...nodes(
+    h('button', { type: 'button', class: 'btn btn-ghost sm', 'aria-pressed': String(!d.ot), onclick: () => { delete d.ot; drawOfficial(); draw() } }, '不佩戴'),
+    (S.me.official_titles || []).map(o => { const t = officialById(o.id); return t && h('button', { type: 'button', class: 'ot-option' + (d.ot === t.id ? ' on' : ''), 'aria-pressed': String(d.ot === t.id), onclick: () => { d.ot = t.id; drawOfficial(); draw() } }, officialChip(t)) })))
+  drawOfficial()
   draw()
   return h('section', { class: 'set-sec deco-sec' }, h('h3', null, '装扮'),
     preview,
+    S.me.official_titles?.length > 0 && field('官方称号', officialOptions, '称号、徽章、气泡与回应框一起佩戴'),
     field('称号', t, '显示在昵称后面'),
     field('徽章', wall, S.me.badges?.length ? '点亮着的戴上，再点一次摘下；群聊里只显示小图标' : '还没有徽章。每天看图、发图、水群够多，第二天就会发'),
     S.me.badges?.length > 0 && field('徽章在哪儿显示', seg('bs', [['all', '全站'], ['chat', '只在群聊'], ['post', '只在帖子和评论']])),
@@ -1615,9 +1645,11 @@ async function userCard(username, anchor) {
     h('div', { class: 'ucard-stats' }, stat(u.posts, '发布'), stat(u.replies, '回应'), stat(u.comments, '评论')),
     u.bio && h('div', { class: 'ucard-bio' }, u.bio),
     u.badges?.length > 0 && h('div', { class: 'ucard-badges' }, u.badges.map((b) => badgeChip(b.id, false, b.n))),
+    u.official_titles?.length > 0 && h('div', { class: 'ucard-badges' }, u.official_titles.map(o => { const t = officialById(o.id); return t && officialChip(t) })),
     (u.joined_at || u.last_seen) && h('div', { class: 'muted ucard-join' }, u.joined_at && `${fmtTime(u.joined_at)} 加入尽欢`,
       u.last_seen && seenText(u.last_seen, Date.now() / 1000)[0] && ` · ${seenText(u.last_seen, Date.now() / 1000)[0]}`),
     h('div', { class: 'ucard-acts' },
+      S.me?.owner && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); officialTitleManager(u.username) } }, '授予称号'),
       u.posts > 0 && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); saveWallPrefs({ author: u.username }); navigate('/?author=' + encodeURIComponent(u.username)) } }, '看 TA 的图'),
       S.me?.is_admin && !u.is_admin && u.username !== S.me.username && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); memberAdmin(u.username) } }, '管理'),
       h('a', { class: 'btn btn-ghost sm', href: `https://linux.do/u/${encodeURIComponent(u.username)}`, target: '_blank', rel: 'noopener' },
@@ -1645,7 +1677,7 @@ function replyForm(m) {
       input.value = text; input.dispatchEvent(new Event('input')); closePop(); form.requestSubmit()
     }, m.my_reply)), { key: key + 'boost', cls: 'pop-boost', focusScope: form })
   } }, icon('rocket'))
-  const form = h('form', { class: 'rp-form boost-entry' }, stk, quick, input, cnt, send)
+  const form = h('form', { class: 'rp-form boost-entry' + officialFrame(S.me, 'post') }, stk, quick, input, cnt, send)
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
     const text = input.value.trim()
@@ -8401,7 +8433,7 @@ function boostPrompt(m, pane, anchor) {
   const go = () => { closePop(); chatBoost(m, pane, input.value.trim()) }
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); go() } })
   openPop(anchor, h('div', { class: 'boost-pop' },
-    h('div', { class: 'boost-row boost-entry' }, icon('rocket', 'i tiny'), input, h('button', { class: 'btn btn-primary sm', type: 'button', onclick: go }, old ? '改' : '挂上')),
+    h('div', { class: 'boost-row boost-entry' + officialFrame(S.me, 'chat') }, icon('rocket', 'i tiny'), input, h('button', { class: 'btn btn-primary sm', type: 'button', onclick: go }, old ? '改' : '挂上')),
     boostChoices(t => { input.value = t; go() }, old),
     old && h('button', { class: 'chip ghost', type: 'button', onclick: () => { input.value = ''; go() } }, '撤掉我的')), { key, cls: 'pop-boost', focusScope: input })
   if ((input.ownerDocument.defaultView?.innerWidth || innerWidth) > 760) setTimeout(() => { if (input.isConnected) input.focus() })
@@ -10068,6 +10100,36 @@ function limitTags(limits) {
   return (limits || []).map((l) => h('span', { class: 'badge danger', title: (l.reason ? `原因：${l.reason}，` : '') + untilText(l.until) },
     LIMIT_KINDS.find((k) => k[0] === l.kind)?.[1] || l.kind))
 }
+async function officialTitleManager(username) {
+  if (!S.me?.owner) return
+  const panel = openModalShell('official-title-manager')
+  S.modal.kind = 'official-titles'
+  const status = h('p', { class: 'muted', role: 'status' }, '加载中…')
+  const grid = h('div', { class: 'ot-grid' })
+  panel.replaceChildren(h('div', { class: 'modal-head' }, h('h2', null, '授予称号'), h('button', { class: 'btn-icon ghost modal-close', type: 'button', 'aria-label': '关闭', onclick: () => closeModal(false) }, icon('close'))),
+    h('p', { class: 'ot-recipient' }, '@' + username), status, grid)
+  let owned = new Set(), busy = false
+  const draw = () => grid.replaceChildren(...(S.officialTitles || []).map(t => {
+    const has = owned.has(t.id)
+    return h('article', { class: 'ot-card ot-' + t.id },
+      h('div', { class: 'ot-card-heading' }, officialArt(t.id), h('div', null, h('strong', null, t.name), h('p', null, t.mood))),
+      h('div', { class: 'ot-demo' }, h('span', { class: 'cm-text ot-bubble ot-' + t.id }, '今天也要开心呀'),
+        h('div', { class: 'ot-demo-field ot-frame ot-' + t.id }, icon('rocket', 'i tiny'), '回应一下')),
+      h('button', { class: 'btn btn-ghost sm ot-grant', type: 'button', disabled: busy, 'data-title': t.id, 'aria-label': (has ? '收回' : '授予') + t.name, onclick: async () => {
+        if (busy) return
+        busy = true; status.textContent = '正在' + (has ? '收回' : '授予') + t.name; draw()
+        try {
+          const r = await api('/admin/official-titles/' + encodeURIComponent(username) + '/' + t.id, { method: has ? 'DELETE' : 'PUT', body: has ? undefined : {} })
+          owned = new Set(r.official_titles.map(o => o.id)); USERS.delete(username)
+          if (username.toLowerCase() === S.me.username.toLowerCase()) S.me = (await api('/me')).user
+          status.textContent = (has ? '已收回 ' : '已授予 ') + t.name
+        } catch (e) { status.textContent = e.message }
+        finally { busy = false; if (grid.isConnected) draw() }
+      } }, has ? '已授予 · 收回' : '授予'))
+  }))
+  try { const u = (await api('/users/' + encodeURIComponent(username))).user; owned = new Set((u.official_titles || []).map(o => o.id)); status.textContent = '仅站长可授予'; if (grid.isConnected) draw() }
+  catch (e) { status.textContent = e.message }
+}
 async function memberAdmin(q0 = '') {
   const panel = openModalShell('member-admin')
   S.modal.kind = 'members'
@@ -10137,6 +10199,7 @@ async function memberAdmin(q0 = '') {
             } catch (err) { toast(err.message, 'err') }
           } }, [['', '炫彩：默认'], ['1', '炫彩：开'], ['0', '炫彩：关']].map(([v, l]) => h('option', { value: v, selected: String(u.fancy_set ?? '') === v }, l))),
           owner && !u.owner && roleSel(u, draw, open),
+          owner && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => officialTitleManager(u.username) }, '授予称号'),
           !u.is_admin && u.id !== S.me.id && h('button', { class: 'btn btn-ghost sm', type: 'button', 'aria-expanded': String(!!open), onclick: () => draw(!open) }, open ? '收起' : '限制'))),
         open && h('div', { class: 'ma-edit' }, LIMIT_KINDS.map(([k, label, what]) => {
           const cur = u.limits.find((l) => l.kind === k)
@@ -10638,6 +10701,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localho
   try {
     const me = await api('/me')
     S.me = me.user
+    S.officialTitles = me.official_titles || []
     S.limits = me.limits || []
     S.emojis = me.emojis
     S.emojiGroups = me.emoji_groups
