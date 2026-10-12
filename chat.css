@@ -2,6 +2,23 @@
 
 /* ---------- 消息区 ---------- */
 .cm-pane { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.cm-ai { position: absolute; inset: 0; z-index: 45; display: flex; flex-direction: column; min-width: 0; background: var(--surface); color: var(--text); border-top: 2px solid var(--brand-accent); overflow: hidden; }
+.cm-ai .cms-head { flex: none; }
+.cm-ai .notif-tabs { flex: none; margin: 0; padding: 0 14px; }
+.cm-ai-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.cm-ai-controls select { max-width: 100%; min-width: 0; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+.cm-ai-output { flex: 1; min-height: 0; overflow: auto; padding: 18px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; overscroll-behavior: contain; }
+.cm-ai-output:empty::before { content: '一起捡起刚才错过的话题。'; color: var(--text-3); }
+.cm-ai-line { padding: 8px 0 14px; }
+.cm-ai-line strong { color: var(--primary); font-size: 13px; }
+.cm-ai-line.user { border-bottom: 1px dashed var(--line); }
+.cm-ai-line p { margin: 4px 0 0; }
+.cm-ai-footer { flex: none; border-top: 1px solid var(--line); padding: 10px 14px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+.cm-ai-input { display: block; width: 100%; resize: vertical; min-height: 66px; max-height: 120px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--text); font: inherit; }
+.cm-ai-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.cm-ai-status { flex: 1 1 140px; margin: 0; color: var(--text-2); font-size: 13px; overflow-wrap: anywhere; }
+.cm-ai-status[role="alert"] { color: var(--err); }
+.cm-ai-open { color: var(--primary); }
 /* 消息区（滚动列表 + 历史消息层）；输入框在它外面，历史层盖不到 */
 .cm-stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .cm-scroll { position: relative; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overflow-anchor: none; overscroll-behavior: contain; padding: 4px 0 12px; }

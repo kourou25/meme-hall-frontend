@@ -7091,6 +7091,16 @@ function mentionPicker(ta, g, recent = () => []) {
 // 一个群的消息区 + 输入框：站内群聊页、飞书伪装、LINUX DO 聊天抽屉共用，外观由各自的 CSS 决定
 function chatPane(g, { onHead } = {}) {
   const st = { first: 0, last: 0, more: true, busy: false, since: 0, items: [], unreadAt: null, sentRead: 0, stick: true, done: false }
+  let aiPanel, aiLoading
+  async function openAi(anchor, mode = 'summary', range = '200') {
+    try {
+      aiLoading ||= import('/ai-chat.js?v=99d7d2c1').then(({ createAiChat }) => {
+        if (!st.destroyed) aiPanel = createAiChat({ pane: el, gid: g.id, h, icon, api })
+      }).catch(error => { aiLoading = null; throw error })
+      await aiLoading
+      if (!st.destroyed) { closePop(); aiPanel.open(anchor, mode, range) }
+    } catch (error) { if (!st.destroyed) toast(error.message, 'err') }
+  }
   const rows = new Map()
   const list = h('div', { class: 'cm-list' })
   const topSpin = h('div', { class: 'cm-top' }, h('div', { class: 'spinner' }))
@@ -7204,6 +7214,7 @@ function chatPane(g, { onHead } = {}) {
         atMe.length > 0 && h('span', { class: 'cm-away-at' }, ` · @你 ${atMe.length} 次`),
         repMe.length > 0 && h('span', { class: 'cm-away-at' }, ` · 回复你 ${repMe.length} 次`)),
       h('span', { class: 'cm-away-acts' },
+        h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: (e) => openAi(e.currentTarget, 'summary', 'away') }, 'AI 摘要'),
         h('button', { class: 'btn btn-primary sm', type: 'button', onclick: () => digest(ms, atMe, repMe, `离开的 ${mins} 分钟`, true) }, '速览'),
         h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { jumpTo(ms[0].id); dropAway() } }, '从第一条看'),
         h('button', { class: 'cm-x', type: 'button', 'aria-label': '知道了', onclick: dropAway }, icon('close', 'i tiny'))))
@@ -7863,6 +7874,7 @@ function chatPane(g, { onHead } = {}) {
           insertAtCursor(ta, (/\S$/.test(ta.value.slice(0, ta.selectionStart)) ? ' ' : '') + `No.${m.id} `)
         }, 'cmpost' + g.id), { 'data-pop': 'cmpost' + g.id }),
         tb('search', '搜索聊天记录', () => search()),
+        tb('smile', 'AI 小伙伴', (e) => openAi(e.currentTarget), { class: 'cm-ibtn cm-ai-open' }),
         tb('download', '导出 / 让 AI 总结', (e) => pickRange(e.currentTarget), { 'data-pop': 'cmrange' }),
         h('span', { class: 'grow' }),
         sendBtn), mention.el)
@@ -7925,7 +7937,7 @@ function chatPane(g, { onHead } = {}) {
     input.focus()
     if (q0) { input.value = q0; run() }
   }
-  function destroy() { st.destroyed = true; st.done = false; CHAT.panes.delete(api_); clearTimeout(st.catchupT); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); offNotice() }
+  function destroy() { st.destroyed = true; aiPanel?.destroy(); st.done = false; CHAT.panes.delete(api_); clearTimeout(st.catchupT); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); offNotice() }
 
   // 群公告：顶上一条，点 × 收起（记住这一版），右上角留个小「公告」随时再打开；公告改了会重新弹出来
   const noticeEl = h('div', { class: 'cm-notice-wrap' })
