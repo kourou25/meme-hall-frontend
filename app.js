@@ -1886,7 +1886,6 @@ function openViewer(m, start = 0, { doc = document } = {}) {
   }
   // now：换图时立刻拿掉（不做淡出），免得新旧两层同时在
   const close = (now) => {
-    clearTimeout(tapT)
     if (doc.fullscreenElement === root) doc.exitFullscreen().catch(() => {})
     root.classList.remove('in')
     if (now === true) root.remove()
@@ -1894,15 +1893,9 @@ function openViewer(m, start = 0, { doc = document } = {}) {
     if (!S.modal || doc !== document) doc.body.classList.remove('lock')
     if (S.viewer?.close === close) S.viewer = null
   }
-  // 放大状态下点图不关（要拖着看），点空白处才关；单击图片稍等一下，免得双击放大时先关掉了
-  let tapT = 0
+  // 单击图片保持预览，双击只负责缩放；关闭不再依赖两次点击之间的时间。
   const tapClose = (e) => {
     if (e.target === root || e.target === img || e.target === frame || e.target.classList?.contains('vw-stage')) return true
-    if (!zoomed && e.target.closest?.('.vw-img') && e.target.tagName === 'IMG') {
-      clearTimeout(tapT)
-      if (e.detail > 1) return false
-      tapT = setTimeout(close, 240)
-    }
     return false
   }
   // 工具条和翻页键都收在居中的框里，不贴着浏览器 / 屏幕边缘
@@ -3210,8 +3203,8 @@ async function renderRoad() {
 }
 function roadCard(it, reload) {
   const score = h('strong', { class: 'rd-score' }, String(it.score))
-  const up = h('button', { class: 'rd-v up', type: 'button', 'aria-label': '赞成', title: '赞成' }, '▲')
-  const down = h('button', { class: 'rd-v down', type: 'button', 'aria-label': '反对', title: '反对' }, '▼')
+  const up = h('button', { class: 'rd-v rd-up', type: 'button', 'aria-label': '赞成', title: '赞成' }, '▲')
+  const down = h('button', { class: 'rd-v rd-down', type: 'button', 'aria-label': '反对', title: '反对' }, '▼')
   const paint = () => {
     score.textContent = String(it.score)
     up.classList.toggle('on', it.my === 1); up.setAttribute('aria-pressed', String(it.my === 1))
@@ -6117,13 +6110,25 @@ function placeTools(msg) {
   const left = Math.max(48, Math.min(right - mr.left + 6, msg.clientWidth - t.offsetWidth - 8))
   t.style.left = left + 'px'
   t.style.right = 'auto'
+  const ref = msg.querySelector(':scope > .cm-ref-row')
+  t.style.top = ref ? ref.getBoundingClientRect().bottom - mr.top + 4 + 'px' : ''
 }
 function bindMsgTools(doc) {
   const clear = (keep) => doc.querySelectorAll('.im-msg.tools, .cm-msg.tools').forEach((x) => { if (x !== keep) x.classList.remove('tools') })
+  doc.addEventListener('focusin', (e) => {
+    if (e.target.closest?.('.cm-tools')) { const msg = e.target.closest(TOOL_SEL); if (msg) placeTools(msg) }
+  })
   if (matchMedia('(hover: hover)').matches) {
     let cur = null, timer = 0
     doc.addEventListener('mouseover', (e) => {
       const msg = e.target.closest?.(TOOL_SEL)
+      // 引用是跳转入口，停留在这里不应唤出消息操作条。
+      if (e.target.closest?.('.cm-ref')) {
+        clearTimeout(timer)
+        if (cur && !cur.querySelector('.cm-tools:focus-within, .im-tools:focus-within')) cur.classList.remove('tools')
+        cur = null
+        return
+      }
       if (msg === cur) return
       clearTimeout(timer)
       if (cur && !cur.querySelector('.cm-tools:focus-within, .im-tools:focus-within') && !POP?.anchor?.closest?.(TOOL_SEL)) cur.classList.remove('tools')

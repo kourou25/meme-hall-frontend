@@ -1573,8 +1573,8 @@ html[data-skin] .site-notice { display: none; }
 .rd-vote { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 40px; }
 .rd-v { width: 32px; height: 26px; border-radius: 8px; font-size: 12px; color: var(--text-3); display: grid; place-items: center; }
 .rd-v:hover { background: var(--surface-2); color: var(--text); }
-.rd-v.up.on { color: #fff; background: var(--primary); }
-.rd-v.down.on { color: #fff; background: var(--danger, #d4483b); }
+.rd-v.rd-up.on { color: #fff; background: var(--primary); }
+.rd-v.rd-down.on { color: #fff; background: var(--danger, #d4483b); }
 .rd-score { font-size: 16px; font-variant-numeric: tabular-nums; }
 .rd-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .rd-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
