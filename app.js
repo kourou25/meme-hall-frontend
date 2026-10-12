@@ -737,7 +737,7 @@ function memeCard(m, { stack = false } = {}) {
   const rpN = h('span', null, m.reply_count || '')
   const rpBtn = h('button', { class: 'rp-toggle', type: 'button', 'aria-expanded': 'false', title: '一句回应',
     onclick: () => { const on = card.classList.toggle('rp-open'); rpBtn.setAttribute('aria-expanded', on ? 'true' : 'false') } },
-  icon('reply', 'i tiny'), rpN)
+  icon('rocket', 'i tiny'), rpN)
   const card = h('article', { class: 'card' + (isText ? ' text-card wide' : '') + (ANCHORS.has(m.id) ? ' anchored' : ''), 'data-id': m.id, 'aria-label': m.title || m.text || '梗图' },
     h('div', { class: 'card-head' },
       avatar(m.author_avatar, m.author_name, 34),
@@ -838,13 +838,17 @@ function peekOrig(e, im) {
 }
 const cellMark = (im) => nodes(kindBadge(im), im?.o && h('span', { class: 'mask-badge' }, maskTap() === 'view' ? '已打码 · 大图里可看原图' : '已打码 · 点一下看原图'), im?.k === 'v' && h('span', { class: 'play-mark' }, icon('play')))
 // 轮播：横向滑动、圆点、左右键；高度按第一张定，夹在 3:4 和 16:9 之间
-function carousel(m, imgs) {
+function carousel(m, imgs, { detail = false } = {}) {
   const n = imgs.length
   const r0 = imgs[0].w && imgs[0].h ? imgs[0].w / imgs[0].h : 1
   const ratio = Math.min(16 / 9, Math.max(3 / 4, r0))
   const track = h('div', { class: 'car-track', tabindex: '0', role: 'group', 'aria-roledescription': '轮播', 'aria-label': `${n} 张图，左右滑动` },
-    imgs.map((im, i) => h('button', { class: 'cell car-cell', type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': `查看第 ${i + 1} 张，共 ${n} 张` },
-      cellPic(im, im.t || im.u, { loading: i < 2 ? null : 'lazy', alt: altOf(m, i, n) }), cellMark(im))))
+    imgs.map((im, i) => detail && im.v
+      ? h('div', { class: 'cell car-cell', role: 'group', 'aria-label': `第 ${i + 1} 项，共 ${n} 项` },
+        mediaVideo(im, { onOpen: () => openViewer(m, i) }),
+        h('button', { class: 'stage-open', type: 'button', onclick: () => openViewer(m, i) }, icon('ext', 'i tiny'), '完整预览'))
+      : h('button', { class: 'cell car-cell', type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': `查看第 ${i + 1} 张，共 ${n} 张` },
+        cellPic(im, detail ? im.u : im.t || im.u, { loading: i < 2 ? null : 'lazy', alt: altOf(m, i, n) }), cellMark(im))))
   const count = h('span', { class: 'car-count' }, `1 / ${n}`)
   const dots = h('div', { class: 'car-dots', 'aria-hidden': 'true' }, imgs.slice(0, 12).map((_, i) => h('i', { class: i ? '' : 'on' })))
   const go = (d) => track.scrollBy({ left: d * track.clientWidth, behavior: REDUCED.matches ? 'auto' : 'smooth' })
@@ -864,7 +868,7 @@ function carousel(m, imgs) {
   track.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); go(e.key === 'ArrowLeft' ? -1 : 1) }
   })
-  return h('div', { class: 'media carousel', style: { '--ratio': ratio } }, track, prev, next, count, dots)
+  return h('div', { class: detail ? 'stage carousel detail-carousel' : 'media carousel', style: { '--ratio': ratio } }, track, prev, next, count, dots)
 }
 
 // 图：单图按原比例完整展示，超长图（高是宽的 2.2 倍以上）先折叠；多图宫格；慎点先盖住
@@ -1072,6 +1076,12 @@ async function toggleNsfw(m, btn) {
     const { item } = await api(`/memes/${m.id}/nsfw`, { method: 'POST', body: { on } })
     syncItem(item)
     refreshBlur()
+    // 标记会改变筛选结果；列表重新加载，已打开的详情保留。
+    if ((S.content === 'hide' && isRisky(item)) || (S.content === 'only' && !isRisky(item))) {
+      document.querySelectorAll(`.card[data-id="${m.id}"], .im-msg[data-id="${m.id}"], .ld-post[data-id="${m.id}"]`).forEach(el => el.remove())
+      S.bgKey = null
+      if (!S.modal) route()
+    }
     toast(on ? '已标成 NSFW' : '已去掉 NSFW', 'ok')
   } catch (e) { toast(e.message, 'err') } finally { btn.disabled = false }
 }
@@ -1403,12 +1413,11 @@ function uName(tag, u, attrs, text, where) {
   if (fc) el.style.setProperty('--fc', `linear-gradient(90deg, ${[...fc, fc[0]].join(', ')})`)
   return [el, titleEl(u, where), badgeEl(u, where)]
 }
-// 身份规则共用：昵称与一个佩戴徽章在首行，称号独立次行。
+// 身份信息按自然宽度同行排列，窄屏允许换行，保留完整文字。
 function compactIdentity(u, where, name, ...meta) {
   const title = titleEl(u, where)
   return h('span', { class: 'identity' },
-    h('span', { class: 'identity-main' }, name, badgeEl(u, where), meta),
-    title && h('span', { class: 'identity-sub' }, title))
+    h('span', { class: 'identity-main' }, name, title, badgeEl(u, where, true), meta))
 }
 // 气泡类名：预设气泡 + 自己写的气泡样式（只作用在这个人自己的 .cm-text 上）
 const bubbleCls = (u) => {
@@ -1852,18 +1861,18 @@ function renderDetail(panel, meme) {
   // 单张超长图（高宽比 > 2.6）：不硬缩进框里（字会小到看不清），按宽度铺开、上下滚
   const im0 = m.images.length === 1 && !m.images[0].v ? m.images[0] : null
   const long = im0 && im0.w && im0.h / im0.w > 2.6
-  const stage = !m.images.length ? null : h('div', { class: 'stage' + (m.images.length > 1 ? ' multi' : long ? ' long' : ''), 'data-blur': m.id, style: long ? { '--lw': im0.w + 'px' } : null },
+  const stage = !m.images.length ? null : m.layout === 'carousel' && m.images.length > 1 ? carousel(m, m.images, { detail: true }) : h('div', { class: 'stage' + (m.images.length > 1 ? ' multi' : long ? ' long' : ''), 'data-blur': m.id, style: long ? { '--lw': im0.w + 'px' } : null },
     m.images.map((im, i) => h('figure', null,
       im.v ? mediaVideo(im, { onOpen: () => openViewer(m, i) })
         : h('button', { class: 'stage-img', type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': im.o ? '已打码，点一下看原图' : '看大图' },
           memeImg(im.u, { loading: 'lazy', width: im.w, height: im.h }), cellMark(im)))))
-  if (stage) applyBlur(stage)
+  if (stage) { stage.dataset.blur = m.id; applyBlur(stage) }
   panel.replaceChildren(...nodes(stage, side))
 
   const actions = h('div', { class: 'detail-acts' }, actionBar(m, slot, { full: true }))
   const replies = h('section', { class: 'detail-replies', id: 'replies' })
   const drawReplies = (x) => replies.replaceChildren(
-    h('h3', null, '一句回应 ', h('span', { class: 'muted' }, x.reply_count || ''),
+    h('h3', { 'aria-label': 'Boost 回应', title: 'Boost 回应' }, icon('rocket'), h('span', { class: 'muted' }, x.reply_count || ''),
       ),
     replyBlock(x, { compact: false }))
   drawReplies(m)
@@ -5488,7 +5497,7 @@ async function imThread(id) {
           h('div', { class: 'im-msg-head' }, avatar(imWho(m) === m.author_name ? m.author_avatar : null, imWho(m), 28), h('strong', null, imWho(m)), h('time', null, fmtTime(m.created_at))),
           (m.title || m.text) && h('div', { class: 'im-bubble' }, cardText(m)),
           media && h('div', { class: 'im-media' }, media)),
-        h('div', { class: 'im-thread-sec' }, `一句回应 · ${m.reply_count || 0}`),
+        h('div', { class: 'im-thread-sec', 'aria-label': 'Boost 回应', title: 'Boost 回应' }, icon('rocket'), h('span', null, m.reply_count || 0)),
         replies,
         commentsSection(m)))
     markSeen(m)
@@ -7802,7 +7811,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
       const text = r.deleted ? '消息已撤回' : previewText(stripQuotes(r.text || '')) || ''
       ref = h('button', { class: 'cm-ref' + (S.me && r.username === S.me.username ? ' me' : ''), type: 'button', title: text ? `${rn}：${text}` : '跳到原消息',
         onclick: () => pane ? pane.jumpTo(r.id) : jumpMsg(r.id) },
-        avatar(r.avatar, rn, 16), h('strong', { class: nameCls(r) }, (r.username ? '@' : '') + rn),
+        avatar(r.avatar, rn, 16), uName('strong', r, {}, (r.username ? '@' : '') + rn, 'chat')[0],
         h('span', { class: 'cm-ref-text' }, text || (r.file || r.image ? '' : '…')),
         !r.deleted && r.file && h('span', { class: 'cm-ref-pic' }, icon('doc', 'i tiny'), r.file),
         !r.deleted && !r.file && r.image && (r.thumb ? h('img', { class: 'cm-ref-thumb', src: r.thumb, alt: '', loading: 'lazy' }) : h('span', { class: 'cm-ref-pic' }, icon('image', 'i tiny'), '图片')))

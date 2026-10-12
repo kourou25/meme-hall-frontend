@@ -1835,12 +1835,12 @@ html[data-skin] .site-notice { display: none; }
 @media (pointer: coarse), (max-width: 760px) { .hz-nav { display: none; } }
 
 /* 第二批：社区流身份、作者筛选和手机导航，复用站点令牌。 */
-.identity { display:flex; flex-direction:column; min-width:0; gap:3px; }
-.identity-main { display:flex; align-items:center; min-width:0; gap:6px; }
-.identity-main > :first-child { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.identity { display:flex; min-width:0; max-width:100%; }
+.identity-main { display:flex; flex-wrap:wrap; align-items:center; min-width:0; max-width:100%; gap:3px 6px; }
+.identity-main > :first-child { flex:0 1 auto; min-width:0; max-width:100%; overflow-wrap:anywhere; white-space:normal; }
 .identity-main .u-badge { flex:none; }
-.identity-sub { display:flex; min-width:0; max-width:100%; }
-.identity-sub .u-title { max-width:100%; height:18px; font-size:10px; padding:0 6px; }
+.identity .identity-main .u-title { max-width:100%; height:auto; min-height:18px; padding:2px 7px; margin-left:0; line-height:1.25; white-space:normal; }
+.identity-main .u-title-t { overflow:visible; text-overflow:clip; white-space:normal; overflow-wrap:anywhere; }
 .card-head { display:grid; grid-template-columns:34px minmax(0,1fr) auto auto auto; gap:8px; padding-top:12px; }
 .card-head > .grow { display:none; }
 .card-head .who-name { font-size:14px; }
@@ -1907,4 +1907,17 @@ html[data-skin] .site-notice { display: none; }
   .comment-head > .identity { flex:1; }
   .chat-dock { bottom:calc(70px + env(safe-area-inset-bottom)); }
   html[data-skin] .mobile-nav,html[data-skin] .mobile-page-title { display:none; }
+}
+/* 详情轮播复用卡片切图，舞台与完整预览都按可用尺寸容纳图片。 */
+.stage.detail-carousel { display:block; width:100%; height:100%; padding:0; }
+.stage.detail-carousel .car-track { height:100%; }
+.stage.detail-carousel .car-cell { position:relative; height:100%; min-height:0; min-width:0; aspect-ratio:auto; display:grid; grid-template:minmax(0,100%) / minmax(0,100%); place-items:center; background:#0c0c0b; }
+.stage.detail-carousel .car-cell img,.stage.detail-carousel .car-cell video { width:100%; height:100%; object-fit:contain; }
+.stage.detail-carousel .vid { width:100%; height:100%; min-height:0; }
+.stage.detail-carousel .stage-open { opacity:1; z-index:2; }
+.stage.detail-carousel .car-nav { opacity:1; }
+.stage.detail-carousel.blur .car-cell { filter:blur(24px); }
+.stage .stage-img { min-height:0; }
+@media(max-width:900px) {
+  .stage.detail-carousel { height:min(62dvh,calc(100vw / var(--ratio,1))); min-height:200px; }
 }
