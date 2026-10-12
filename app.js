@@ -2051,6 +2051,7 @@ function mobileMore(anchor) {
 
 // 互动提醒：别人对我发的图点喜欢 / 表情 / 回应 / 评论；一分钟拉一次未读数，打开面板即标已读
 const NOTIF = { unread: 0, items: null, at: 0, tab: 'all' }
+let notifSequence = 0, notifWrites = 0, notifReload = false
 const NOTIF_VERB = { like: '喜欢了', emoji: '回应了表情', reply: '回应了', comment: '评论了', creply: '回复了你在这帖的评论', post: '发了新帖',
   mention: '在评论里 @ 了你', chat_at: '在群聊里 @ 了你', chat_reply: '在群聊里回复了你', post_at: '在帖子里 @ 了你', join_req: '申请回到群聊', badge: '你获得了徽章' }
 // 提醒分类
@@ -2070,10 +2071,12 @@ function syncNotifBadge() {
 // 标签页标题上的数：只算通知（群聊有自己的角标，不往铃铛里算）
 const tabCount = () => (S.me ? NOTIF.unread : 0)
 async function loadNotifs() {
-  if (!S.me) return
+  if (!S.me || notifWrites) return
+  const sequence = ++notifSequence, uid = S.me.id
   NOTIF.at = Date.now()
   try {
     const d = await api('/notifs')
+    if (sequence !== notifSequence || S.me?.id !== uid) return
     Object.assign(NOTIF, { unread: d.unread, items: d.items })
     syncNotifBadge()
     if (POP?.key === 'notif') NOTIF.draw?.()
@@ -2082,18 +2085,25 @@ async function loadNotifs() {
 setInterval(() => { if (S.me && !document.hidden && Date.now() - NOTIF.at > 60000) loadNotifs() }, 15000)
 document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - NOTIF.at > 20000) loadNotifs() })
 // 点哪条只标哪条已读；其它保持未读
+async function persistNotifRead(body) {
+  ++notifSequence; ++notifWrites
+  try { await api('/notifs/read', { method: 'POST', body }) }
+  catch { notifReload = true }
+  finally { if (--notifWrites === 0 && notifReload) { notifReload = false; loadNotifs() } }
+}
 function readNotif(n) {
   if (!n.unread) return
   n.unread = false
   NOTIF.unread = Math.max(0, NOTIF.unread - 1)
   syncNotifBadge()
-  api('/notifs/read', { method: 'POST', body: { item: { kind: n.kind, meme_id: n.meme_id, user_id: n.user_id, at: n.at, gid: n.gid } } }).catch(() => {})
+  return persistNotifRead({ item: { kind: n.kind, meme_id: n.meme_id, user_id: n.user_id, at: n.at, gid: n.gid } })
 }
 // 群里已经看到（已读游标推到 upto）的 @ / 回复提醒：本地直接标已读、刷角标；服务端按游标过滤，不用逐条发
 function chatNotifSeen(gid, upto) {
   let n = 0
   NOTIF.items?.forEach((x) => { if (x.unread && isChatNotif(x) && x.gid === gid && x.meme_id <= upto) { x.unread = false; n++ } })
   if (!n) return
+  ++notifSequence
   NOTIF.unread = Math.max(0, NOTIF.unread - n)
   syncNotifBadge()
   // 打开着的提醒面板也跟着变
@@ -2110,6 +2120,12 @@ function openChatMsg(gid, id) {
 }
 function notifRow(n) {
   const who = n.name || n.username || '有人'
+  if(n.kind==='ai_alert'){
+    const labels={cap:'今日 AI 请求已达上限',breaker:'AI 服务连续失败，已暂停',configuration:'AI 服务配置需要检查'}
+    return h('a',{class:'notif-row'+(n.unread?' unread':''),href:'/admin/ai',onclick:async e=>{e.preventDefault();await readNotif(n);location.href='/admin/ai'}},
+      h('i',{class:'notif-dot','aria-hidden':'true'}),h('span',{class:'notif-bd','aria-hidden':'true'},'✦'),
+      h('div',{class:'notif-main'},h('div',{class:'notif-line'},h('strong',null,labels[n.val]||'AI 运行提醒')),h('div',{class:'notif-val muted'},'查看 AI 设置与运行状态'),h('time',{class:'muted'},fmtTime(n.at))))
+  }
   // 徽章：系统发的，不跳页，点开设置看徽章墙
   if (n.kind === 'badge') {
     const b = BADGES[n.val]
@@ -2158,7 +2174,7 @@ async function notifPanel(anchor) {
     NOTIF.items?.forEach((n) => { n.unread = false })
     syncNotifBadge()
     draw()
-    api('/notifs/read', { method: 'POST' }).catch(() => {})
+    persistNotifRead()
   } }, '全部已读')
   const box = h('div', { class: 'notif-pop' },
     h('div', { class: 'notif-head' }, h('strong', null, '互动提醒'),
