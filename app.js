@@ -101,7 +101,7 @@ async function api(path, opts = {}) {
     init.headers['content-type'] = 'application/json'
     init.body = JSON.stringify(opts.body)
   }
-  const res = await fetch(path.startsWith('/auth') ? path : '/api' + path, init)
+  const res = await fetch(path.startsWith('/auth/') ? path : '/api' + path, init)
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
     const err = new Error(data.error || `请求失败（${res.status}）`)
@@ -585,6 +585,7 @@ const popResize = () => {
 }
 addEventListener('resize', popResize)
 visualViewport?.addEventListener('resize', () => { if (POP && innerWidth === popW) placePop(POP.anchor, POP.el, POP.align, POP.up) })
+visualViewport?.addEventListener('resize', () => document.body.classList.toggle('mobile-keyboard', innerWidth<=640 && innerHeight-visualViewport.height>150))
 
 // ---------- 看过 ----------
 // 卡片在视口里停留约 0.8 秒记为看过；登录用户上报服务器，游客只记在本地
@@ -704,8 +705,9 @@ function toggleReaction(m, key) {
 // ---------- 卡片 ----------
 
 const memeHref = (m) => `/m/${m.id}`
+const authorUser = (m) => ({ username: m.author_name, name: m.author_nick, fancy: m.author_fancy, deco: m.author_deco })
 const authorLink = (m) => m.author_name
-  ? h('a', { class: 'who-name', href: `/u/${encodeURIComponent(m.author_name)}`, 'data-link': '' }, m.author_name)
+  ? uName('a', authorUser(m), { class: 'who-name', href: `/u/${encodeURIComponent(m.author_name)}`, 'data-link': '' }, m.author_nick || m.author_name, 'post')[0]
   : h('span', { class: 'who-name' }, '佚名')
 
 function seenTag(m) {
@@ -737,17 +739,19 @@ function memeCard(m, { stack = false } = {}) {
     onclick: () => { const on = card.classList.toggle('rp-open'); rpBtn.setAttribute('aria-expanded', on ? 'true' : 'false') } },
   icon('reply', 'i tiny'), rpN)
   const card = h('article', { class: 'card' + (isText ? ' text-card wide' : '') + (ANCHORS.has(m.id) ? ' anchored' : ''), 'data-id': m.id, 'aria-label': m.title || m.text || '梗图' },
-    isText ? [cardText(m), textMedia(m)] : [cardMedia(m, { stack }), cardText(m)],
     h('div', { class: 'card-head' },
-      avatar(m.author_avatar, m.author_name, 22),
-      authorLink(m), titleEl({ username: m.author_name, deco: m.author_deco }, 'post'), badgeEl({ username: m.author_name, deco: m.author_deco }, 'post'), status,
+      avatar(m.author_avatar, m.author_name, 34),
+      compactIdentity(authorUser(m), 'post', authorLink(m), status),
       isText && h('span', { class: 'badge text-badge' }, '文字'),
       h('span', { class: 'grow' }),
-      rpBtn,
       h('span', { class: 'serial', title: '全站编号' }, h('span', { class: 'no' }, 'No.'), m.id),
       h('span', { class: 'anchor-badge', title: '我的锚点' }, icon('anchor', 'i tiny')),
       h('button', { class: 'btn-icon ghost sm', 'aria-label': '更多操作', 'data-pop': slot + 'm', onclick: (e) => moreMenu(m, e.currentTarget, slot + 'm') }, icon('more'))),
-    actions,
+    cardText(m),
+    m.tags?.length > 0 && h('nav', { class: 'card-tags', 'aria-label': '帖子标签' }, m.tags.map(t => h('a', { href: '/t/' + encodeURIComponent(t) + location.search, 'data-link': '' }, '#' + t))),
+    isText ? textMedia(m) : cardMedia(m, { stack }),
+    h('div', { class: 'card-bottom' }, actions, rpBtn,
+      h('button', { class: 'btn-icon ghost sm card-share', 'aria-label': '分享帖子', type: 'button', onclick: () => copyText(location.origin + memeHref(m)) }, icon('send'))),
     replies,
     comments)
   onPageLeave(watchItem(m.id, (x) => {
@@ -1349,7 +1353,7 @@ function badgeEl(u, where, full) {
   const b = d?.bd && BADGES[d.bd]
   if (!b || decoHidden(u, 'badge')) return null
   if (where !== 'card' && d.bs && d.bs !== 'all' && d.bs !== where) return null
-  return badgeChip(d.bd, where === 'chat' && !full, d.bn || 1)
+  return badgeChip(d.bd, where !== 'card' && !full, d.bn || 1)
 }
 // 贴纸徽章：圆形贴纸（白描边 + 高光）+ 名字 + 等级角标；mini 只露贴纸
 const badgeChip = (id, mini, n) => {
@@ -1398,6 +1402,13 @@ function uName(tag, u, attrs, text, where) {
   const el = h(tag, { ...attrs, class: nameCls(u, attrs?.class || '') + (fc ? ' fancy-own' : '') }, text)
   if (fc) el.style.setProperty('--fc', `linear-gradient(90deg, ${[...fc, fc[0]].join(', ')})`)
   return [el, titleEl(u, where), badgeEl(u, where)]
+}
+// 身份规则共用：昵称与一个佩戴徽章在首行，称号独立次行。
+function compactIdentity(u, where, name, ...meta) {
+  const title = titleEl(u, where)
+  return h('span', { class: 'identity' },
+    h('span', { class: 'identity-main' }, name, badgeEl(u, where), meta),
+    title && h('span', { class: 'identity-sub' }, title))
 }
 // 气泡类名：预设气泡 + 自己写的气泡样式（只作用在这个人自己的 .cm-text 上）
 const bubbleCls = (u) => {
@@ -1538,8 +1549,7 @@ async function userCard(username, anchor) {
     (u.joined_at || u.last_seen) && h('div', { class: 'muted ucard-join' }, u.joined_at && `${fmtTime(u.joined_at)} 加入尽欢`,
       u.last_seen && seenText(u.last_seen, Date.now() / 1000)[0] && ` · ${seenText(u.last_seen, Date.now() / 1000)[0]}`),
     h('div', { class: 'ucard-acts' },
-      u.posts > 0 && h('a', { class: 'btn btn-ghost sm', href: `/u/${encodeURIComponent(u.username)}`, 'data-link': '', onclick: closePop }, '看 TA 的图'),
-      u.posts > 0 && h('a', { class: 'btn btn-ghost sm', href: `/?author=${encodeURIComponent(u.username)}`, 'data-link': '', onclick: closePop }, '首页只看 TA'),
+      u.posts > 0 && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); saveWallPrefs({ author: u.username }); navigate('/?author=' + encodeURIComponent(u.username)) } }, '看 TA 的图'),
       S.me?.is_admin && !u.is_admin && u.username !== S.me.username && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); memberAdmin(u.username) } }, '管理'),
       h('a', { class: 'btn btn-ghost sm', href: `https://linux.do/u/${encodeURIComponent(u.username)}`, target: '_blank', rel: 'noopener' },
         'linux.do 主页', icon('ext', 'i tiny')))))
@@ -1866,7 +1876,7 @@ function renderDetail(panel, meme) {
   side.append(...nodes(
     h('header', { class: 'side-head' },
       avatar(m.author_avatar, author, 36),
-      h('div', { class: 'who' }, h('span', { class: 'who-line' }, authorLink(m), titleEl({ username: m.author_name, deco: m.author_deco }, 'post'), badgeEl({ username: m.author_name, deco: m.author_deco }, 'post')), h('span', { class: 'muted' }, fmtTime(m.created_at), ' · No.' + m.id)),
+      h('div', { class: 'who' }, compactIdentity(authorUser(m), 'post', authorLink(m)), h('span', { class: 'muted' }, fmtTime(m.created_at), ' · No.' + m.id)),
       closeBtn()),
     m.title && h('h2', { class: 'detail-title' }, m.title),
     m.content && h('div', { class: 'detail-content md' }, richText(m.content, { md: true })),
@@ -1898,6 +1908,8 @@ function renderActions() {
   const lookBtn = h('button', { class: 'btn-icon', title: '外观：背景 · 伪装', 'aria-label': '外观', 'data-pop': 'look', onclick: (e) => looksPanel(e.currentTarget) },
     icon('palette'))
   const kids = [moyuBtn(), lookBtn, themeBtn, h('button', { class: 'btn btn-primary share', onclick: openCompose }, icon('plus'), h('span', { class: 'lbl' }, '发帖'))]
+  kids.slice(0,3).forEach(el=>el.classList.add('desktop-action'))
+  kids.unshift(h('button',{class:'btn-icon mobile-action',type:'button','aria-label':'搜索帖子',onclick:e=>mobileSearch(e.currentTarget)},icon('search')))
   if (S.me) {
     const n = NOTIF.unread
     kids.splice(kids.length - 1, 0, h('button', { class: 'btn-icon notif-btn', title: '互动提醒', 'aria-label': n ? `互动提醒，${n} 条未读` : '互动提醒', 'data-pop': 'notif', onclick: (e) => notifPanel(e.currentTarget) },
@@ -1908,8 +1920,23 @@ function renderActions() {
     kids.push(h('a', { class: 'btn btn-ghost btn-login', href: loginHref() },
       h('span', { class: 'long' }, 'Linux.DO 登录'), h('span', { class: 'short' }, '登录')))
   }
+  kids.push(h('button',{class:'btn-icon mobile-action',type:'button','aria-label':'更多功能','data-pop':'mobilemore',onclick:e=>mobileMore(e.currentTarget)},icon('more')))
   nav.replaceChildren(...kids)
+  document.querySelectorAll('.mobile-nav [data-nav]').forEach(a=>a.querySelector('span').replaceChildren(icon(({wall:'image',series:'apps',chat:'chat',road:'pen',me:'contacts'})[a.dataset.nav])))
   markNav()
+}
+function mobileSearch(anchor) {
+  const input=h('input',{class:'input',type:'search','aria-label':'搜索帖子和标签',placeholder:'搜索帖子和标签',value:new URLSearchParams(location.search).get('q') || ''})
+  openPop(anchor,h('form',{class:'mobile-search',onsubmit:e=>{e.preventDefault();closePop();navigate('/?q='+encodeURIComponent(input.value.trim()))}},input,h('button',{class:'btn btn-primary sm',type:'submit'},'搜索')),{key:'mobsearch',cls:'sheet'})
+}
+function mobileMore(anchor) {
+  const item=(label,ic,fn)=>h('button',{class:'mobile-more-item',type:'button',onclick:()=>{closePop();fn()}},icon(ic),label)
+  openPop(anchor,h('div',{class:'mobile-more'},
+    item('摸鱼日历','calendar',()=>moyuPanel(anchor)),
+    item('外观与伪装','palette',()=>looksPanel(anchor)),
+    item('切换深浅色','moon',toggleTheme),
+    item('设置','gear',()=>meSettings()),
+    h('a',{class:'mobile-more-item',href:'/me','data-link':''},icon('contacts'),'我的主页')),{key:'mobilemore',align:'right',cls:'sheet'})
 }
 
 // 互动提醒：别人对我发的图点喜欢 / 表情 / 回应 / 评论；一分钟拉一次未读数，打开面板即标已读
@@ -2089,6 +2116,8 @@ function markNav() {
       : p.startsWith('/chat') ? 'chat' : p.startsWith('/road') ? 'road' : p.startsWith('/me') ? 'me' : ''
   if (p.startsWith('/m/')) return
   document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === cur))
+  const title=document.getElementById('mobile-page-title')
+  if(title) title.textContent=({wall:'图廊',series:'图集',chat:'群聊',road:'鞭打',me:'我的'})[cur] || '尽欢'
 }
 
 document.getElementById('search').addEventListener('submit', (e) => {
@@ -2195,13 +2224,97 @@ function dayLabel(d) {
 
 // 当前筛选条件拼成查询串（图廊、按天加载、日期目录共用）
 function listParams(st, extra = {}) {
-  const p = new URLSearchParams({ sort: st.sort, ...nsfwParam(), ...extra })
+  const p = new URLSearchParams({ sort: st.sort || 'new', ...nsfwParam(), ...extra })
   for (const k of ['q', 'tag', 'author', 'series', 'text']) if (st[k]) p.set(k, st[k])
-  if (st.unseen && S.me) {
+  if (st.unseen) {
     p.set('unseen', '1')
     if (st.anchor) p.set('before', st.anchor)
   }
   return p
+}
+// 游客只读查询携带进入列表时的已看快照；POST 不保存快照或创建记录。
+function browseApi(path, st) {
+  st.seenSnap ||= new Set(SEEN.local)
+  const guest = !S.me && st.seenSnap.size
+  return api(guest ? '/browse' + path : path, guest ? { method: 'POST', body: { seen: [...st.seenSnap] } } : {})
+}
+const AUTHOR_CHOICES = new Map()
+const authorNames = s => [...new Map((s || '').split(/[,，\s]+/).map(x => x.replace(/^@/, '').trim()).filter(Boolean).map(x => [x.toLowerCase(), x])).values()].slice(0, 20)
+function authorChips(st) {
+  return h('div', { class: 'author-chips' }, authorNames(st.author).map(n => {
+    const u = AUTHOR_CHOICES.get(n.toLowerCase()) || { username: n }
+    return h('button', { class: 'cond author-chip', type: 'button', 'aria-label': '去掉发图人 ' + n,
+      onclick: () => st.setParam('author', authorNames(st.author).filter(x => x.toLowerCase() !== n.toLowerCase()).join(',')) },
+    avatar(u.avatar, u.name || n, 22), h('span', { class: 'clip' }, u.name || n), icon('close', 'i tiny'))
+  }))
+}
+function tagChips(st) {
+  const tags = [...new Set((st.tag || '').split(',').filter(Boolean))]
+  return tags.map(t => h('button', { class: 'cond tag-chip', type: 'button', 'aria-label': '去掉标签 ' + t,
+    onclick: () => st.setParam('tag', tags.filter(x => x !== t).join(',')) }, '#' + t, icon('close', 'i tiny')))
+}
+function authorPicker(st, anchor) {
+  if (POP?.key === 'authors') return closePop()
+  const selected = new Map(authorNames(st.author).map(n => [n.toLowerCase(), n]))
+  const input = h('input', { class: 'input', type: 'search', placeholder: '搜昵称或用户名', 'aria-label': '搜索发图人', autocomplete: 'off' })
+  const list = h('div', { class: 'author-options' })
+  const chosen = h('div', { class: 'author-selected' })
+  const apply = h('button', { class: 'btn btn-primary sm', type: 'button', onclick: () => { closePop(); st.setParam('author', [...selected.values()].join(',')) } })
+  let rows = [], generation = 0, timer
+  const draw = () => {
+    apply.textContent = selected.size ? `看这 ${selected.size} 位发图人的帖` : '看全部发图人'
+    chosen.replaceChildren(...[...selected.values()].map(n => h('button', { class: 'cond', type: 'button', 'aria-label': '取消选择 ' + n,
+      onclick: () => { selected.delete(n.toLowerCase()); draw() } }, AUTHOR_CHOICES.get(n.toLowerCase())?.name || n, icon('close', 'i tiny'))))
+    list.replaceChildren(...(rows.length ? rows.map(u => h('label', { class: 'author-option' },
+      h('input', { type: 'checkbox', checked: selected.has(u.username.toLowerCase()), onchange: e => {
+        const key = u.username.toLowerCase()
+        if (e.target.checked && selected.size >= 20) { e.target.checked = false; return toast('最多选择 20 位发图人') }
+        e.target.checked ? selected.set(key,u.username) : selected.delete(key); draw()
+      } }), avatar(u.avatar,u.name || u.username,32),
+      h('span', { class: 'who grow' }, h('strong', { class: 'clip' }, u.name || u.username), h('small', { class: 'muted clip' }, '@' + u.username)),
+      h('small', { class: 'muted' }, `${u.posts} 帖`))) : [h('p', { class: 'muted' }, '没有匹配的发图人')]))
+  }
+  const load = async () => {
+    const id = ++generation
+    list.replaceChildren(h('p', { class: 'muted', role: 'status' }, '加载中…'))
+    try {
+      const d = await api('/authors?' + new URLSearchParams({ ...nsfwParam(), q: input.value.trim() }))
+      if (id !== generation || !list.isConnected) return
+      rows = d.authors
+      rows.forEach(u => AUTHOR_CHOICES.set(u.username.toLowerCase(),u))
+      draw()
+    } catch(e) {
+      if (id !== generation || !list.isConnected) return
+      list.replaceChildren(h('p', { class: 'muted' }, e.message),h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: load },'重试'))
+    }
+  }
+  input.addEventListener('input', () => { generation++; clearTimeout(timer); timer = setTimeout(load,200) })
+  input.addEventListener('keydown', e => { if (e.key === 'Escape' && input.value) { e.preventDefault(); e.stopPropagation(); input.value=''; load() } })
+  const box = h('div', { class: 'author-picker' },h('div', { class: 'pop-head' },h('strong', null,'发图人'),h('button', { class: 'btn-icon sm', type:'button','aria-label':'关闭发图人筛选',onclick:closePop },icon('close'))),
+    input, chosen, list, h('div', { class: 'row-end' },h('button', { class:'btn btn-ghost sm',type:'button',onclick:()=>{selected.clear();draw()} },'清空'),apply))
+  openPop(anchor,box,{key:'authors',align:'right',cls:'pop-authors sheet'})
+  draw();load()
+}
+async function browseTagPicker(st, anchor) {
+  const chosen = new Set((st.tag || '').split(',').filter(Boolean))
+  const input = h('input', { class: 'input', type: 'search', placeholder: '搜索标签', 'aria-label': '搜索标签', autocomplete: 'off' })
+  const list = h('div', { class: 'tag-options' }, '加载中…')
+  let tags = []
+  const draw = () => {
+    const q = input.value.trim().replace(/^#/, '').toLocaleLowerCase()
+    const rows = tags.filter(t => t.toLocaleLowerCase().includes(q))
+    list.replaceChildren(...(rows.length ? rows.map(t => h('label', { class: 'set-check' }, h('input', { type: 'checkbox', checked: chosen.has(t), onchange: e => e.target.checked ? chosen.add(t) : chosen.delete(t) }), '#' + t)) : [h('p', { class: 'muted', role: 'status' }, '没有匹配的标签')]))
+  }
+  input.addEventListener('input', draw)
+  input.addEventListener('keydown', e => { if (e.key === 'Escape' && input.value) { e.preventDefault(); e.stopPropagation(); input.value = ''; draw() } })
+  openPop(anchor,h('div',{class:'author-picker'},h('div',{class:'pop-head'},h('strong',null,'标签，可多选'),h('button',{class:'btn-icon sm','aria-label':'关闭标签筛选',onclick:closePop},icon('close'))),input,list,
+    h('div',{class:'row-end'},h('button',{class:'btn btn-ghost sm',onclick:()=>{closePop();st.setParam('tag','')}},'清空'),h('button',{class:'btn btn-primary sm',onclick:()=>{closePop();st.setParam('tag',[...chosen].join(','))}},'应用'))),{key:'tags',cls:'sheet',align:'right'})
+  try {
+    const d = await api('/tags?' + new URLSearchParams(nsfwParam()))
+    if (!list.isConnected) return
+    tags = [...new Set([...chosen,...d.tags.map(x=>x.tag)])]
+    draw()
+  } catch(e) { if(list.isConnected)list.textContent=e.message }
 }
 // 保留筛选、换一个起点（日期 / 锚点）
 function wallHref(from, focus) {
@@ -2219,13 +2332,14 @@ async function renderWall(base) {
   const st = {
     ...base,
     author: base.author || (params.get('author') || '').split(/[,，\s]+/).filter(Boolean).slice(0, 20).join(','),
+    tag: base.tag || params.get('tag') || '',
     q: params.get('q') || '',
     sort: params.get('sort') || 'new',
     unseen: params.get('unseen') === '1',
     text: ['only', '0'].includes(params.get('text')) ? params.get('text') : '',
     from: params.get('from') || '',
     focus: Number(params.get('focus')) || 0,
-    page: 0, more: true, loading: false, ids: new Set(), unseenLeft: null, sections: [],
+    page: 0, more: true, loading: false, ids: new Set(), unseenLeft: null, sections: [], seenSnap: new Set(SEEN.local),
   }
   st.plain = !st.q && !st.tag && !st.author && !st.series && !st.text
   st.byDay = st.sort !== 'hot' // 热门没有时间顺序，不分天
@@ -2234,14 +2348,16 @@ async function renderWall(base) {
 
   const setParam = (k, v) => {
     const p = new URLSearchParams(location.search)
+    if (base.tag) p.set('tag',st.tag)
     if (v) p.set(k, v)
     else p.delete(k)
     p.delete('from')
     p.delete('focus')
-    if (k === 'sort' || k === 'unseen' || k === 'text') saveWallPrefs({ [k]: v || '' })
+    if (['sort','unseen','text','author','tag'].includes(k)) saveWallPrefs({ [k]: v || '' })
     S.wallFresh = true
     const qs = p.toString()
-    navigate(location.pathname + (qs ? '?' + qs : ''), { replace: true })
+    const path = (base.tag || (base.author && k === 'author')) ? '/' : location.pathname
+    navigate(path + (qs ? '?' + qs : ''), { replace: true })
   }
 
   // 返回上一页时：从离开时屏幕顶上那张接着显示，不重新从头刷
@@ -2252,21 +2368,7 @@ async function renderWall(base) {
   st.ready = !pos
   if (pos) setTimeout(() => { st.ready = true }, 4000)
   let head
-  if (st.author && !base.author) {
-    // 首页按作者筛：可以叠加好几个人，点 × 去掉一个
-    const list = st.author.split(',')
-    const drop = (n) => setParam('author', list.filter((x) => x !== n).join(','))
-    const add = h('input', { class: 'input sm au-add', placeholder: '再加一个用户名', 'aria-label': '添加作者', enterkeyhint: 'done' })
-    add.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter' || e.isComposing) return
-      const v = add.value.trim().replace(/^@/, '')
-      if (v && !list.some((x) => x.toLowerCase() === v.toLowerCase())) setParam('author', [...list, v].join(','))
-    })
-    head = pageHead(list.length > 1 ? `${list.length} 位作者` : '@' + list[0], h('span', { class: 'au-chips' },
-      list.map((n) => h('span', { class: 'chip on' }, '@' + n, h('button', { class: 'chip-x', type: 'button', 'aria-label': '去掉 ' + n, onclick: () => drop(n) }, icon('close', 'i tiny')))),
-      list.length < 20 && add),
-      h('a', { class: 'btn btn-ghost sm', href: '/', 'data-link': '' }, icon('close', 'i tiny'), '清除筛选'))
-  } else if (st.author) {
+  if (base.author) {
     head = pageHead('@' + st.author, '发过的图', h('a', { class: 'btn btn-ghost sm', href: `https://linux.do/u/${encodeURIComponent(st.author)}`, target: '_blank', rel: 'noopener' }, 'linux.do 主页', icon('ext', 'i tiny')))
   } else if (st.series) {
     head = pageHead(st.series, h('span', null, h('a', { href: '/series', 'data-link': '' }, '← 全部图集'), ' · 同一期原帖里的图'))
@@ -2304,7 +2406,7 @@ async function renderWall(base) {
   const without = (k) => { const p = new URLSearchParams(location.search); p.delete(k); p.delete('from'); p.delete('focus'); const q = p.toString(); return location.pathname + (q ? '?' + q : '') }
   const cond = (label, href) => h('a', { class: 'cond', href, 'data-link': '', 'aria-label': `去掉条件：${label}` }, label, icon('close', 'i tiny'))
   const conds = [
-    st.tag && cond('#' + st.tag, '/' + location.search),
+    ...tagChips(st),
     st.unseen && cond('只看未看', without('unseen')),
     st.sort === 'old' && cond('最早在前', without('sort')),
     S.content === 'only' && h('button', { class: 'cond', type: 'button', onclick: () => setContent('hide') }, '只看 NSFW', icon('close', 'i tiny')),
@@ -2334,10 +2436,11 @@ async function renderWall(base) {
       h('div', { class: 'segs', role: 'group', 'aria-label': '排序' }, seg('最新', 'new'), seg('热门', 'hot')),
       h('label', { class: 'check-pill' }, unseenBox, h('span', { class: 'box' }, icon('check', 'i tiny')), '只看未看', countEl),
       h('span', { class: 'grow' }),
+      h('button', { class:'tool-btn',type:'button','aria-label':'筛选发图人',onclick:e=>authorPicker(st,e.currentTarget) },icon('users','i tiny'),h('span',{class:'lbl'},'发图人')),
       filterBtn,
       !st.series && h('a', { class: 'tool-btn', href: '/series', 'data-link': '' }, icon('apps', 'i tiny'), h('span', { class: 'lbl' }, '全部图集'))),
-    conds.length > 0 && h('div', { class: 'conds' }, conds),
-    (st.plain || st.tag) && tagsRow,
+    (conds.length > 0 || st.author) && h('div', { class: 'conds' }, authorChips(st), conds),
+    tagsRow,
     notice, hzDates, days, !st.hz && sentinel,
     st.hz && [
       h('button', { class: 'hz-nav prev', type: 'button', 'aria-label': '上一帖', onclick: () => hzStep(-1) }, icon('chevL')),
@@ -2416,12 +2519,13 @@ async function renderWall(base) {
   st.notice = notice
   st.sentinel = sentinel
 
-  if (st.plain || st.tag) {
+  {
     api('/tags?' + new URLSearchParams(nsfwParam())).then(({ tags }) => {
       if (S.wall !== st) return
       tagsRow.replaceChildren(
-        h('a', { class: 'chip' + (!st.tag ? ' on' : ''), href: '/', 'data-link': '' }, '全部'),
-        ...tags.map((t) => h('a', { class: 'chip' + (st.tag === t.tag ? ' on' : ''), href: `/t/${encodeURIComponent(t.tag)}`, 'data-link': '' }, t.tag)))
+        h('button', { class: 'chip' + (!st.tag ? ' on' : ''), type:'button',onclick:()=>setParam('tag','') }, '全部'),
+        ...tags.map((t) => h('button', { class: 'chip' + (st.tag.split(',').includes(t.tag) ? ' on' : ''), type:'button',onclick:()=>setParam('tag',t.tag) }, t.tag)),
+        h('button',{class:'chip ghost',type:'button',onclick:e=>browseTagPicker(st,e.currentTarget)},'多选标签'))
     }).catch(() => {})
   }
 
@@ -2474,7 +2578,7 @@ async function initDays(st) {
   st.sentinel.replaceChildren(loadingBox())
   let list
   try {
-    list = (await api('/days?' + listParams(st))).days
+    list = (await browseApi('/days?' + listParams(st), st)).days
   } catch (e) {
     if (st.qCount) st.qCount.textContent = '搜索出错了'
     return st.sentinel.replaceChildren(h('div', { class: 'empty' }, h('div', { class: 'empty-title' }, '加载失败'),
@@ -2483,9 +2587,8 @@ async function initDays(st) {
   }
   if (S.wall !== st) return
   st.dayList = list
-  st.seenSnap = new Set(SEEN.local)
   const total = list.reduce((a, d) => a + d.n, 0)
-  st.unseenLeft = S.me ? (st.unseen ? total : list.reduce((a, d) => a + (d.unseen || 0), 0)) : st.plain ? Math.max(0, total - SEEN.local.size) : null
+  st.unseenLeft = st.unseen ? total : list.reduce((a, d) => a + (d.unseen || 0), 0)
   st.drawCount()
   if (st.qCount) st.qCount.textContent = total ? `找到 ${total} 张` : '没有结果'
   st.di = st.from ? Math.max(0, list.findIndex((d) => d.day === st.from)) : 0
@@ -2667,7 +2770,7 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
   const p = listParams(st, { day: sec.day, limit: String(first ? DAY_FIRST : DAY_STEP), offset: String(sec.offset) })
   if (focus) p.set('focus', focus)
   try {
-    const data = await api('/memes?' + p)
+    const data = await browseApi('/memes?' + p, st)
     if (S.wall !== st) return
     if (!st.anchor && data.anchor) st.anchor = data.anchor
     if (focus && data.offset > 0) {
@@ -2728,6 +2831,8 @@ function wallSettings(st, anchor) {
       h('button', { class: 'btn-icon ghost sm ws-close', 'aria-label': '关闭', onclick: closePop }, icon('close'))),
     row('排序', segs([['new', '最新'], ['hot', '热门'], ['old', '最早']], st.sort, (v) => { closePop(); st.setParam('sort', v === 'new' ? '' : v) }, '排序')),
     row('范围', check(st.unseen, '只看没看过的', (on) => { closePop(); st.setParam('unseen', on ? '1' : '') })),
+    row('发图人', h('button',{class:'btn btn-ghost sm',type:'button',onclick:e=>authorPicker(st,e.currentTarget)},st.author ? `已选 ${authorNames(st.author).length} 位 · 更改` : '搜索并选择')),
+    row('标签',h('button',{class:'btn btn-ghost sm',type:'button',onclick:e=>browseTagPicker(st,e.currentTarget)},st.tag || '多选标签')),
     row('内容显示', contentSeg()),
     row('文字帖', segs([['', '都看'], ['only', '只看文字帖'], ['0', '不看文字帖']], st.text || '', (v) => { closePop(); st.setParam('text', v) }, '文字帖')),
     row('一键模糊', check(S.blurAll, '所有图先模糊（快捷键 B）', setBlurAll)),
@@ -2807,14 +2912,13 @@ async function loadMore(st) {
   st.loading = true
   st.sentinel.replaceChildren(st.page ? h('div', { class: 'spinner' }) : loadingBox())
   try {
-    const data = await api('/memes?' + listParams(st, { page: String(st.page + 1) }))
+    const data = await browseApi('/memes?' + listParams(st, { page: String(st.page + 1) }), st)
     if (S.wall !== st) return
     st.page += 1
     st.more = data.more
     if (st.page === 1) {
       st.anchor = data.anchor
-      st.seenSnap = new Set(SEEN.local)
-      st.unseenLeft = S.me ? data.unseen_total : st.plain ? Math.max(0, data.total - SEEN.local.size) : null
+      st.unseenLeft = data.unseen_total ?? data.total
       st.drawCount()
     }
     for (const m of data.items) {
@@ -2842,6 +2946,13 @@ async function loadMore(st) {
 
 const SERIES_SORT = [['last', '最近更新'], ['first', '最早一期'], ['n', '图最多'], ['likes', '最受欢迎']]
 async function renderSeries() {
+  const params = new URLSearchParams(location.search)
+  const st = { author:params.get('author') || '',tag:params.get('tag') || '',q:params.get('q') || '',text:params.get('text') || '',unseen:params.get('unseen') === '1',seenSnap:new Set(SEEN.local) }
+  st.setParam = (k,v) => {
+    v ? params.set(k,v) : params.delete(k)
+    if (['author','tag','unseen','text'].includes(k)) saveWallPrefs({[k]:v || ''})
+    navigate('/series?' + params, {replace:true})
+  }
   const list = loadingBox()
   let sort = localStorage.getItem('series-sort') || 'last'
   const sortRow = h('div', { class: 'segs', role: 'group', 'aria-label': '图集排序' })
@@ -2854,7 +2965,7 @@ async function renderSeries() {
     const rows = [...data].sort((a, b) => key(a) - key(b))
     list.className = 'series-grid'
     list.removeAttribute('aria-hidden')
-    list.replaceChildren(...rows.map((s) => h('a', { class: 'series-card', href: `/s/${encodeURIComponent(s.name)}`, 'data-link': '' },
+    list.replaceChildren(...rows.map((s) => h('a', { class: 'series-card', href: `/s/${encodeURIComponent(s.name)}${params.size ? '?' + params : ''}`, 'data-link': '' },
       h('div', { class: 'covers n' + Math.min(4, s.covers.length) },
         s.covers.map((c) => h('div', thumbBlur('cv', c.spoiler), memeImg(c.src, { loading: 'lazy', alt: '' })))),
       h('div', { class: 'series-body' },
@@ -2862,10 +2973,15 @@ async function renderSeries() {
         s.desc && h('span', { class: 'series-desc' }, s.desc),
         h('span', { class: 'muted' }, `${s.n} 张 · 更新于 ${fmtDate(s.last_at)}`, s.likes > 0 && ` · ♥ ${fmtN(s.likes)}`)))))
   }
-  main.replaceChildren(pageHead('图集', null, sortRow), list)
+  main.replaceChildren(pageHead('图集', null, sortRow),
+    h('div',{class:'toolbar series-toolbar'},h('button',{class:'tool-btn',type:'button','aria-label':'筛选发图人',onclick:e=>authorPicker(st,e.currentTarget)},icon('users','i tiny'),'发图人'),
+      h('button',{class:'tool-btn',type:'button',onclick:e=>browseTagPicker(st,e.currentTarget)},'标签'),
+      h('label',{class:'check-pill'},h('input',{type:'checkbox',checked:st.unseen,onchange:e=>st.setParam('unseen',e.target.checked?'1':'')}),h('span',{class:'box'},icon('check','i tiny')),'只看未看'),
+      h('button',{class:'tool-btn',type:'button',onclick:e=>{openPop(e.currentTarget,h('div',{class:'author-picker'},contentSeg()),{key:'series-content',cls:'sheet'})}},'内容显示')),
+    h('div',{class:'conds'},authorChips(st),...tagChips(st)),list)
   draw()
   try {
-    data = (await api('/series?' + new URLSearchParams(nsfwParam()))).series
+    data = (await browseApi('/series?' + listParams(st), st)).series
     if (!data.length) return list.replaceChildren(emptyState('还没有图集', null, goHomeBtn()))
     draw()
   } catch (e) {
@@ -2966,10 +3082,10 @@ async function renderRoad() {
     } catch (e) { backfillStatus.textContent = e.message + '；再次点击可从已完成位置继续' }
     finally { backfill.disabled = false }
   } }, '回填历史反馈')
-  main.replaceChildren(pageHead('鞭打模块', '想要什么功能、遇到什么 Bug、哪里用着别扭，都来鞭打站长；可以附截图和文件，大家投票，票多的先做',
+  main.replaceChildren(...nodes(pageHead('鞭打模块', '想要什么功能、遇到什么 Bug、哪里用着别扭，都来鞭打站长；可以附截图和文件，大家投票，票多的先做',
     h('button', { class: 'btn btn-primary sm', type: 'button', onclick: openForm }, icon('plus', 'i tiny'), '提一条')), filters,
     st.item && h('div', { class: 'notice-bar' }, `正在查看鞭打 #${st.item}`, h('a', { class: 'btn-text', href: '/road', 'data-link': '' }, '查看全部')),
-    backfill && h('div', { class: 'road-backfill-bar' }, backfill, backfillStatus), list)
+    backfill && h('div', { class: 'road-backfill-bar' }, backfill, backfillStatus), list))
   let seq = 0
   async function load() {
     const my = ++seq
@@ -3475,8 +3591,7 @@ function commentsSection(meme, { compact = false } = {}) {
       avatar(c.avatar, c.username, 28),
       h('div', { class: 'comment-main' },
         h('div', { class: 'comment-head' },
-          h('a', { href: `/u/${encodeURIComponent(c.username)}`, 'data-link': '' }, c.name || c.username),
-          titleEl(c, 'post'), badgeEl(c, 'post'),
+          compactIdentity(c, 'post', uName('a', c, { href: `/u/${encodeURIComponent(c.username)}`, 'data-link': '' }, c.name || c.username, 'post')[0]),
           h('span', { class: 'tl' }, 'TL' + c.trust_level),
           h('span', { class: 'muted' }, fmtTime(c.created_at)),
           setReply && c.id > 0 && h('button', { class: 'btn-text small', type: 'button', onclick: () => setReply(c) }, '回复'),
@@ -7272,6 +7387,13 @@ function chatPane(g, { onHead } = {}) {
     } catch {} finally { st.reading = false }
   }
   scroller.addEventListener('scroll', () => {
+    const delta=scroller.scrollTop-(st.lastHeadScroll ?? scroller.scrollTop)
+    const header=scroller.closest('.chat-body')?.querySelector('.chat-head')
+    if(header && innerWidth<=640) {
+      if(scroller.scrollTop<80 || delta<-8) header.classList.remove('compact')
+      else if(delta>8) header.classList.add('compact')
+    }
+    st.lastHeadScroll=scroller.scrollTop
     st.stick = nearBottom() && !st.after
     if (st.stick) { pill.hidden = true; st.newN = 0; st.newIds = []; if (!awayEl) st.awayMark = false; markRead() }
     else if (st.newIds.length) recount()
@@ -7776,7 +7898,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
   h('div', { class: 'cm-side' }, cont ? h('time', null, clock(m.created_at)) : face),
   h('div', { class: 'cm-main' },
     !cont && h('div', { class: 'cm-head' },
-      uName('button', m.user, { class: 'cm-name', type: 'button', title: canAt ? `@${m.user.username}` : who, 'data-pop': 'u' + m.user.username, onclick: at }, who, 'chat'),
+      compactIdentity(m.user, 'chat', uName('button', m.user, { class: 'cm-name', type: 'button', title: canAt ? `@${m.user.username}` : who, 'data-pop': 'u' + m.user.username, onclick: at }, who, 'chat')[0]),
       h('time', { title: new Date(m.created_at * 1000).toLocaleString('zh-CN', { hour12: false }) }, clock(m.created_at)),
       m.floor && h('span', { class: 'cm-floor' }, m.floor + '楼')),
     body),
@@ -8085,7 +8207,8 @@ async function renderChat(gid) {
     if (!page.isConnected) return
     const vh = visualViewport?.height || innerHeight
     const top = page.getBoundingClientRect().top + scrollY
-    page.style.height = Math.max(320, vh - top - (innerWidth > 760 ? 12 : 0)) + 'px'
+    const bottom=innerWidth<=640 ? (document.querySelector('.mobile-nav')?.getBoundingClientRect().height || 0) : 0
+    page.style.height = Math.max(200, vh - top - bottom - (innerWidth > 760 ? 12 : 0)) + 'px'
     // 手机点输入框弹出输入法：浏览器会先把整页往上推，页面变矮之后下面就空出一截白底。输入框本来就在可见区底部，推回原位
     if (innerWidth <= 760 && (scrollY > 0 || visualViewport?.offsetTop > 0)) requestAnimationFrame(() => { if (page.isConnected) scrollTo(0, 0) })
   }
@@ -8152,11 +8275,10 @@ function chatHead(g, { back, pane } = {}) {
   return h('header', { class: 'chat-head' },
     back && h('button', { class: 'btn-icon ghost chat-back', 'aria-label': '返回', onclick: back }, icon('chevL')),
     groupAvatar(g.name, 34),
-    h('span', { class: 'chat-head-title' }, h('strong', null, g.name), memberCount(g, (x) => `${x.members} 人${x.online ? ` · ${x.online} 人在线` : ''}${x.is_default ? ' · 登录即入群' : ''}`)),
-    h('span', { class: 'grow' }),
+    h('span', { class: 'chat-head-title' }, h('strong', { title:g.name }, g.name), memberCount(g, (x) => `${x.members} 人${x.online ? ` · ${x.online} 人在线` : ''}${x.is_default && innerWidth>640 ? ' · 登录即入群' : ''}`)),
     pane && h('button', { class: 'btn-icon ghost', title: '搜索聊天记录', 'aria-label': '搜索聊天记录', onclick: () => pane.search() }, icon('search')),
     pane && h('button', { class: 'btn-icon ghost', title: '弹出小窗', 'aria-label': '弹出小窗', onclick: () => chatPopout(g) }, icon('popout')),
-    h('button', { class: 'btn btn-ghost sm', onclick: () => groupPanel(g) }, icon('users', 'i tiny'), CHAT.canManage ? '成员与设置' : '成员',
+    h('button', { class: 'btn btn-ghost sm chat-members', 'aria-label':CHAT.canManage ? '成员与设置' : '成员',title:CHAT.canManage ? '成员与设置' : '成员', onclick: () => groupPanel(g) }, icon('users', 'i tiny'), h('span',{class:'lbl'},CHAT.canManage ? '成员与设置' : '成员'),
       CHAT.canManage && findGroup(g.id)?.reqs > 0 && h('i', { class: 'chat-badge', title: '有人申请回群' }, findGroup(g.id).reqs)))
 }
 
@@ -9388,9 +9510,9 @@ function route() {
     return
   }
   closeModal(false)
-  if (path === '/' && !location.search) {
+  if ((path === '/' || path === '/series') && !location.search) {
     const qs = new URLSearchParams(Object.entries(wallPrefs()).filter(([k, v]) => v && !(k === 'sort' && v === 'new'))).toString()
-    if (qs) history.replaceState(history.state, '', '/?' + qs)
+    if (qs) history.replaceState(history.state, '', path + '?' + qs)
   }
   const key = path + location.search
   if (key !== S.bgKey) renderPage(path, location.search)
