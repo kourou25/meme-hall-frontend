@@ -3721,7 +3721,7 @@ function commentsSection(meme, { compact = false } = {}) {
       h('div', { class: 'comment-main' },
         h('div', { class: 'comment-head' },
           compactIdentity(c, 'post', uName('a', c, { href: `/u/${encodeURIComponent(c.username)}`, 'data-link': '' }, c.name || c.username, 'post')[0]),
-          h('span', { class: 'tl' }, 'TL' + c.trust_level),
+          c.kind === 'bot' ? h('span', { class: 'comment-ai-label', title: 'AI 自动回应' }, 'AI') : h('span', { class: 'tl' }, 'TL' + c.trust_level),
           h('span', { class: 'muted' }, fmtTime(c.created_at)),
           setReply && c.id > 0 && h('button', { class: 'btn-text small', type: 'button', onclick: () => setReply(c) }, '回复'),
           c.can_delete && h('button', { class: 'btn-text small', onclick: async () => {
@@ -4448,6 +4448,26 @@ function imageMenu(m, i, e) {
     !S.modal && item('查看详情', 'chat', () => navigate(memeHref(m)))))
 }
 
+function imageAiControl(off) {
+  const input = h('input', { type: 'checkbox', class: 'ai-image-post', checked: off === undefined ? false : !off, disabled: true })
+  let touched = false, baseline = input.checked
+  input.addEventListener('change', () => { touched = true })
+  const status = h('span', { class: 'muted sm', role: 'status' }, '读取中…')
+  const retry = h('button', { class: 'btn-text small', type: 'button', hidden: true, onclick: load }, '重试')
+  const el = h('div', { class: 'ai-image-control' }, h('label', { class: 'switch' }, input, h('span', { class: 'switch-ui' }), h('span', null, '让 AI 接个梗')), status, retry)
+  async function load() {
+    input.disabled = true; retry.hidden = true; status.textContent = '读取中…'
+    try {
+      const [config, prefs] = await Promise.all([api('/ai/config'), api('/me/ai-prefs')])
+      if (off === undefined && !touched) { input.checked = !!config.img && !!prefs.img_reply; baseline = input.checked }
+      input.disabled = !config.img || !prefs.img_reply
+      status.textContent = !config.img ? '暂未开启' : !prefs.img_reply ? '个人设置已关闭' : '仅公开非慎点图'
+    } catch { if (off === undefined) input.checked = false; status.textContent = '暂时无法读取'; retry.hidden = false }
+  }
+  load()
+  return { el, input, changed: () => touched && input.checked !== baseline, off: () => input.disabled || !input.checked }
+}
+
 // 编辑已发的帖：图（留 / 删 / 换顺序 / 加新图 / 重新打码）、配文、描述、标签、慎点
 async function openEdit(m0) {
   if (!requireLogin('编辑')) return
@@ -4482,8 +4502,9 @@ async function openEdit(m0) {
   const tags = tagPicker(m.tags || [])
   const spoiler = h('input', { type: 'checkbox' })
   spoiler.checked = !!m.spoiler
+  const ai = imageAiControl(m.ai_off)
   const mediaSig = () => JSON.stringify(tray.items.map((it) => it.kept?.u || it.url))
-  const snap = () => JSON.stringify([title.value, content.value, tags.value(), spoiler.checked, mediaSig()])
+  const snap = () => JSON.stringify([title.value, content.value, tags.value(), spoiler.checked, ai.input.checked, mediaSig()])
   const init = snap()
   const initMedia = mediaSig()
   const save = h('button', { class: 'btn btn-primary' }, '保存')
@@ -4494,6 +4515,7 @@ async function openEdit(m0) {
     save.textContent = tray.busy() ? '等上传完…' : '保存中…'
     try {
       const body = { title: title.value, content: content.value, tags: tags.value(), spoiler: spoiler.checked }
+      if (ai.changed() && !ai.input.disabled) body.ai_off = !ai.input.checked
       if (mediaSig() !== initMedia) Object.assign(body, { items: await tray.media(), layout: 'carousel' })
       save.textContent = '保存中…'
       await api(`/memes/${m.id}`, { method: 'PATCH', body })
@@ -4523,6 +4545,7 @@ async function openEdit(m0) {
           field('配文', title),
           field('描述', h('div', { class: 'fmt-wrap' }, fmtBar(content), content)),
           field('标签', tags.el),
+          ai.el,
           h('label', { class: 'switch' }, spoiler, h('span', { class: 'switch-ui' }), h('span', null, '慎点（默认模糊）')))),
     h('footer', { class: 'compose-foot' },
       h('span', { class: 'grow' }),
@@ -4601,6 +4624,7 @@ function openCompose(opts) {
   const content = h('textarea', { class: 'input', rows: 3, maxlength: 2000, placeholder: '出处、背景…（选填）' })
   const tags = tagPicker()
   const spoiler = h('input', { type: 'checkbox' })
+  const ai = imageAiControl()
   const pf = puzzleForm()
   const puzzleWrap = h('div', { class: 'puzzle-editor', hidden: true }, pf.el)
   const toggle = h('input', { type: 'checkbox', checked: withPuzzle })
@@ -4619,7 +4643,7 @@ function openCompose(opts) {
       // 每一帖记住是哪几个托盘项：发出去的那几张在托盘上标「已发 No.x」，失败重试只发没标的
       const its = plan(tray.items)
       const groups = plan(items)
-      const base = { title: title.value, content: content.value, tags: tags.value(), spoiler: spoiler.checked, layout: 'carousel' }
+      const base = { title: title.value, content: content.value, tags: tags.value(), spoiler: spoiler.checked, layout: 'carousel', ai_off: ai.off() }
       if (tray.items.every((it) => it.posted)) { tray.items.forEach((it) => { it.posted = 0 }); posted = [] }
       for (const [i, g] of groups.entries()) {
         if (its[i].every((it) => it.posted)) continue
@@ -4658,6 +4682,7 @@ function openCompose(opts) {
         field('标题', title),
         field('描述', h('div', { class: 'fmt-wrap' }, fmtBar(content), content)),
         field('标签', tags.el),
+        ai.el,
         h('label', { class: 'switch' }, spoiler, h('span', { class: 'switch-ui' }), h('span', null, '慎点'), h('span', { class: 'muted sm' }, '· 别人看到时先模糊')),
         withPuzzle && h('label', { class: 'switch' }, toggle, h('span', { class: 'switch-ui' }), h('span', null, '挂一个解密')),
         withPuzzle && puzzleWrap)),
@@ -4670,7 +4695,7 @@ function openCompose(opts) {
   function guard_() { return guard() }
   const guard = () => {
     const n = tray.items.length
-    const words = [title, content].some((x) => x.value.trim()) || tags.value().length > 0 || (toggle.checked && pf.dirty())
+    const words = [title, content].some((x) => x.value.trim()) || tags.value().length > 0 || (toggle.checked && pf.dirty()) || ai.changed()
     if (!n && !words) return null
     const what = [n && `${n} 个文件`, words && '填好的文字'].filter(Boolean).join('和')
     return {
@@ -10377,6 +10402,27 @@ Object.assign(ICON, {
   fish: '<svg viewBox="0 0 24 24"><path d="M3 12c3-5 9-6 13-3l4-3v12l-4-3c-4 3-10 2-13-3z"/><circle cx="8" cy="11" r=".8"/></svg>',
   clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
 })
+function imageAiSettings() {
+  const input = h('input', { id: 'ai-image-pref', type: 'checkbox', disabled: true })
+  const status = h('p', { class: 'ai-pref-status muted', role: 'status' }, '读取中…')
+  const save = h('button', { class: 'btn btn-primary sm', type: 'button', disabled: true, onclick: async () => {
+    input.disabled = save.disabled = true; status.textContent = '保存中…'
+    try { await api('/me/ai-prefs', { method: 'PATCH', body: { img_reply: input.checked } }); status.textContent = '已保存' }
+    catch (e) { status.textContent = e.message }
+    finally { input.disabled = save.disabled = false }
+  } }, '保存偏好')
+  const retry = h('button', { class: 'btn btn-ghost sm', type: 'button', hidden: true, onclick: load }, '重新读取')
+  async function load() {
+    retry.hidden = true; input.disabled = save.disabled = true; status.textContent = '读取中…'
+    try { const prefs = await api('/me/ai-prefs'); input.checked = prefs.img_reply; input.disabled = save.disabled = false; status.textContent = '' }
+    catch (e) { status.textContent = e.message; retry.hidden = false }
+  }
+  load()
+  return h('section', { class: 'set-sec' }, h('h3', null, 'AI 小伙伴'), h('label', { class: 'set-check' }, input, '让 AI 回应我发的图'),
+    h('p', { class: 'muted' }, '开启后，新发的公开非慎点图片会交给模型看图回应。每张图也可以单独关闭。'),
+    h('div', { class: 'set-save' }, save, retry), status)
+}
+
 function meSettings(section) {
   const panel = openModalShell('me-settings')
   S.modal.kind = 'settings'
@@ -10410,6 +10456,7 @@ function meSettings(section) {
       } }, '保存资料')))],
     ['deco', '装扮', 'sparkle', () => decoEditor()],
     ['appearance', '外观', 'palette', () => h('section', { class: 'set-sec' }, h('h3', null, '深浅色'), themeControl())],
+    ['ai', 'AI 小伙伴', 'sparkle', () => imageAiSettings()],
     ['badges', '徽章墙', 'trophy', () => h('section', { class: 'set-sec' }, h('h3', null, '徽章墙'),
       h('p', { class: 'muted sm' }, '每日徽章次日结算，可以反复拿，拿得越多等级越高；想佩戴哪个去「装扮」里选'),
       badgeWall(S.me.badges))],

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="尽欢AI小猫">
+ <circle cx="48" cy="48" r="46" fill="#f4ebcf"/>
+ <path d="M22 40 20 19 39 30Q48 26 57 30L76 19 74 40Q85 72 48 76 11 72 22 40Z" fill="#fcfaf3" stroke="#31594a" stroke-width="3.5" stroke-linejoin="round"/>
+ <path d="m27 28 2 10 8-5m32-5-2 10-8-5" fill="#f2b3a5"/>
+ <path d="M33 49v5m30-5v5M42 60q6 8 12 0" fill="none" stroke="#31594a" stroke-width="4" stroke-linecap="round"/>
+ <path d="m46 52 2 3 2-3" fill="#31594a"/>
+ <path d="M24 58h8m32 0h8" stroke="#f2b3a5" stroke-width="5" stroke-linecap="round"/>
+ <path d="m80 68 2 6 6 2-6 2-2 6-2-6-6-2 6-2Z" fill="#b7ce78" stroke="#31594a" stroke-width="2" stroke-linejoin="round"/>
+</svg>

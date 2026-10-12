@@ -1934,3 +1934,4 @@ html[data-skin] .site-notice { display: none; }
 @media(max-width:900px) {
   .stage.detail-carousel { height:min(62dvh,calc(100vw / var(--ratio,1))); min-height:200px; }
 }
+.ai-image-control{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}.ai-image-control .switch{margin:0}.comment-ai-label{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.04em}.ai-pref-status{min-height:1.5em}
