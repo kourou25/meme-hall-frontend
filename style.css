@@ -1766,14 +1766,28 @@ html[data-skin] .site-notice { display: none; }
 }
 .wall.hz .days:focus-visible { box-shadow: inset 0 0 0 2px var(--primary); }
 .wall.hz .day { flex-direction: row; flex: none; gap: 16px; height: 100%; }
+/* 每天开头只放一根竖向细线 + 竖排小号日期（日期导航交给顶上的标签条），不占整列；收起按钮缩成一个小图标 */
 .wall.hz .day-head {
-  position: static; flex-direction: column; align-items: flex-start; gap: 6px; flex: none; width: 84px;
-  margin: 0; padding: 10px 8px; border-radius: var(--r); background: var(--surface-2); scroll-snap-align: start;
+  position: relative; flex-direction: column; align-items: center; gap: 8px; flex: none; width: 22px;
+  margin: 0; padding: 6px 0; border: 0; border-radius: 0; background: none; scroll-snap-align: start;
 }
-.wall.hz .day-head .grow { display: none; }
-.wall.hz .day-date { font-size: 17px; white-space: nowrap; }
-.wall.hz .day-toggle { align-self: stretch; justify-content: center; padding: 0 4px; margin-top: auto; }
-.wall.hz .day.collapsed .day-head { position: static; border-bottom: 0; outline: 1px dashed var(--line); }
+.wall.hz .day-head::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px dashed var(--line); }
+.wall.hz .day-head > * { position: relative; }
+.wall.hz .day-head .grow, .wall.hz .day-week, .wall.hz .day-n, .wall.hz .day-unseen { display: none; }
+.wall.hz .day-date { writing-mode: vertical-rl; font-size: 12px; font-weight: 600; color: var(--text-3); white-space: nowrap; padding: 4px 0; background: var(--bg); }
+.wall.hz .day-toggle { width: 22px; height: 22px; padding: 0; margin-top: auto; justify-content: center; border-radius: 50%; font-size: 0; background: var(--bg); }
+.wall.hz .day-toggle .i { transform: rotate(-90deg); }
+/* 收起的那天：只剩一个紧凑小块「10月10日 · 91 张 · 展开」 */
+.wall.hz .day.collapsed .day-head {
+  flex-direction: row; align-self: center; width: auto; height: auto; margin: auto 0; gap: 6px; padding: 6px 6px 6px 12px;
+  border: 1px dashed var(--line); border-radius: 999px; background: var(--surface); outline: 0;
+}
+.wall.hz .day.collapsed .day-head::before { display: none; }
+.wall.hz .day.collapsed .day-date { writing-mode: horizontal-tb; font-size: 13px; color: var(--text); padding: 0; background: none; }
+.wall.hz .day.collapsed .day-n { display: inline; font-size: 12px; color: var(--text-3); white-space: nowrap; }
+.wall.hz .day.collapsed .day-n::before { content: "· "; }
+.wall.hz .day.collapsed .day-toggle { width: auto; height: 26px; padding: 0 10px; margin: 0; border-radius: 999px; font-size: 12px; white-space: nowrap; background: var(--surface-2); }
+.wall.hz .day.collapsed .day-toggle .i { transform: none; }
 .wall.hz .day-body { flex-direction: row; gap: 16px; padding: 0; height: 100%; }
 .wall.hz .day-top, .wall.hz .day-more { flex: none; align-self: center; }
 .wall.hz .day-more-btn { white-space: nowrap; }
@@ -1781,7 +1795,12 @@ html[data-skin] .site-notice { display: none; }
 .wall.hz .card {
   flex: none; width: min(560px, 90vw); height: 100%; overflow-y: auto; overscroll-behavior-y: contain;
   scroll-snap-align: start; transform: none; box-shadow: none;
+  /* 多图上下排时还能在卡片里滚，但不画第二条滚动条（和外面的横向滚动叠在一起像坏了） */
+  scrollbar-width: none;
 }
+.wall.hz .card::-webkit-scrollbar { display: none; }
+/* 单张长图：先按列高截一段，「展开完整图片」在横向里直接开大图看（不在卡片里撑出滚动） */
+.wall.hz .card > .media.single.tall .cell { max-height: calc(var(--hz-h) - 170px); }
 .wall.hz .card:hover { transform: none; }
 .wall.hz .card > * { flex-shrink: 0; } /* 内容比列高时在卡片里上下滚，不要被压扁 */
 .wall.hz .card > .media.single.fit { --mh: calc(var(--hz-h) - 140px); }
@@ -1802,8 +1821,6 @@ html[data-skin] .site-notice { display: none; }
   .wall.hz .days { gap: 10px; margin: 0 -10px; padding: 0 10px 6px; scroll-padding: 0 10px; }
   .wall.hz .day, .wall.hz .day-body, .wall.hz .feed { gap: 10px; }
   .wall.hz .card { width: calc(100vw - 20px); scroll-snap-stop: always; }
-  .wall.hz .day-head { width: 64px; padding: 8px 6px; }
-  .wall.hz .day-date { font-size: 15px; }
-  .wall.hz .day-toggle { white-space: nowrap; font-size: 12px; }
+
 }
 @media (pointer: coarse), (max-width: 760px) { .hz-nav { display: none; } }

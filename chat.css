@@ -2,6 +2,8 @@
 
 /* ---------- 消息区 ---------- */
 .cm-pane { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* 消息区（滚动列表 + 历史消息层）；输入框在它外面，历史层盖不到 */
+.cm-stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .cm-scroll { position: relative; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overflow-anchor: none; overscroll-behavior: contain; padding: 4px 0 12px; }
 .cm-top { min-height: 44px; display: grid; place-items: center; }
 .cm-begin { font-size: 12px; color: var(--text-3); padding: 10px 0; }
@@ -137,6 +139,15 @@
 .cm-tool:hover { background: var(--surface-2); color: var(--primary); }
 .cm-tool .i { width: 16px; height: 16px; }
 
+/* 回到底部：不在底部时右下角常驻，带新消息数；盖在历史层上面（有新消息时历史层里也出） */
+.cm-down {
+  position: absolute; right: 16px; bottom: 14px; z-index: 7; display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px 0 9px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text-2); font-size: 12px; font-weight: 600; box-shadow: var(--shadow-pop); cursor: pointer;
+}
+.cm-down:hover { color: var(--primary); border-color: var(--primary); }
+.cm-down[hidden] { display: none; }
+.cm-down-n { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--primary); color: var(--primary-ink); font-size: 11px; line-height: 18px; text-align: center; }
+.cm-down-n[hidden] { display: none; }
 .cm-pill {
   position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); z-index: 3; padding: 6px 14px; border-radius: 999px;
   background: var(--primary); color: var(--primary-ink); font-size: 13px; font-weight: 600; box-shadow: var(--shadow-pop);
@@ -671,6 +682,8 @@ body.chat-split .chat-dock.split { top: 0; right: 0; bottom: 0; z-index: 95; }
 body.chat-split .chat-dock.split .cd-panel { width: var(--split-w); height: 100dvh; border-radius: 0; border-width: 0 0 0 1px; box-shadow: none; }
 body.chat-split .modal, body.chat-split .viewer, body.chat-split .login-sheet { right: var(--split-w); }
 body.chat-split.lock .chat-dock { visibility: visible; }
+/* 分屏列 z-index 95 比浮层（80）高：消息右键菜单、表情板、名片会被压在群聊列下面看不见（像右键没反应）。分屏时浮层抬到列和拖动条之上 */
+body.chat-split .pop { z-index: 97; }
 /* 分屏分界处的拖动条：10px 宽的热区，正中一条细线，悬停 / 聚焦 / 拖动时变成松绿 */
 .split-handle { position: fixed; top: 0; bottom: 0; right: calc(var(--split-w) - 5px); z-index: 96; width: 10px; cursor: col-resize; touch-action: none; outline: none; }
 .split-handle::before { content: ''; position: absolute; top: 0; bottom: 0; left: 4px; width: 2px; background: transparent; transition: background .15s; }
@@ -725,6 +738,17 @@ body.split-drag iframe, body.split-drag img, body.split-drag video { pointer-eve
 /* 自己挑的炫彩名配色 */
 .fancy-name.fancy-own { background-image: var(--fc); }
 .ucard-name, .gp-name, .who-line { display: inline-flex; align-items: center; min-width: 0; }
+/* 昵称 + 称号 + 徽章放不下：整组换行，称号文字出省略号，徽章整个挪到下一行，不被裁（名片、成员列表、帖子详情、群聊消息头、评论头） */
+.ucard-name, .gp-name, .who-line { flex-wrap: wrap; row-gap: 3px; max-width: 100%; }
+.ucard-head .who { flex: 1; }
+.ucard-name > strong, .gp-name > strong { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.cm-head, .comment-head, .rd-c-head { flex-wrap: wrap; row-gap: 3px; min-width: 0; max-width: 100%; }
+.cm-name { min-width: 0; max-width: 100%; overflow-wrap: anywhere; text-align: left; }
+.u-title { flex: 0 1 auto; min-width: 0; max-width: min(10em, 100%); }
+.u-title-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-badge { max-width: 100%; }
+/* 帖子卡片作者行一行放不下：名字和称号收缩（省略号），徽章保持完整 */
+.card-head > .u-title { flex-shrink: 1; }
 
 /* ---------- 消息气泡 ---------- */
 .cm-text.bb { position: relative; }
@@ -944,7 +968,7 @@ button.notif-row { width: 100%; border: 0; background: none; font: inherit; text
 .cm-jump-date { position: absolute; top: 4px; right: 8px; z-index: 2; padding: 2px 8px; border-radius: 999px; background: var(--primary); color: #fff; font-size: 11px; font-weight: 600;
   pointer-events: none; animation: cm-jd 2.6s ease forwards; }
 @keyframes cm-jd { 0% { opacity: 0; transform: translateY(-3px); } 10%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
-/* 历史消息层：盖在当前消息列表上，不动当前聊天 */
+/* 历史消息层：盖在当前消息列表上（.cm-stage 里），不动当前聊天，输入框露在下面 */
 .cm-hist { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; background: var(--surface); }
 .cm-hist-head { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--surface-2); flex: none; }
 .cm-hist-t { font-weight: 700; font-size: 13px; }

@@ -907,6 +907,8 @@ function cardMedia(m, { stack = false } = {}) {
     if (tall) {
       box.append(h('span', { class: 'long-badge' }, '长图'),
         h('button', { class: 'expand', type: 'button', 'aria-expanded': 'false', onclick: (e) => {
+          // 横向浏览：卡片高度就是一列，原地展开会撑出卡片里的滚动条，直接看大图
+          if (box.closest('.wall.hz')) { e.stopPropagation(); return openViewer(m, 0) }
           const btn = e.currentTarget
           const open = box.classList.toggle('tall')
           btn.setAttribute('aria-expanded', String(!open))
@@ -1319,7 +1321,7 @@ function titleEl(u, where) {
   const d = decoAt(u, where)
   if (!d?.t || decoHidden(u, 'title')) return null
   return h('span', { class: `u-title sh-${d.sh || 'pill'} fl-${d.fill || 'solid'} fx-${d.fx || 'none'}${d.f ? ' ft-' + d.f : ''}${userCss(u, 'csst', 'u-title', where)}`, title: '称号',
-    style: { '--t1': d.c || '#ffffff', '--t2': d.c2 || '#16a34a', '--t3': d.bc || d.c2 || '#16a34a' } }, d.t)
+    style: { '--t1': d.c || '#ffffff', '--t2': d.c2 || '#16a34a', '--t3': d.bc || d.c2 || '#16a34a' } }, h('span', { class: 'u-title-t' }, d.t)) // 包一层，放不下时文字能出省略号
 }
 // ---------- 徽章 ----------
 // tier 决定底色：legend 传说（金色流光）/ epic 史诗（紫）/ rare 稀有（蓝）/ fun 趣味（粉）。每日徽章次日结算，可以反复拿
@@ -1644,6 +1646,8 @@ function mediaVideo(im, { auto = false, onOpen = null } = {}) {
 }
 // doc：弹出的聊天小窗里看图时传小窗的 document
 function openViewer(m, start = 0, { doc = document } = {}) {
+  // 全局只开一层：已经开着（分屏时群聊列还能点图）就把旧的那层直接换掉，不叠
+  if (S.viewer) S.viewer.close(true)
   closePop()
   markSeen(m)
   let imgs = m.images?.length ? m.images.slice() : [{ u: m.image, w: m.width, h: m.height }]
@@ -1764,10 +1768,12 @@ function openViewer(m, start = 0, { doc = document } = {}) {
     const n = imgs.length
     if (n > 1) { i = (i + d + n) % n; raw = false; show() }
   }
-  const close = () => {
+  // now：换图时立刻拿掉（不做淡出），免得新旧两层同时在
+  const close = (now) => {
     if (doc.fullscreenElement === root) doc.exitFullscreen().catch(() => {})
     root.classList.remove('in')
-    setTimeout(() => root.remove(), 160)
+    if (now === true) root.remove()
+    else setTimeout(() => root.remove(), 160)
     if (!S.modal || doc !== document) doc.body.classList.remove('lock')
     if (S.viewer?.close === close) S.viewer = null
   }
@@ -2516,6 +2522,7 @@ function daySection(st, d) {
     sec.el?.classList.toggle('collapsed', on)
     sec.tab?.classList.toggle('folded', on)
     toggle.setAttribute('aria-expanded', on ? 'false' : 'true')
+    toggle.title = on ? '展开这一天' : '收起这一天' // 横向时只露一个小图标，靠 title 说明
     toggle.replaceChildren(on ? '展开' : '收起', icon('chevD', 'i tiny'))
   }
   sec.setFold = setFold
@@ -6576,9 +6583,20 @@ function chatPane(g, { onHead } = {}) {
   const list = h('div', { class: 'cm-list' })
   const topSpin = h('div', { class: 'cm-top' }, h('div', { class: 'spinner' }))
   const scroller = h('div', { class: 'cm-scroll' }, topSpin, list)
+  // 消息区：历史消息层只盖这一块，输入框露在外面（在历史层里点回复 / 引用 / 编辑 / @ 看得见）
+  const stage = h('div', { class: 'cm-stage' }, scroller)
+  // 消息列表视图：主列表和历史消息层各一个，共用 renderRow 渲染和 pane 根上的事件委托（按消息所在的列表找视图）
+  // 以后再加一种消息列表，只要 VIEWS.set(容器, 视图)，右键 / 左滑 / 操作条就都有了
+  const VIEWS = new WeakMap()
+  let histEl = null // 历史消息层（historyView）
+  let histView = null
+  const viewOf = (node) => VIEWS.get(node?.closest?.('.cm-list, .cm-hist-rows'))
+  const mainView = { box: list, get items() { return st.items }, rows, pane: null, unreadAt: () => st.unreadAt, find: (id) => st.items.find((x) => x.id === id) }
+  VIEWS.set(list, mainView)
   const pendingSlot = () => scroller.append(pending)
   // 新消息提示：有「以下是新消息」分隔线且还没看到就先跳到分隔线，否则到底部
   const pill = h('button', { class: 'cm-pill', type: 'button', hidden: true, onclick: () => {
+    closeHist()
     const mark = list.querySelector('.cm-unread')
     if (mark && mark.offsetTop - 40 > scroller.scrollTop + 4) {
       scroller.scrollTo({ top: mark.offsetTop - 40, behavior: REDUCED.matches ? 'auto' : 'smooth' })
@@ -6596,6 +6614,21 @@ function chatPane(g, { onHead } = {}) {
     st.newN = st.newIds.length
     pill.hidden = !st.newN
     if (st.newN) pill.textContent = `${st.newN} 条新消息 ↓`
+    drawDown()
+  }
+  // 滚动跟随（主列表、历史层、/chat、抽屉、小窗、飞书 / LD 皮肤共用这一个 pane）：
+  // 只有「页面看得见、没失焦、没开历史层、贴着底部」时来新消息才跟着滚；否则只记数，右下角给「回到底部」
+  const downN = h('i', { class: 'cm-down-n', hidden: true })
+  const downBtn = h('button', { class: 'cm-down', type: 'button', hidden: true, title: '回到底部', 'aria-label': '回到底部',
+    onclick: () => { closeHist(); toBottom(true) } }, icon('chevD', 'i tiny'), h('span', null, '回到底部'), downN)
+  stage.append(downBtn)
+  function drawDown() {
+    const n = st.newIds.length
+    // 跳转窗口（下面还有没加载的）用「回到最新消息」；历史层里有新消息才出（点了回到当前聊天的底部）
+    downBtn.hidden = st.after || (histEl ? !n : nearBottom())
+    downN.hidden = !n
+    downN.textContent = n > 99 ? '99+' : n
+    downBtn.setAttribute('aria-label', n ? `回到底部，${n} 条新消息` : '回到底部')
   }
   const toBottom = (smooth) => {
     // 跳转窗口里（往下还有没加载的）：先回到最新
@@ -6604,16 +6637,30 @@ function chatPane(g, { onHead } = {}) {
     pill.hidden = true
     st.newN = 0
     st.newIds = []
+    st.stick = true
+    drawDown()
     markRead()
   }
   // 标签页切走期间、以及切回来那一下拉到的消息：不自动滚到底，免得漏看
   const doc = scroller.ownerDocument
-  const away = () => doc.hidden || (st.backAt && Date.now() - st.backAt < 4000 && st.backAt - st.hiddenAt > 5000)
-  const onVis = () => {
-    if (doc.hidden) { st.hiddenAt = Date.now(); return }
+  // 切走（标签页隐藏，或主窗口失焦——切到别的软件）期间、以及切回来 4 秒内那次轮询拉到的，都算「人不在」。
+  // 以前要离开 5 秒以上才算，切走一小会儿回来照样被拽到底部
+  const away = () => doc.hidden || st.blur || (st.backAt && Date.now() - st.backAt < 4000 && st.backAt - st.hiddenAt > 1000)
+  const back = () => {
     st.backAt = Date.now()
     if (st.backAt - st.hiddenAt > 60000) setTimeout(showAway, 1500) // 等切回来那次轮询拉完
   }
+  const onVis = () => {
+    if (doc.hidden) { if (!st.blur) st.hiddenAt = Date.now(); return }
+    if (st.blur && doc.hasFocus()) st.blur = false // 有的浏览器切回标签页不发 focus
+    if (!st.blur) back()
+  }
+  // 失焦只看主窗口：弹出的小窗本来就是给「切到别处也一直看得到」用的，照常跟着滚
+  const win = doc === document ? doc.defaultView : null
+  const onBlur = () => { if (st.blur || doc.hidden) return; st.blur = true; st.hiddenAt = Date.now() }
+  const onFocus = () => { if (!st.blur) return; st.blur = false; if (!doc.hidden) back() }
+  win?.addEventListener('blur', onBlur)
+  win?.addEventListener('focus', onFocus)
   // 「你离开的 x 分钟里有 N 条新消息」：速览 / 从第一条看 / 导出
   st.awayIds = []
   let awayEl = null
@@ -6748,8 +6795,8 @@ function chatPane(g, { onHead } = {}) {
     openPop(anchor, box, { key: 'cmrange', up: true })
   }
 
-  // 每条消息一行：日期分隔、「以下是新消息」和消息本体包在一起，换的时候整行换
-  const row = (m, prev) => {
+  // 每条消息一行：日期分隔、「以下是新消息」和消息本体包在一起，换的时候整行换。主列表、历史层都用这一个
+  const renderRow = (view, m, prev) => {
     // 回复别人的消息总是带头像和名字，免得看着像接在上一条后面
     const cont = prev && !prev.deleted && !m.deleted && !m.reply_to && prev.user.id === m.user.id && m.created_at - prev.created_at < 300 && dayOf(prev.created_at) === dayOf(m.created_at)
     const kids = []
@@ -6757,18 +6804,20 @@ function chatPane(g, { onHead } = {}) {
       const lb = dayLabel(dayOf(m.created_at))
       kids.push(h('div', { class: 'cm-sep' }, h('span', null, `${lb.main} ${lb.sub}`)))
     }
-    if (st.unreadAt === m.id) kids.push(h('div', { class: 'cm-unread' }, h('span', null, '以下是新消息')))
-    kids.push(chatMsg(m, { cont, pane: api_ }))
+    if (view.unreadAt?.() === m.id) kids.push(h('div', { class: 'cm-unread' }, h('span', null, '以下是新消息')))
+    kids.push(chatMsg(m, { cont, pane: view.pane }))
     const el = h('div', { class: 'cm-row', 'data-row': m.id }, kids)
-    rows.set(m.id, el)
-    if (m.at_read) queueMicrotask(() => st.paintReads?.(m))
+    view.rows.set(m.id, el)
+    if (m.at_read) queueMicrotask(() => paintReads(view, m))
     return el
   }
-  const redraw = (i) => {
-    const m = st.items[i]
-    const old = rows.get(m?.id)
-    if (old) old.replaceWith(row(m, st.items[i - 1]))
+  const row = (m, prev) => renderRow(mainView, m, prev)
+  const redrawIn = (view, i) => {
+    const m = view.items[i]
+    const old = view.rows.get(m?.id)
+    if (old) old.replaceWith(renderRow(view, m, view.items[i - 1]))
   }
+  const redraw = (i) => redrawIn(mainView, i)
   const add = (items, where) => {
     items = items.filter((m) => !rows.has(m.id))
     if (!items.length) return
@@ -6789,13 +6838,18 @@ function chatPane(g, { onHead } = {}) {
     st.last = Math.max(st.last, st.items[st.items.length - 1].id)
     // 新到的回复（轮询 / 自己刚发的）：已加载的原消息「N 条回复」跟着 +1；历史批次服务端已经算好，不用加
     if (where === 'live') items.forEach((m) => {
+      // 原消息开在历史层里的也一样 +1
+      const hi = m.reply_to && !m.deleted && histView ? histView.items.findIndex((x) => x.id === m.reply_to.id) : -1
+      if (hi >= 0) { histView.items[hi] = { ...histView.items[hi], reply_count: (histView.items[hi].reply_count || 0) + 1 }; redrawIn(histView, hi) }
       const i = m.reply_to && !m.deleted ? st.items.findIndex((x) => x.id === m.reply_to.id) : -1
       if (i < 0) return
       st.items[i] = { ...st.items[i], reply_count: (st.items[i].reply_count || 0) + 1 }
       redraw(i)
     })
   }
+  // 编辑 / 撤回 / 表情 / 回应 / 转帖 / 轮询 changed：主列表和历史层里有这条的都重画
   const update = (m) => {
+    histView?.apply(m)
     const i = st.items.findIndex((x) => x.id === m.id)
     if (i < 0) return
     st.items[i] = { ...m, floor: m.floor ?? st.items[i].floor }
@@ -6852,7 +6906,8 @@ function chatPane(g, { onHead } = {}) {
         const gone = others.length > 0 && away()
         // 来新消息要不要跟着滚：在底部时跟（默认）/ 总是滚到最新 / 不自动滚（只出按钮）
         const ap = chatAuto()
-        const stick = !gone && (ap === 'always' ? true : ap === 'off' ? false : nearBottom())
+        // 开着历史层：正在看旧消息，主列表也不动，只记数
+        const stick = !gone && !histEl && (ap === 'always' ? true : ap === 'off' ? false : nearBottom())
         // 人不在：从第一条没看的开始画「以下是新消息」（这次离开期间已经画过就不挪）
         if (gone && !st.awayMark) {
           list.querySelectorAll('.cm-unread').forEach((el) => el.remove())
@@ -6867,7 +6922,7 @@ function chatPane(g, { onHead } = {}) {
         if (gone && !doc.hidden && (awayEl || st.backAt - st.hiddenAt > 60000)) showAway()
         if (stick) toBottom(true)
         else {
-          if (gone || ap === 'off') st.stick = false // 图片晚加载也别把人拽到底
+          if (gone || ap === 'off' || histEl) st.stick = false // 图片晚加载也别把人拽到底
           // 往上翻着看的时候来了新消息：一样出按钮（以前只在离开时才出）
           st.newIds.push(...others.map((m) => m.id))
           recount()
@@ -6888,14 +6943,18 @@ function chatPane(g, { onHead } = {}) {
 
   // 跳到某条消息：不在已加载的范围里，就把中间的历史一次拉下来再跳
   // 搜索结果 / 回复原文：就在当前列表里的，滚过去高亮 2 秒并标出日期；不在的，另开「历史消息」层只看那附近一段，当前聊天不动
+  // 所有入口（搜索、引用条、N 条回复、公告 / 正文里的引用、提醒、历史层里再点）都走这一个：
+  // 历史层开着且层里有 → 层里滚过去；主列表有 → 先收起历史层再滚主列表；都没有 → 开历史层
   async function jumpTo(id) {
-    const hit = () => {
-      const el = rows.get(id)?.querySelector('.cm-msg')
+    const hitIn = (view) => {
+      const el = view?.rows.get(id)?.querySelector('.cm-msg')
       if (!el) return false
+      if (view !== histView) closeHist()
       el.scrollIntoView({ block: 'center', behavior: REDUCED.matches ? 'auto' : 'smooth' })
-      flashMsg(el, st.items.find((m) => m.id === id))
+      flashMsg(el, view.find(id))
       return true
     }
+    const hit = () => hitIn(histView) || hitIn(mainView)
     if (hit()) return
     if (st.items.length && id > st.last && !st.after) return toast('这条消息还没加载出来')
     while (st.busy) await new Promise((r) => setTimeout(r, 80))
@@ -6903,36 +6962,46 @@ function chatPane(g, { onHead } = {}) {
     return historyView(id)
   }
   // 历史消息层：盖在消息列表上，前后各 25 条，要看更多点「更早 / 更晚」，不会无限往上翻
-  let histEl = null
+  function closeHist() { if (!histEl) return; histEl.remove(); histEl = null; histView = null; drawDown() }
   async function historyView(id) {
-    histEl?.remove()
+    closeHist()
     const box = h('div', { class: 'cm-hist-list' }, h('div', { class: 'spinner' }))
     const title = h('span', { class: 'cm-hist-t' }, '历史消息')
-    const close = () => { histEl?.remove(); histEl = null }
+    const close = closeHist
     histEl = h('div', { class: 'cm-hist', role: 'region', 'aria-label': '历史消息' },
       h('header', { class: 'cm-hist-head' }, icon('calendar', 'i tiny'), title, h('span', { class: 'grow' }),
         h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: close }, '回到当前聊天')),
       box)
-    el.append(histEl)
-    const hv = { items: [], more: false, after: false }
-    const hpane = { ...api_, jumpTo: (rid) => { const r = box.querySelector(`[data-hrow="${rid}"] .cm-msg`); if (r) { r.scrollIntoView({ block: 'center' }); flashMsg(r, hv.items.find((x) => x.id === rid)) } else historyView(rid) } }
+    stage.append(histEl)
+    drawDown()
+    // 历史层也是一个视图：同一个 renderRow、同一套委托；动作沿用主 pane 的（jumpTo / update 本来就两边都管），看大图在这一段里串
+    const rowsBox = h('div', { class: 'cm-hist-rows' })
+    const hv = histView = { box: rowsBox, items: [], rows: new Map(), more: false, after: false, pane: null,
+      find: (rid) => hv.items.find((x) => x.id === rid),
+      apply: (m) => {
+        const i = hv.items.findIndex((x) => x.id === m.id)
+        if (i < 0) return
+        hv.items[i] = { ...m, floor: m.floor ?? hv.items[i].floor }
+        redrawIn(hv, i)
+        redrawIn(hv, i + 1)
+      } }
+    hv.pane = { ...api_, gallery: (m, i) => galleryOf(hv.items, m, i) }
+    VIEWS.set(rowsBox, hv)
     const draw = () => {
-      const kids = []
-      if (hv.more) kids.push(h('button', { class: 'btn-text cm-hist-more', type: 'button', onclick: () => extend('up') }, '↑ 更早的 25 条'))
-      else kids.push(h('div', { class: 'cm-begin' }, `这是「${g.name}」最早的消息`))
-      hv.items.forEach((m, i) => {
-        const prev = hv.items[i - 1]
-        if (!prev || dayOf(prev.created_at) !== dayOf(m.created_at)) { const lb = dayLabel(dayOf(m.created_at)); kids.push(h('div', { class: 'cm-sep' }, h('span', null, `${lb.main} ${lb.sub}`))) }
-        kids.push(h('div', { class: 'cm-row', 'data-hrow': m.id }, chatMsg(m, { pane: hpane })))
-      })
-      if (hv.after) kids.push(h('button', { class: 'btn-text cm-hist-more', type: 'button', onclick: () => extend('down') }, '↓ 更晚的 25 条'))
-      else kids.push(h('button', { class: 'btn-text cm-hist-more', type: 'button', onclick: close }, '已经到最新了 · 回到当前聊天'))
-      box.replaceChildren(...kids)
+      hv.rows.clear()
+      rowsBox.replaceChildren(...hv.items.map((m, i) => renderRow(hv, m, hv.items[i - 1])))
+      box.replaceChildren(
+        hv.more ? h('button', { class: 'btn-text cm-hist-more', type: 'button', onclick: () => extend('up') }, '↑ 更早的 25 条')
+          : h('div', { class: 'cm-begin' }, `这是「${g.name}」最早的消息`),
+        rowsBox,
+        hv.after ? h('button', { class: 'btn-text cm-hist-more', type: 'button', onclick: () => extend('down') }, '↓ 更晚的 25 条')
+          : h('button', { class: 'btn-text cm-hist-more', type: 'button', onclick: close }, '已经到最新了 · 回到当前聊天'))
     }
     const extend = async (dir) => {
       const edge = dir === 'up' ? hv.items[0]?.id : hv.items[hv.items.length - 1]?.id
       try {
         const d = await api(`/chat/groups/${g.id}/messages?around=${edge}`)
+        if (histView !== hv) return
         const have = new Set(hv.items.map((m) => m.id))
         const fresh = d.items.filter((m) => !have.has(m.id))
         if (dir === 'up') {
@@ -6950,7 +7019,7 @@ function chatPane(g, { onHead } = {}) {
     }
     try {
       const d = await api(`/chat/groups/${g.id}/messages?around=${id}`)
-      if (!histEl?.isConnected) return
+      if (histView !== hv) return
       hv.items = d.items
       hv.more = d.more
       hv.after = !!d.more_after
@@ -6958,10 +7027,10 @@ function chatPane(g, { onHead } = {}) {
       if (!t) { close(); return toast('原消息找不到了') }
       title.textContent = '历史消息 · ' + fullDate(t.created_at)
       draw()
-      const r = box.querySelector(`[data-hrow="${id}"] .cm-msg`)
+      const r = hv.rows.get(id)?.querySelector('.cm-msg')
       r?.scrollIntoView({ block: 'center' })
       if (r) flashMsg(r, t)
-    } catch (e) { close(); toast(e.message, 'err') }
+    } catch (e) { if (histView === hv) close(); toast(e.message, 'err') }
   }
   // 跳转窗口：清空列表，只放 id 前后各 25 条
   const resetList = () => { rows.clear(); list.replaceChildren(); st.items = []; st.first = 0; st.newIds = []; pill.hidden = true; st.unreadAt = -1 }
@@ -7001,11 +7070,12 @@ function chatPane(g, { onHead } = {}) {
   }
   const latestBtn = h('button', { class: 'cm-pill cm-latest', type: 'button', hidden: true, onclick: () => backToLatest() }, '回到最新消息 ↓')
   const drawLatest = () => { latestBtn.hidden = !st.after }
-  // 看大图：整个群已加载的图串成一组，左右键能一直翻
-  function gallery(m, i) {
+  // 看大图：整个群已加载的图串成一组，左右键能一直翻（历史层传它那一段）
+  function gallery(m, i) { return galleryOf(st.items, m, i) }
+  function galleryOf(items, m, i) {
     const all = []
     let start = -1
-    for (const x of st.items) {
+    for (const x of items) {
       if (x.deleted) continue
       const media = x.media?.length ? x.media : x.image ? [{ u: x.image, w: x.width, h: x.height }] : []
       if (x.id === m.id) start = all.length + i
@@ -7018,8 +7088,8 @@ function chatPane(g, { onHead } = {}) {
     openViewer({ id: -1, image: all[0].u, images: all, image_count: all.length, title: g.name, seen_at: 1 }, start, { doc: scroller.ownerDocument })
   }
   // @ 已读：自己发的、@ 了人的消息，名字后面一个点；隔 20 秒问一次还有谁没读的那几条
-  const paintReads = (m) => {
-    const el = rows.get(m.id)?.querySelector('.cm-text')
+  const paintReads = (view, m) => {
+    const el = view.rows.get(m.id)?.querySelector('.cm-text')
     if (!el || !m.at_read) return
     el.querySelectorAll('.at[data-at]').forEach((b) => {
       const k = b.dataset.at
@@ -7032,7 +7102,7 @@ function chatPane(g, { onHead } = {}) {
       dot.title = m.at_read[k] ? '已读' : '还没看'
     })
   }
-  st.paintReads = paintReads
+  st.paintReads = (m) => paintReads(mainView, m)
   async function refreshReads() {
     // 不只是自己发的：别人 @ 别人的，点也要跟着变绿
     const ids = st.items.filter((m) => m.at_read && Object.values(m.at_read).some((v) => !v) && Date.now() / 1000 - m.created_at < 7 * 86400).map((m) => m.id).slice(-100)
@@ -7041,7 +7111,7 @@ function chatPane(g, { onHead } = {}) {
       const { reads } = await api(`/chat/groups/${g.id}/reads?ids=${ids.join(',')}`)
       for (const [id, r] of Object.entries(reads)) {
         const m = st.items.find((x) => x.id === Number(id))
-        if (m) { m.at_read = r; paintReads(m) }
+        if (m) { m.at_read = r; paintReads(mainView, m) }
       }
     } catch {}
   }
@@ -7065,52 +7135,10 @@ function chatPane(g, { onHead } = {}) {
     else if (st.newIds.length) recount()
     if (st.after && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 300) newer()
     if (scroller.scrollTop < 300) older()
+    drawDown()
   }, { passive: true })
   // 图片晚加载会把内容往下顶：原本贴着底部就继续贴着
   scroller.addEventListener('load', () => { if (st.stick) scroller.scrollTop = scroller.scrollHeight }, true)
-  const msgOf = (el) => { const id = Number(el?.dataset.msg); return id > 0 ? st.items.find((x) => x.id === id) : null }
-  // 右键（安卓长按）消息：自己的操作菜单盖掉浏览器的；按住 Shift 还是浏览器菜单
-  scroller.addEventListener('contextmenu', (e) => {
-    if (e.shiftKey || !S.me) return
-    const el = e.target.closest('.cm-msg')
-    const m = msgOf(el)
-    if (!m || m.deleted || el.classList.contains('pending')) return
-    e.preventDefault()
-    chatMenu(m, api_, e)
-  })
-  // 手机上消息往左滑：回复这条
-  let sw = null
-  scroller.addEventListener('touchstart', (e) => {
-    const el = e.touches.length === 1 && S.me && e.target.closest('.cm-msg:not(.gone):not(.pending)')
-    sw = el ? { el, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, on: false } : null
-  }, { passive: true })
-  scroller.addEventListener('touchmove', (e) => {
-    if (!sw) return
-    const dx = e.touches[0].clientX - sw.x
-    const dy = e.touches[0].clientY - sw.y
-    if (!sw.on) {
-      // 严一点：先竖着动了就算滚动；横向要明显（> 28px 且是竖向的 2 倍）才算左滑回复
-      if (Math.abs(dy) > 8 && Math.abs(dy) * 2 > Math.abs(dx)) { sw = null; return }
-      if (dx > -28 || Math.abs(dx) < Math.abs(dy) * 2) return
-      sw.on = true
-      sw.el.classList.add('swiping')
-    }
-    sw.dx = Math.max(-90, Math.min(0, dx))
-    sw.el.style.setProperty('--sw', sw.dx + 'px')
-    sw.el.classList.toggle('sw-ready', sw.dx <= -60)
-  }, { passive: true })
-  const swEnd = () => {
-    if (!sw?.on) { sw = null; return }
-    const { el, dx } = sw
-    sw = null
-    el.classList.remove('swiping', 'sw-ready')
-    el.style.removeProperty('--sw')
-    const m = msgOf(el)
-    if (dx <= -60 && m) { navigator.vibrate?.(10); setReply(m) }
-  }
-  scroller.addEventListener('touchend', swEnd)
-  scroller.addEventListener('touchcancel', swEnd)
-
   // 输入框
   const reply = h('div', { class: 'cm-reply', hidden: true })
   const setReply = (m) => {
@@ -7188,6 +7216,7 @@ function chatPane(g, { onHead } = {}) {
         const r = await uploadFile(f, 'chat', 'file')
         const { message } = await api(`/chat/groups/${g.id}/messages`, { method: 'POST', body: { body: '', reply_to: st.reply?.id || 0, media: [{ key: r.key, name: f.name }] } })
         setReply(null)
+        closeHist()
         add([message], 'live')
         toBottom(false)
       } catch (e) { toast(`「${f.name}」没发出去：${e.message}`, 'err') }
@@ -7202,6 +7231,8 @@ function chatPane(g, { onHead } = {}) {
     const body = only || ta.value.trim()
     if (!body && !att.items.length) return
     if (!requireLogin('聊天')) return
+    // 在历史层里发（回车 / +1 复读 / 表情包）：回到当前聊天，看得见自己刚发的
+    closeHist()
     const job = { body, reply: st.reply, tray: !only && att.items.length ? att : null, done: false, tries: 0 }
     const fake = { id: 0, user: { id: S.me.id, username: S.me.username, name: S.me.name, avatar: S.me.avatar, is_admin: S.me.is_admin, fancy: S.me.fancy },
       body, media: job.tray ? att.local() : null, created_at: Date.now() / 1000, reactions: [], mine: true,
@@ -7291,9 +7322,8 @@ function chatPane(g, { onHead } = {}) {
 
   function quoteMsg(m) {
     const doc = scroller.ownerDocument
-    const selObj = doc.getSelection()
-    const sel = String(selObj || '').trim()
-    const text = sel && doc.querySelector(`[data-msg="${m.id}"]`)?.contains(selObj.anchorNode) ? sel : stripQuotes(m.body).slice(0, 300)
+    const sel = String(doc.getSelection() || '').trim()
+    const text = sel && selMsgId(doc) === String(m.id) ? sel : stripQuotes(m.body).slice(0, 300)
     insertAtCursor(ta, `[quote="${quoteName(m.user.name || m.user.username)}, msg:${m.id}"]\n${text || '[图片]'}\n[/quote]\n`)
     grow()
   }
@@ -7346,7 +7376,7 @@ function chatPane(g, { onHead } = {}) {
     input.focus()
     if (q0) { input.value = q0; run() }
   }
-  function destroy() { CHAT.panes.delete(api_); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); offNotice() }
+  function destroy() { CHAT.panes.delete(api_); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); offNotice() }
 
   // 群公告：顶上一条，点 × 收起（记住这一版），右上角留个小「公告」随时再打开；公告改了会重新弹出来
   const noticeEl = h('div', { class: 'cm-notice-wrap' })
@@ -7367,7 +7397,7 @@ function chatPane(g, { onHead } = {}) {
   drawNotice()
 
   pendingSlot()
-  const el = h('div', { class: 'cm-pane' }, noticeEl, scroller, pill, latestBtn, compose)
+  const el = h('div', { class: 'cm-pane' }, noticeEl, stage, pill, latestBtn, compose)
   // 在光标处插入 @用户名，前面不是空白就补一个空格；刚插过同一个人不重复插
   const atUser = (username) => {
     const before = ta.value.slice(0, ta.selectionStart ?? ta.value.length)
@@ -7375,6 +7405,63 @@ function chatPane(g, { onHead } = {}) {
     insertAtCursor(ta, (/\S$/.test(before) ? ' ' : '') + '@' + username + ' ')
   }
   const api_ = { el, poll, destroy, update, setReply, setEdit, recalled, quoteMsg, jumpTo, gallery, search, atUser, send: (t) => send(t), focus: () => ta.focus(), group: g, st }
+  mainView.pane = api_
+  // 消息上的右键 / 左滑：委托在整个 pane 上（跟着 pane 进小窗 document），按消息所在列表找视图和消息。
+  // 发送中的占位不在任何列表里，自然不管
+  const msgAt = (t) => {
+    const msg = t?.closest?.('.cm-msg')
+    const v = msg && viewOf(msg)
+    const id = Number(msg?.dataset.msg)
+    const m = v && id > 0 ? v.find(id) : null
+    return m ? { msg, v, m } : null
+  }
+  // 右键（安卓长按）消息：自己的操作菜单盖掉浏览器的；按住 Shift 还是浏览器菜单
+  el.addEventListener('contextmenu', (e) => {
+    const x = msgAt(e.target)
+    if (!x) return
+    const { msg, v, m } = x
+    // 打码 / 模糊的图：右键直接看大图，不出菜单
+    const cell = e.target.closest('.cm-img[data-mask]')
+    if (cell) { e.preventDefault(); v.pane.gallery(m, Number(cell.dataset.mi)); return }
+    // 右键（长按）头像 = @TA，消息菜单照样出
+    if (e.target.closest('.cm-face') && S.me && !m.mine) { e.preventDefault(); v.pane.atUser(m.user.username) }
+    if (e.shiftKey || !S.me) return
+    if (m.deleted || msg.classList.contains('pending')) return
+    e.preventDefault()
+    chatMenu(m, v.pane, e)
+  })
+  // 手机上消息往左滑：回复这条
+  let sw = null
+  el.addEventListener('touchstart', (e) => {
+    const msg = e.touches.length === 1 && S.me && e.target.closest('.cm-msg:not(.gone):not(.pending)')
+    sw = msg ? { el: msg, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, on: false } : null
+  }, { passive: true })
+  el.addEventListener('touchmove', (e) => {
+    if (!sw) return
+    const dx = e.touches[0].clientX - sw.x
+    const dy = e.touches[0].clientY - sw.y
+    if (!sw.on) {
+      // 严一点：先竖着动了就算滚动；横向要明显（> 28px 且是竖向的 2 倍）才算左滑回复
+      if (Math.abs(dy) > 8 && Math.abs(dy) * 2 > Math.abs(dx)) { sw = null; return }
+      if (dx > -28 || Math.abs(dx) < Math.abs(dy) * 2) return
+      sw.on = true
+      sw.el.classList.add('swiping')
+    }
+    sw.dx = Math.max(-90, Math.min(0, dx))
+    sw.el.style.setProperty('--sw', sw.dx + 'px')
+    sw.el.classList.toggle('sw-ready', sw.dx <= -60)
+  }, { passive: true })
+  const swEnd = () => {
+    if (!sw?.on) { sw = null; return }
+    const { el: msg, dx } = sw
+    sw = null
+    msg.classList.remove('swiping', 'sw-ready')
+    msg.style.removeProperty('--sw')
+    const x = msgAt(msg)
+    if (dx <= -60 && x) { navigator.vibrate?.(10); x.v.pane.setReply(x.m) }
+  }
+  el.addEventListener('touchend', swEnd)
+  el.addEventListener('touchcancel', swEnd)
   CHAT.panes.add(api_)
   older()
   return api_
@@ -7439,8 +7526,8 @@ function chatMsg(m, { cont, pane, pending } = {}) {
   const canAt = !!(pane?.atUser && S.me && !m.mine)
   const card = (e) => userCard(m.user.username, e.currentTarget)
   const at = (e) => { if (!canAt) return card(e); e.preventDefault(); pane.atUser(m.user.username) }
-  const ctx = (e) => { if (canAt) at(e) }
-  const face = h('button', { class: 'cm-face', type: 'button', title: canAt ? `${who} · 右键或长按 @TA` : who, 'data-pop': 'u' + m.user.username, onclick: card, oncontextmenu: ctx }, avatar(m.user.avatar, who, 36))
+  // 右键 / 长按头像 @TA 在 chatPane 的委托里做（主列表、历史层一样）
+  const face = h('button', { class: 'cm-face', type: 'button', title: canAt ? `${who} · 右键或长按 @TA` : who, 'data-pop': 'u' + m.user.username, onclick: card }, avatar(m.user.avatar, who, 36))
   const body = []
   let ref = null
   if (m.deleted) body.push(h('div', { class: 'cm-gone' }, `${m.mine ? '你' : who} 撤回了一条消息`))
@@ -7481,7 +7568,9 @@ function chatMsg(m, { cont, pane, pending } = {}) {
             if (maskTap() === 'peek' && peekOrig(e, it)) return
             open(e, i)
           },
-          oncontextmenu: it.b || it.o ? (e) => { e.preventDefault(); e.stopPropagation(); open(e, i) } : null },
+          // 打码 / 模糊的图右键直接看图：列表里的消息由 chatPane 委托处理（data-mask / data-mi），发送中的占位没有 pane，还是自己管
+          'data-mi': i, 'data-mask': (it.b || it.o) && pane ? '' : null,
+          oncontextmenu: (it.b || it.o) && !pane ? (e) => { e.preventDefault(); e.stopPropagation(); open(e, i) } : null },
         it.u ? h('img', { src: it.u, alt: '', loading: 'lazy', width: it.w || null, height: it.h || null, onload: unsize, onerror: unsize })
           : h('video', { src: it.v, muted: true, playsinline: true, preload: 'metadata', onloadedmetadata: unsize, onerror: unsize }),
         kindBadge(it), it.o && h('span', { class: 'mask-badge' }, maskTap() === 'peek' ? '已打码 · 点一下看原图' : '已打码'),
@@ -7642,6 +7731,11 @@ function chatTools(m, pane) {
     b('rocket', '回应', (e) => boostPrompt(m, pane, e.currentTarget), { 'data-pop': 'cmb' + m.id }),
     b('more', '更多（也可以右键消息）', (e) => chatMenu(m, pane, e), { 'data-pop': 'cmm' + m.id }))
 }
+// 选区落在哪条消息里：按选区所在的那份元素算，不按 id 去文档里找第一份
+const selMsgId = (doc) => {
+  const n = doc.getSelection()?.anchorNode
+  return (n?.nodeType === 1 ? n : n?.parentElement)?.closest?.('[data-msg]')?.dataset.msg
+}
 // 右键菜单：顶上一排快捷表情，下面是全部操作
 function chatMenu(m, pane, e) {
   const doc = e.target.ownerDocument
@@ -7650,8 +7744,10 @@ function chatMenu(m, pane, e) {
   const r0 = btn ? btn.getBoundingClientRect() : { left: e.clientX, right: e.clientX, top: e.clientY, bottom: e.clientY }
   const box0 = { left: r0.left, right: r0.right, top: r0.top, bottom: r0.bottom }
   const anchor = { ownerDocument: doc, getBoundingClientRect: () => box0 }
+  // 触发菜单的那一份消息（同一条可能同时在主列表和历史层里）
+  const host = e.target.closest?.(`[data-msg="${m.id}"]`) || doc.querySelector(`[data-msg="${m.id}"]`)
   const sel = String(doc.getSelection() || '').trim()
-  const selIn = sel && doc.querySelector(`[data-msg="${m.id}"]`)?.contains(doc.getSelection().anchorNode)
+  const selIn = sel && selMsgId(doc) === String(m.id)
   const item = (label, ic, fn, cls = '') => h('button', { class: 'menu-item ' + cls, type: 'button', onclick: () => { closePop(); fn() } }, icon(ic), label)
   const mine = new Set(m.reactions.filter((r) => r.mine).map((r) => r.emoji))
   const pic = m.media?.[0]?.u || m.image
@@ -7669,7 +7765,7 @@ function chatMenu(m, pane, e) {
     selIn ? item('复制选中的文字', 'copy', () => copyText(sel)) : item('复制', 'copy', () => chatCopy(m)),
     m.body && !selIn && item('选择文字', 'quote', () => {
       // 选中整条，手机上会出系统的选择柄，可以再拖着调范围
-      const t = doc.querySelector(`[data-msg="${m.id}"] .cm-text, [data-msg="${m.id}"] .im-text`)
+      const t = host?.querySelector('.cm-text, .im-text')
       if (t) setTimeout(() => doc.getSelection().selectAllChildren(t), 50)
     }),
     pic && item('复制图片链接', 'image', () => copyText(location.origin + pic)),
@@ -8276,6 +8372,7 @@ async function chatPopout(g0, { pip = false } = {}) {
   })
   doc.addEventListener('keydown', (e) => {
     if (S.viewer?.doc === doc) {
+      if (e.key !== 'Escape' && e.target.closest?.('input, textarea, select, [contenteditable]')) return
       if (S.viewer.zoomKey?.(e)) return
       if (e.key === 'Escape') S.viewer.close()
       else if (e.key === 'z' || e.key === 'Z') S.viewer.zoom()
@@ -9250,6 +9347,8 @@ document.addEventListener('keydown', (e) => {
     return
   }
   if (S.viewer) {
+    // 焦点在输入框里（分屏时看着图还能打字）：方向键 / + - 0 / z 留给输入框，只有 Esc 关图
+    if (e.key !== 'Escape' && e.target.closest?.('input, textarea, select, [contenteditable]')) return
     if (S.viewer.zoomKey?.(e)) return
     if (e.key === 'Escape') S.viewer.close()
     else if (e.key === 'z' || e.key === 'Z') S.viewer.zoom()
