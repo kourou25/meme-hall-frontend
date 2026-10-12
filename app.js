@@ -6235,6 +6235,11 @@ function richBody(text = '', opts = {}) {
     const [who, ...rest] = (m[1] || '').split(',').map((s) => s.trim())
     const ref = rest.find((s) => /^(m|msg):\d+$/.test(s))
     const qg = Number(rest.find((s) => /^g:\d+$/.test(s))?.slice(2)) || 0
+    if (opts.inlineRefs && ref) {
+      out.push(inlineQuote(ref, qg || opts.groupId || 0))
+      last = m.index + m[0].length
+      continue
+    }
     const jump = ref && (ref.startsWith('m:')
       ? h('a', { class: 'quote-jump', href: `/m/${ref.slice(2)}`, 'data-link': '', title: '跳到原文' }, icon('chevR', 'i tiny'))
       : h('a', { class: 'quote-jump', href: '#msg-' + ref.slice(4), title: '跳到原文', onclick: (e) => { e.preventDefault(); jumpMsg(Number(ref.slice(4)), e.currentTarget, qg) } }, icon('chevR', 'i tiny')))
@@ -6247,7 +6252,65 @@ function richBody(text = '', opts = {}) {
   // 站内链接和 No.1234 引用都带一张预览卡，最多两张
   const own = new RegExp(location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/m/(\\d+)|(?<![\\w.])No\\.(\\d{1,7})(?!\\d)', 'g')
   const ids = [...new Set([...text.replace(QUOTE_RE, '').matchAll(own)].map((x) => Number(x[1] || x[2])))].slice(0, 2)
-  return [...out, ...ids.map(onebox)]
+  return [...out, ...ids.map((id) => opts.inlineRefs ? inlineQuote('m:' + id) : onebox(id))]
+}
+// 公告引用：不展示旧快照，不递归展开被引用内容里的引用。
+function inlineQuote(ref, gid = 0) {
+  const post = ref.startsWith('m:'), id = Number(ref.slice(post ? 2 : 4))
+  const jump = h('a', { class: 'quote-jump', href: post ? `/m/${id}` : '#msg-' + id,
+    ...(post ? { 'data-link': '' } : { onclick: (e) => { e.preventDefault(); jumpMsg(id, e.currentTarget, gid) } }) },
+    post ? '查看原帖' : '定位消息', icon('chevR', 'i tiny'))
+  const who = h('strong', { class: 'quote-who' }, post ? '引用帖子' : '引用消息')
+  const content = h('div', { class: 'quote-content', 'aria-live': 'polite' })
+  const box = h('aside', { class: 'quote quote-inline', tabindex: 0, role: 'link', 'aria-label': post ? '查看引用帖子' : '定位引用消息',
+    onclick: (e) => {
+      if (e.target.closest('a,button,input,video,audio') || box.ownerDocument.getSelection()?.toString()) return
+      jump.click()
+    }, onkeydown: (e) => { if (e.target === box && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); jump.click() } } },
+    h('div', { class: 'quote-title' }, who, jump), content)
+  const load = async () => {
+    box.dataset.state = 'loading'
+    content.replaceChildren(h('span', { class: 'muted' }, '正在加载原文…'))
+    try {
+      if (!post && !gid) throw Object.assign(new Error('缺少来源群'), { status: 404 })
+      const d = await api(post ? `/memes/${id}` : `/chat/groups/${gid}/messages/${id}`)
+      const m = post ? d.meme : d.message
+      if (m.deleted) throw Object.assign(new Error('已撤回'), { status: 410 })
+      who.textContent = (post ? m.author_name : m.user?.name || m.user?.username) || '佚名'
+      if (post && S.content === 'hide' && isRisky(m)) {
+        box.dataset.state = 'hidden'
+        content.replaceChildren(h('span', { class: 'muted' }, '已按内容设置隐藏敏感帖子'))
+        return
+      }
+      const media = (post ? m.images : m.media) || (m.image ? [{ u: m.image, t: m.thumb, w: m.width, h: m.height }] : [])
+      const pics = media.filter((im) => im.k !== 'f' && !(S.content === 'hide' && im.b))
+      const view = post ? { ...m, images: pics } : { id: -m.id, image: pics[0]?.u, images: pics, title: '', seen_at: 1 }
+      const gallery = pics.length && h('div', { class: 'quote-media' }, pics.map((im, i) => {
+        const obscured = wantBlur(view) || !!im.b
+        const button = h('button', { class: 'quote-image' + (obscured ? ' blur' : ''), type: 'button',
+          'aria-label': obscured ? '敏感图片，点击显示' : `查看第 ${i + 1} 张图片`,
+          onclick: (e) => {
+            if (button.classList.contains('blur')) { button.classList.remove('blur'); button.setAttribute('aria-label', `查看第 ${i + 1} 张图片`); return }
+            openViewer(view, i, { doc: e.currentTarget.ownerDocument })
+          } }, im.t || im.u ? memeImg(im.t || im.u, { loading: 'lazy', alt: `引用图片 ${i + 1}` }) : icon('play'))
+        return button
+      }))
+      content.replaceChildren(...[
+        post && m.title && h('strong', { class: 'quote-subject' }, m.title),
+        h('div', { class: 'quote-body' }, richText(post ? m.content ?? m.text ?? '' : m.body || '', { md: 'lite' })),
+        gallery,
+        media.some((im) => im.b) && S.content === 'hide' && h('span', { class: 'muted' }, '敏感附件已隐藏'),
+        ...media.filter((im) => im.k === 'f').map((im) => h('a', { class: 'quote-file', href: im.u, target: '_blank', rel: 'noopener' }, icon('link', 'i tiny'), im.n || '下载附件'))].filter(Boolean))
+      box.dataset.state = 'ready'
+    } catch (e) {
+      box.dataset.state = 'error'
+      const unavailable = [401,403,404,410].includes(e.status)
+      content.replaceChildren(...[h('span', { class: 'muted' }, e.status === 401 || e.status === 403 ? '当前无法查看来源群消息' : e.status === 410 ? '原消息已撤回' : e.status === 404 ? '原内容不存在或已删除' : '原文暂时加载失败'),
+        !unavailable && h('button', { class: 'btn-text sm', type: 'button', onclick: load }, '重试')].filter(Boolean))
+    }
+  }
+  load()
+  return box
 }
 const quoteName = (s) => String(s || '佚名').replace(/[",\]\[]/g, '')
 const stripQuotes = (s = '') => s.replace(QUOTE_RE, '').trim()
@@ -7837,13 +7900,18 @@ function chatPane(g, { onHead } = {}) {
   // 群公告：顶上一条，点 × 收起（记住这一版），右上角留个小「公告」随时再打开；公告改了会重新弹出来
   const noticeEl = h('div', { class: 'cm-notice-wrap' })
   let noticeOpen = false
+  let noticeRenderKey = ''
   const drawNotice = () => {
     const x = findGroup(g.id) || g
     const key = 'noticeSeen:' + g.id
-    if (!x.notice) return noticeEl.replaceChildren()
     const seen = Number(localStorage.getItem(key)) >= (x.notice_at || 0)
+    const renderKey = JSON.stringify([x.notice, x.notice_at, seen, noticeOpen, S.content, S.blurAll])
+    if (noticeRenderKey === renderKey) return
+    noticeRenderKey = renderKey
+    if (!x.notice) return noticeEl.replaceChildren()
     if (seen && !noticeOpen) return noticeEl.replaceChildren(h('button', { class: 'cm-notice-mini', type: 'button', title: '看群公告', onclick: () => { noticeOpen = true; drawNotice() } }, icon('pin', 'i tiny'), '公告'))
-    const text = h('div', { class: 'cm-notice-t clip2', title: '点开看全部', onclick: (e) => { if (!e.target.closest('a, button, .onebox')) text.classList.toggle('clip2') } }, richBody(x.notice, { md: 'lite' }))
+    const hasRefs = /\[quote[^\]]*(?:msg|m):\d+|No\.\d+|\/m\/\d+/.test(x.notice)
+    const text = h('div', { class: 'cm-notice-t' + (hasRefs ? ' has-refs' : ' clip2'), title: hasRefs ? '' : '点开看全部', onclick: (e) => { if (!hasRefs && !e.target.closest('a, button, .onebox')) text.classList.toggle('clip2') } }, richBody(x.notice, { md: 'lite', inlineRefs: true, groupId: g.id }))
     noticeEl.replaceChildren(h('div', { class: 'cm-notice', role: 'note' },
       icon('pin', 'i tiny cm-notice-i'),
       h('div', { class: 'cm-notice-main' }, h('strong', null, '群公告'), x.notice_at && h('span', { class: 'muted sm' }, ' · ' + fmtTime(x.notice_at)), text),
@@ -8604,7 +8672,7 @@ async function groupPanel(g, { outside } = {}) {
   }
   const noticeSec = () => {
     const x = findGroup(g.id) || {}
-    if (!admin) return x.notice ? h('div', { class: 'gp-sec' }, h('h3', { class: 'gp-h' }, '群公告'), h('div', { class: 'gp-notice' }, richBody(x.notice, { md: 'lite' }))) : null
+    if (!admin) return x.notice ? h('div', { class: 'gp-sec' }, h('h3', { class: 'gp-h' }, '群公告'), h('div', { class: 'gp-notice' }, richBody(x.notice, { md: 'lite', inlineRefs: true, groupId: g.id }))) : null
     const ta = h('textarea', { class: 'input', rows: 4, maxlength: 1000, placeholder: '写点群规、活动、提醒…（留空就是不要公告）；写 No.1234 引用帖子' }, x.notice || '')
     return h('div', { class: 'gp-sec' }, field('群公告', ta, '改了之后，所有人进群都会在顶上看到一次'),
       h('div', { class: 'row-end' },
@@ -9938,7 +10006,7 @@ function noticeDetail(n) {
   S.modal.kind = 'notice-detail'
   panel.replaceChildren(
     h('header', { class: 'compose-head' }, h('h2', null, n.kind === 'daily' ? '今日公告' : '网站公告', n.created_at && h('span', { class: 'muted' }, ' · ' + fmtTime(n.created_at))), closeBtn()),
-    h('div', { class: 'ma-body notice-detail-body md' }, richBody(n.body, { md: true })))
+    h('div', { class: 'ma-body notice-detail-body md' }, richBody(n.body, { md: true, inlineRefs: true })))
 }
 async function noticeAdmin() {
   const shell = openModalShell('notice-admin')
@@ -10521,22 +10589,24 @@ function moyuBtn() {
     icon('calendar'), h('span', { class: 'moyu-earn', 'data-moyu-earn': '', hidden: !(p.bar && p.salary > 0) }))
 }
 // 今天在站里干了啥：服务器算，一分钟拉一次
-const TODAY = { at: 0, d: null, busy: false }
+const TODAY = { at: 0, d: null, busy: false, error: false }
 async function loadToday(force) {
   if (!S.me || TODAY.busy || (!force && Date.now() - TODAY.at < 60000)) return
   TODAY.busy = true
-  try { TODAY.d = await api('/me/today'); TODAY.at = Date.now() } catch {} finally { TODAY.busy = false }
+  try { TODAY.d = await api('/me/today'); TODAY.at = Date.now(); TODAY.error = false } catch { TODAY.error = true } finally { TODAY.busy = false }
 }
-function todayBlock() {
+function todayBlock(variant = 0, retry) {
   const t = TODAY.d
   if (!S.me) return null
-  if (!t) return h('div', { class: 'my-today muted sm' }, '正在统计今天的战绩…')
-  const b = (n) => h('b', null, fmtN(n || 0))
-  return h('div', { class: 'my-today' },
-    h('p', null, '今日你已发了 ', b(t.posts), ' 张图，看了 ', b(t.seen), ' 张图', t.seen_nsfw ? ['（其中 ', b(t.seen_nsfw), ' 张不可描述）'] : '',
-      t.post_reacts ? ['，给图回应 ', b(t.post_reacts), ' 次'] : '', '，得到了短暂的安宁和纯粹的快乐。'),
-    h('p', null, '你今日已在群聊内水了 ', b(t.msgs), ' 条消息，发了 ', b(t.reacts), ' 个回应和表情，浏览了 ', b(t.browsed), ' 条群消息，真是消磨了不少时间。'),
-    h('p', { class: 'muted sm' }, todayHint(t)))
+  if (!t) return h('div', { class: 'my-today muted sm' }, TODAY.error ? '日报暂时没取到' : '正在统计今天的战绩…',
+    TODAY.error && h('button', { class: 'btn-text sm', type: 'button', onclick: retry }, '重试'))
+  const titles = ['今日摸鱼小报', '本日摸鱼结算', '尽欢营业记录']
+  const lines = ['把快乐攒成一页。', '今天的梗，也算精神食粮。', '人间很忙，这里歇一会儿。']
+  const stats = [['seen', '看过的图'], ['posts', '发出的图'], ['msgs', '群聊发言'], ['browsed', '浏览消息'], ['post_reacts', '帖子回应'], ['reacts', '群聊互动'], ['seen_nsfw', '慎点图']]
+  return h('section', { class: 'my-today my-report', 'data-variant': variant, 'aria-label': '今日统计' },
+    h('h3', null, titles[variant]), h('p', { class: 'my-report-intro' }, lines[variant]),
+    h('div', { class: 'my-report-stats' }, stats.map(([k, label]) => h('div', { class: 'my-report-stat' }, h('b', { 'data-stat': k }, fmtN(t[k] || 0)), h('span', null, label)))),
+    h('p', { class: 'muted sm' }, todayHint(t)), TODAY.error && h('p', { class: 'muted sm' }, '暂未刷新，显示上次统计'))
 }
 // 离今天能拿的徽章还差多少（只提示门槛型的，冠军型要看别人）
 function todayHint(t) {
@@ -10545,7 +10615,14 @@ function todayHint(t) {
   return '今天的门槛徽章都拿稳了，冠军徽章要看谁最多，明天揭晓'
 }
 function moyuPanel(anchor) {
-  const body = h('div', { class: 'moyu' })
+  let variant = Math.floor(Math.random() * 3), reportData, reportError
+  const live = h('div', { class: 'moyu-live' }), report = h('div')
+  const redrawReport = () => { reportData = TODAY.d; reportError = TODAY.error; report.replaceChildren(...[todayBlock(variant, () => loadToday(true).then(redrawReport))].filter(Boolean)) }
+  const body = h('div', { class: 'moyu' }, live, report,
+    h('div', { class: 'my-report-foot' },
+      h('button', { class: 'btn-text sm my-shuffle', type: 'button', onclick: () => { variant = (variant + 1) % 3; redrawReport() } }, icon('swap', 'i tiny'), '换张日报'),
+      h('button', { class: 'btn-text sm', type: 'button', onclick: () => { MOYU_TICK = null; closePop(); moyuEdit() } }, icon('gear', 'i tiny'), '设置')))
+  redrawReport()
   loadToday().then(() => MOYU_TICK?.())
   const draw = () => {
     const p = moyuPrefs(), t = moyuT(), now = new Date()
@@ -10562,7 +10639,7 @@ function moyuPanel(anchor) {
     const pay = nextPay(now, p.pay)
     const hr = hourly(p)
     const row = (k, v, cls = '') => h('div', { class: 'my-row ' + cls }, h('span', { class: 'my-k' }, k), h('strong', { class: 'my-v' }, v))
-    body.replaceChildren(
+    live.replaceChildren(
       h('div', { class: 'my-big' }, h('span', null, '距离下班'), h('strong', null, offLine),
         pct > 0 && h('div', { class: 'my-bar', role: 'progressbar', 'aria-valuenow': Math.round(pct), 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-label': '今天上班进度' }, h('i', { style: { width: pct + '%' } })),
         pct > 0 && h('span', { class: 'muted sm' }, `今天已经熬过 ${pct.toFixed(1)}%`)),
@@ -10574,10 +10651,8 @@ function moyuPanel(anchor) {
         h('strong', { class: 'my-time' }, hms(t.day === now.toDateString() ? t.sec : 0)),
         hr ? h('div', { class: 'my-earn' }, '带薪赚了 ', h('b', null, money(hr * (t.day === now.toDateString() ? t.sec : 0) / 3600)), h('span', { class: 'muted sm' }, ` · 时薪 ${money(hr)}`))
           : h('div', { class: 'muted sm' }, '填一下月薪，就能算出摸鱼赚了多少钱'),
-        h('div', { class: 'muted sm' }, `累计摸鱼 ${hms(t.total)}` + (hr ? `，约 ${money(hr * t.total / 3600)}` : ''))),
-      todayBlock(),
-      h('div', { class: 'row-end' },
-        h('button', { class: 'btn-text sm', type: 'button', onclick: () => { MOYU_TICK = null; closePop(); moyuEdit() } }, icon('gear', 'i tiny'), '设置')))
+        h('div', { class: 'muted sm' }, `累计摸鱼 ${hms(t.total)}` + (hr ? `，约 ${money(hr * t.total / 3600)}` : ''))))
+    if (reportData !== TODAY.d || reportError !== TODAY.error) redrawReport()
   }
   draw()
   const el = openPop(anchor, body, { key: 'moyu', align: 'right', cls: 'pop-moyu' })

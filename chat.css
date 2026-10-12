@@ -118,10 +118,11 @@
 .boost-row { display: flex; align-items: center; gap: 6px; }
 .boost-row .input { flex: 1; min-width: 0; height: 32px; }
 .boost-quick { display: flex; flex-wrap: wrap; gap: 4px; }
-.boost-entry { border-radius: 10px; }
-.boost-entry:focus-within { animation: boost-frame 2.4s ease-in-out infinite; }
-@keyframes boost-frame { 0%,100% { box-shadow: 0 0 0 1px var(--primary); } 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent); } }
-@media (prefers-reduced-motion: reduce) { .boost-entry:focus-within { animation: none; box-shadow: 0 0 0 1px var(--primary); } }
+.boost-entry { position: relative; border-radius: 10px; }
+.boost-entry::after { content: ''; position: absolute; pointer-events: none; inset: -2px; padding: 2px; border-radius: inherit; opacity: 0; background: linear-gradient(110deg, var(--ot-edge, #63cdb3), var(--ot-accent, #f8bd67), var(--ot-ink, #d28cd8), var(--ot-edge, #63cdb3)); background-size: 300% 100%; -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.boost-entry:focus-within::after { opacity: 1; animation: boost-frame-flow 4s linear infinite; }
+@keyframes boost-frame-flow { to { background-position: 150% 0; } }
+@media (prefers-reduced-motion: reduce) { .boost-entry:focus-within::after { animation: none; } }
 /* @ 已读：@名字后面一个小点，灰 = 还没看，绿 = 看过了 */
 .at-dot { display: inline-block; width: 6px; height: 6px; margin: 0 2px 1px 2px; border-radius: 50%; background: var(--text-3); opacity: .55; vertical-align: middle; }
 .at-dot.read { background: #22b573; opacity: 1; }
@@ -1098,6 +1099,20 @@ button.notif-row { width: 100%; border: 0; background: none; font: inherit; text
 .cm-notice-i { color: #ca8a04; margin-top: 2px; flex: none; }
 .cm-notice-main { flex: 1; min-width: 0; }
 .cm-notice-t { margin-top: 2px; white-space: pre-wrap; word-break: break-word; cursor: pointer; }
+.cm-notice-t.has-refs { max-height: min(36dvh, 320px); overflow: auto; overscroll-behavior: contain; cursor: auto; padding-right: 4px; }
+.quote-inline { min-width: 0; overflow-wrap: anywhere; cursor: pointer; white-space: normal; }
+.quote-inline:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.quote-inline .quote-title { flex-wrap: wrap; gap: 4px 8px; padding-top: 2px; }
+.quote-inline .quote-who { min-width: 0; flex: 1; }
+.quote-inline .quote-jump { display: inline-flex; flex: none; gap: 3px; width: auto; min-height: 32px; height: auto; padding: 0 6px; color: var(--primary); }
+.quote-content { padding: 4px 10px 10px; font-size: 13px; }
+.quote-subject { display: block; margin-bottom: 4px; }
+.quote-body { white-space: pre-wrap; }
+.quote-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr)); gap: 5px; max-width: 440px; margin-top: 6px; }
+.quote-image { min-width: 0; height: 132px; padding: 0; border: 0; border-radius: 6px; background: var(--surface-2); overflow: hidden; cursor: zoom-in; }
+.quote-image img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.quote-image.blur img { filter: blur(16px); }
+.quote-file { display: flex; align-items: center; gap: 6px; min-height: 32px; overflow-wrap: anywhere; }
 .clip2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .cm-notice-mini { position: absolute; top: 6px; right: 10px; display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 999px;
   border: 1px solid var(--line); background: var(--surface); color: var(--text-2); font-size: 12px; cursor: pointer; box-shadow: var(--shadow); }
@@ -1110,6 +1125,22 @@ button.notif-row { width: 100%; border: 0; background: none; font: inherit; text
 .my-today { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 13px; line-height: 1.7; }
 .my-today p { margin: 0 0 4px; }
 .my-today b { color: var(--primary); font-size: 15px; padding: 0 1px; }
+.my-report h3 { font-size: 16px; margin: 0 0 3px; }
+.my-report-intro { color: var(--text-2); }
+.my-report-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 10px; margin: 9px 0; }
+.my-report-stat { display: flex; flex-direction: column; min-width: 0; line-height: 1.45; }
+.my-report-stat span { font-size: 12px; color: var(--text-2); }
+.my-report-stat b { font-variant-numeric: tabular-nums; font-size: 18px; overflow-wrap: anywhere; }
+.my-report[data-variant="0"] .my-report-stat:nth-child(-n+2) b { font-size: 27px; }
+.my-report[data-variant="1"] { border-radius: 3px 12px 3px 12px; border-left: 3px solid var(--primary); background: transparent; }
+.my-report[data-variant="1"] .my-report-stats { grid-template-columns: 1fr; gap: 4px; }
+.my-report[data-variant="1"] .my-report-stat { flex-direction: row-reverse; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--line); padding-bottom: 3px; }
+.my-report[data-variant="2"] .my-report-stat:first-child { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 8px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
+.my-report[data-variant="2"] .my-report-stat:first-child b { font-size: 32px; }
+.my-report-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; }
+.my-report-foot button { min-height: 32px; }
+.moyu-live { min-width: 0; }
+.pop-moyu { max-height: calc(100dvh - 96px); overflow-y: auto; overscroll-behavior: contain; }
 @media (prefers-reduced-motion: reduce) { .u-badge::after { animation: none; display: none; } }
 
 /* 群聊输入框（contenteditable）：表情包直接显示成小图 */
