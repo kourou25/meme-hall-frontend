@@ -40,11 +40,9 @@
 .cm-img { display: block; max-width: min(320px, 100%); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); cursor: zoom-in; }
 .cm-img img { display: block; max-width: 100%; max-height: 320px; width: auto; height: auto; object-fit: contain; }
 [data-blur-all] .cm-img img, [data-blur-all] .ob-thumb img { filter: blur(24px); }
-/* 单图预占位：JS 按 w/h 算好宽 + aspect-ratio（限 320），加载前后高度不变；没尺寸的先给 200×150 的框，加载完放开 */
+/* 单图预占位：JS 按 w/h 算好宽 + aspect-ratio；缺尺寸旧图使用稳定的 240×180 缩略框。 */
 .cm-img.sized { max-width: 100%; }
 .cm-img.sized img, .cm-img.sized video { width: 100%; height: 100%; max-height: none; object-fit: contain; }
-.cm-img.unsized { min-width: 200px; min-height: 150px; }
-.cm-img.unsized img, .cm-img.unsized video { min-height: 150px; }
 /* 反向引用「N 条回复」 */
 .cm-replies { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: 12px; line-height: 20px;
   color: var(--primary); background: var(--surface-2); border: 1px solid var(--line); }
@@ -55,7 +53,9 @@
 .cm-rpl-row .who-main { min-width: 0; }
 .cm-rpl-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
 /* 正文里图片直链的预览 */
-.cm-linkimg { margin-top: 4px; }
+.cm-linkimg { margin-top: 4px; width: 240px; max-width: 100%; min-width: 0; }
+.cm-linkimg .cm-img, .cm-linkimg-failed { width: 100%; aspect-ratio: 4 / 3; }
+.cm-linkimg-failed { display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--text-2); }
 .cm-linkimg-src { display: block; max-width: min(320px, 100%); margin-top: 2px; font-size: 11.5px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 引用单独占一整行，下面才是头像和正文 */
 .cm-ref-row { flex: 0 0 100%; min-width: 0; display: flex; }
@@ -424,12 +424,14 @@ body.chat-mode #main { padding-bottom: 0; }
 }
 
 /* 多图 / 视频消息 */
-.cm-media { display: grid; gap: 4px; max-width: min(360px, 100%); }
-.cm-media.n2 { grid-template-columns: 1fr 1fr; }
-.cm-media.n3 { grid-template-columns: 1fr 1fr 1fr; }
-.cm-media .cm-img { position: relative; max-width: 100%; }
+.cm-media { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; max-width: min(360px, 100%); }
+.cm-media.n2, .cm-media.n3 { width: 360px; }
+.cm-media.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cm-media.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cm-media .cm-img { position: relative; min-width: 0; max-width: 100%; }
 .cm-media.n2 .cm-img, .cm-media.n3 .cm-img { aspect-ratio: 1; }
 .cm-media.n2 .cm-img img, .cm-media.n3 .cm-img img, .cm-media .cm-img video { width: 100%; height: 100%; max-height: 320px; object-fit: cover; }
+.cm-media.n1 .cm-img video { object-fit: contain; }
 .cm-media .play-mark { width: 38px; height: 38px; margin: -19px 0 0 -19px; }
 [data-blur-all] .cm-img video { filter: blur(24px); }
 /* 发送中 / 失败 */

@@ -7943,20 +7943,17 @@ function bodyImgUrl(body) {
 }
 // 直链图预览：站内直接加载；linux.do / ldstatic 先直连，不行走 /ext 代理（服务端 EXT_HOSTS 白名单）；
 // 其它外站直连 + no-referrer，加载失败就退回成一个普通链接。点开看大图
-function linkImg(url, extra, only = true) {
+function linkImg(url, extra) {
   const ext = /^https?:\/\//.test(url)
   const proxy = ext && url.startsWith('https://') && LD_HOST.test(new URL(url).hostname)
-  const link = () => h('a', { class: 'cm-linkimg-fail', href: url, target: '_blank', rel: 'noopener noreferrer' }, url)
   let b = null
   const img = h('img', { src: url, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', decoding: 'async',
-    onload: () => b.classList.remove('unsized'),
     onerror: () => {
       if (proxy && !img.dataset.fallback) { img.dataset.fallback = '1'; img.src = '/ext?u=' + encodeURIComponent(url); return }
-      // 整条就是这个链接：退回成一个链接气泡；正文里还有别的字（链接已经在气泡里了）：预览直接去掉
-      if (only) wrap.replaceWith(h('div', { class: 'cm-text' }, link(), extra || null))
-      else wrap.remove()
+      // 失败也保留预览高度，原链接仍能打开，避免后面的消息突然上移。
+      b.replaceWith(h('a', { class: 'cm-linkimg-failed', href: url, target: '_blank', rel: 'noopener noreferrer', title: url }, icon('image'), '打开原图'))
     } })
-  b = h('button', { class: 'cm-img unsized', type: 'button', 'aria-label': '查看大图',
+  b = h('button', { class: 'cm-img sized', type: 'button', 'aria-label': '查看大图',
     onclick: (e) => {
       const src = img.currentSrc || img.src
       openViewer({ id: -1, image: src, images: [{ u: src, w: img.naturalWidth || null, h: img.naturalHeight || null }], image_count: 1, title: '', seen_at: 1 }, 0, { doc: e.currentTarget.ownerDocument })
@@ -8074,20 +8071,18 @@ function chatMsg(m, { cont, pane, pending } = {}) {
         h('span', null, `${({hb:'HB · ',credit:'Credit · ',fish:'fish · '})[m.redpack.provider] || ''}${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`)),
       h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放'})[m.redpack.snapshot?.state] || (m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, `${m.redpack.opened} 人拆过${m.redpack.provider && m.redpack.provider!=='native'?'包装':''}`))))
     if (!m.redpack && m.body && !lnk?.only) body.push(h('div', { class: 'cm-text' + (stkOnly(m.body) ? ' stk-only' : bubbleCls(m.user)) }, richBody(m.body, { md: 'lite' }), edited))
-    if (lnk) body.push(linkImg(lnk.url, lnk.only && edited, lnk.only))
+    if (lnk) body.push(linkImg(lnk.url, lnk.only && edited))
     const all = m.redpack ? [] : m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
     const files = all.filter((x) => x.k === 'f')
     const media = all.filter((x) => x.k !== 'f')
     if (media.length) {
       const view = { id: -(m.id || 1), image: media[0].u, images: media, image_count: media.length, title: '', seen_at: 1 }
       const open = (e, i) => pane?.gallery ? pane.gallery(m, i) : openViewer(view, i, { doc: e.currentTarget.ownerDocument })
-      // 单张：按 media 里的 w/h 先把框占好（限 320×320），图加载时消息不上下跳；没尺寸的给个默认占位框，加载完再放开
+      // 单张按 w/h 预占位；旧图没有尺寸时保留固定缩略框，完整比例交给看图器。
       const solo = media.length === 1
       const cell = (it, i, cls = 'cm-img') => {
-        const sz = solo && cls === 'cm-img' ? cmImgBox(it.w, it.h) : null
-        let b = null
-        const unsize = () => b?.classList.remove('unsized')
-        b = h('button', { class: cls + (it.b ? ' cm-blur blur' : '') + (sz ? ' sized' : solo && cls === 'cm-img' ? ' unsized' : ''), type: 'button', 'aria-label': it.b ? '已模糊，点一下看' : it.v ? '播放视频' : '查看大图',
+        const sz = solo && cls === 'cm-img' ? cmImgBox(it.w, it.h) || { w: 240, h: 180 } : null
+        const b = h('button', { class: cls + (it.b ? ' cm-blur blur' : '') + (sz ? ' sized' : ''), type: 'button', 'aria-label': it.b ? '已模糊，点一下看' : it.v ? '播放视频' : '查看大图',
           style: sz ? { width: sz.w + 'px', aspectRatio: `${sz.w} / ${sz.h}` } : null,
           onclick: (e) => {
             // 发的人选了「模糊」：按设置，点一下揭开 / 再点盖回；或者直接看大图
@@ -8098,8 +8093,8 @@ function chatMsg(m, { cont, pane, pending } = {}) {
           // 打码 / 模糊的图右键直接看图：列表里的消息由 chatPane 委托处理（data-mask / data-mi），发送中的占位没有 pane，还是自己管
           'data-mi': i, 'data-mask': (it.b || it.o) && pane ? '' : null,
           oncontextmenu: (it.b || it.o) && !pane ? (e) => { e.preventDefault(); e.stopPropagation(); open(e, i) } : null },
-        it.u ? h('img', { src: it.u, alt: '', loading: 'lazy', width: it.w || null, height: it.h || null, onload: unsize, onerror: unsize })
-          : h('video', { src: it.v, muted: true, playsinline: true, preload: 'metadata', onloadedmetadata: unsize, onerror: unsize }),
+        it.u ? h('img', { src: it.u, alt: '', loading: 'lazy', width: it.w || null, height: it.h || null })
+          : h('video', { src: it.v, muted: true, playsinline: true, preload: 'metadata' }),
         kindBadge(it), it.o && h('span', { class: 'mask-badge' }, maskTap() === 'peek' ? '已打码 · 点一下看原图' : '已打码'),
         it.b && h('span', { class: 'cm-veil' }, icon('eyeOff', 'i tiny'), maskTap() === 'peek' ? '点一下看' : '点开看'),
         it.k === 'v' ? h('span', { class: 'play-mark' }, icon('play')) : h('span', { class: 'cm-zoom', 'aria-hidden': 'true' }, icon('zoom')))
