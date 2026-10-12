@@ -17,8 +17,10 @@
   <script>
     (function () {
       var t = localStorage.getItem('theme')
-      if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      document.documentElement.dataset.theme = t
+      if (t !== 'light' && t !== 'dark') t = 'system'
+      document.documentElement.dataset.themeMode = t
+      document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t
+      document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) { m.content = document.documentElement.dataset.theme === 'dark' ? '#14261F' : '#F7F6F0' })
       // 伪装：首屏就换好标题和图标，别闪出原样
       var skin = localStorage.getItem('skin')
       var cover = { feishu: ['飞书', '/disguise/feishu.svg'], linuxdo: ['【持续更新】每天摸鱼时收集的图，欢迎佬友补充 - 搞七捻三 - LINUX DO', '/disguise/linuxdo.svg'] }[skin]
@@ -38,9 +40,9 @@
       } catch (e) {}
     })()
   </script>
-  <link rel="stylesheet" href="/style.css?v=c46d0588" />
+  <link rel="stylesheet" href="/style.css?v=ce1f643d" />
   <link rel="stylesheet" href="/skin.css?v=f56c23de" />
-  <link rel="stylesheet" href="/chat.css?v=f5c62e00" />
+  <link rel="stylesheet" href="/chat.css?v=82e1567b" />
   <link rel="stylesheet" href="/linuxdo.css?v=9b853320" />
 </head>
 <body>
@@ -74,6 +76,6 @@
     <a href="/me" data-link data-nav="me"><span aria-hidden="true">☻</span>我的</a>
   </nav>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="/app.js?v=b7a01350"></script>
+  <script type="module" src="/app.js?v=6013177b"></script>
 </body>
 </html>

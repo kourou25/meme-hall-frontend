@@ -68,6 +68,7 @@ const ICON = {
   copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg>',
   sun: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
   moon: '<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>',
+  monitor: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
   image: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>',
   chevL: '<svg viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg>',
   chevR: '<svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>',
@@ -231,19 +232,40 @@ const loadPacks = () => (packsP ||= Promise.all([
   ps.forEach((p) => { STICKER_EXT[p.key] ||= p.ext })
   STICKER_DUPES = dupes || {}
   return ps
-}))
+}).catch(e => { packsP = null; throw e }))
 
 // ---------- 表情面板 ----------
 // 常用（最近用过 + 精选）/ Unicode 分组 / 各平台表情包；表情回应和输入框共用
 const recentEmos = () => { try { return JSON.parse(localStorage.getItem('emo-recent')) || [] } catch { return [] } }
 const pushRecent = (k) => localStorage.setItem('emo-recent', JSON.stringify([k, ...recentEmos().filter((x) => x !== k)].slice(0, 24)))
 
+let emojiWordsP
+const loadEmojiWords = () => emojiWordsP ||= fetch('/emoji-search.json?v=ca8246e7').then(r => {
+  if (!r.ok) throw Error('词库加载失败')
+  return r.json()
+}).catch(e => { emojiWordsP = null; throw e })
+const emojiSearchKey = s => s.normalize('NFKC').replaceAll('\ufe0f', '').toLowerCase()
 function emojiBoard(onPick, { mine = new Set(), counts = {}, foot = null } = {}) {
   const uniTabs = h('div', { class: 'eb-row' })
   const pakTabs = h('div', { class: 'eb-row' })
   const tabs = h('div', { class: 'eb-tabs' }, uniTabs, pakTabs)
   const grid = h('div', { class: 'eb-grid' }, h('div', { class: 'spinner' }))
-  loadPacks().then((packs) => {
+  const search = h('input', { type: 'search', class: 'eb-search', 'aria-label': '搜索表情', placeholder: '搜索表情', autocomplete: 'off' })
+  const clear = h('button', { type: 'button', class: 'btn-icon', 'aria-label': '清空表情搜索', hidden: true, onclick: () => { search.value = ''; search.dispatchEvent(new Event('input')); search.focus() } }, icon('close'))
+  const notice = h('div', { class: 'eb-notice', role: 'status', hidden: true })
+  const board = h('div', { class: 'eb' }, h('div', { class: 'eb-search-row' }, icon('search'), search, clear), notice, tabs, grid, foot)
+  board.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || e.isComposing) return
+    e.preventDefault(); e.stopPropagation()
+    if (search.value) { search.value = ''; search.dispatchEvent(new Event('input')); search.focus() }
+    else { const anchor = POP?.anchor; closePop(); anchor?.focus?.({ preventScroll: true }) }
+  })
+  async function load() {
+    const [packResult, wordResult] = await Promise.allSettled([loadPacks(), loadEmojiWords()])
+    const packs = packResult.status === 'fulfilled' ? packResult.value : []
+    const words = wordResult.status === 'fulfilled' ? wordResult.value : {}
+    notice.hidden = packResult.status === 'fulfilled' && wordResult.status === 'fulfilled'
+    notice.replaceChildren(...(notice.hidden ? [] : [h('span', null, '部分表情未加载'), h('button', { type: 'button', onclick: () => { notice.hidden = true; load() } }, '重试')]))
     const pages = [
       // 常用：最近用过的在前，后面固定跟上下左右箭头和精选
       { key: 'fav', label: '常用', items: () => [...new Set([...recentEmos(), ...ARROWS, ...pickedEmos()])] },
@@ -253,20 +275,36 @@ function emojiBoard(onPick, { mine = new Set(), counts = {}, foot = null } = {})
     ]
     let cur = localStorage.getItem('eb-tab') || (recentEmos().length ? 'fav' : 'pick')
     if (!pages.some((p) => p.key === cur)) cur = 'fav'
+    const all = new Map()
+    for (const p of pages) for (const k of p.items()) {
+      const item = all.get(k) || { key: k, label: words[k] || emoLabel(k), search: '' }
+      item.search += ' ' + emojiSearchKey(k + ' ' + item.label + ' ' + p.label)
+      all.set(k, item)
+    }
+    let limit = 80
     const show = () => {
+      const tokens = emojiSearchKey(search.value.trim()).split(/\s+/).filter(Boolean)
+      clear.hidden = !search.value
+      tabs.hidden = !!tokens.length
       const tab = (p) => h('button', { type: 'button', class: 'eb-tab' + (p.key === cur ? ' on' : ''),
         onclick: () => { cur = p.key; localStorage.setItem('eb-tab', cur); show() } }, p.label)
       uniTabs.replaceChildren(h('span', { class: 'eb-cap' }, '表情'), h('div', { class: 'eb-list' }, ...pages.filter((p) => !p.big).map(tab)))
       pakTabs.replaceChildren(h('span', { class: 'eb-cap' }, '表情包'), h('div', { class: 'eb-list' }, ...pages.filter((p) => p.big).map(tab)))
       const pg = pages.find((p) => p.key === cur)
-      grid.className = 'eb-grid' + (pg.big ? ' big' : '')
-      grid.replaceChildren(...pg.items().map((k) => h('button', { type: 'button', class: 'eb-btn' + (mine.has(k) ? ' on' : ''), title: emoLabel(k),
+      const matches = tokens.length ? [...all.values()].filter(item => tokens.every(t => /^[a-z0-9]+$/.test(t) ? new RegExp('(^|[^a-z0-9])' + t).test(item.search) : item.search.includes(t))).map(item => item.key) : pg.items()
+      const keys = tokens.length ? matches.slice(0, limit) : matches
+      grid.className = 'eb-grid' + (tokens.length ? ' searching' : pg.big ? ' big' : '')
+      grid.replaceChildren(...keys.map((k) => h('button', { type: 'button', class: 'eb-btn' + (mine.has(k) ? ' on' : ''), title: all.get(k)?.label || emoLabel(k), 'aria-label': emoLabel(k), 'data-emoji': k,
         onclick: () => { pushRecent(k); onPick(k) } }, emo(k), counts[k] ? h('span', { class: 'n' }, counts[k]) : null)))
+      if (!matches.length) grid.append(h('p', { class: 'eb-empty', role: 'status' }, '没找到，换个词试试'))
+      if (tokens.length && keys.length < matches.length) grid.append(h('button', { class: 'eb-more', type: 'button', onclick: () => { const top = grid.scrollTop; limit += 80; show(); grid.scrollTop = top } }, `更多表情（${matches.length - keys.length}）`))
       grid.scrollTop = 0
     }
+    search.oninput = () => { limit = 80; show() }
     show()
-  }).catch(() => grid.replaceChildren(h('div', { class: 'muted' }, '表情加载失败')))
-  return h('div', { class: 'eb' }, tabs, grid, foot)
+  }
+  load()
+  return board
 }
 // 表情包按来源合并成一个标签：L站转存的 B站 / 贴吧 和原版的放一起，都叫「B站」「贴吧」；表情代码不变，老消息照常显示
 const PACK_MERGE = { 'ld-bili': 'B站', bb: 'B站', bm: 'B站', 'ld-tieba': '贴吧', tieba: '贴吧', 'ld-lark': '飞书', 'ld-xhs': '小红书' }
@@ -547,7 +585,7 @@ function openPop(anchor, content, { key, align = 'left', cls = '', up = false } 
   POP = { el, key, anchor, up, align }
   placePop(anchor, el, align, up)
   // 内容（表情图等）加载后会变高，重新摆一次，免得往下盖住输入框
-  if (up) {
+  if (up || content.classList?.contains('eb')) {
     POP.ro = new ResizeObserver(() => { if (POP?.el === el) placePop(anchor, el, align, up) })
     POP.ro.observe(el)
   }
@@ -559,6 +597,9 @@ function placePop(anchor, el, align, up = false) {
   // 手机弹出输入法时可见区域变矮（iOS 只缩 visualViewport），按看得见的那块摆，免得浮层被键盘盖住
   const vv = win.visualViewport
   const innerHeight = vv ? vv.height + vv.offsetTop : win.innerHeight
+  const topEdge = (vv?.offsetTop || 0) + 8
+  el.style.maxHeight = Math.max(100, innerHeight - topEdge - 8) + 'px'
+  el.style.setProperty('--pop-height', Math.max(100, innerHeight - topEdge - 10) + 'px')
   const r = anchor.getBoundingClientRect()
   const w = el.offsetWidth
   const ht = el.offsetHeight
@@ -567,6 +608,7 @@ function placePop(anchor, el, align, up = false) {
   let top = r.bottom + 6
   if (up && r.top - ht - 6 > 8) top = r.top - ht - 6
   else if (top + ht > innerHeight - 8 && r.top - ht - 6 > 8) top = r.top - ht - 6
+  top = Math.max(topEdge, Math.min(top, innerHeight - ht - 8))
   el.style.left = left + scrollX + 'px'
   el.style.top = top + scrollY + 'px'
 }
@@ -1212,7 +1254,7 @@ function replyChip(m, r, manage) {
       if (r.mine) {
         if (confirm('撤回这句回应？')) act(m, null, () => api(`/memes/${m.id}/reply`, { method: 'DELETE' }))
       } else act(m, null, () => api(`/memes/${m.id}/reply`, { method: 'PUT', body: { text: r.text } }))
-    } }, linkify(r.text))
+    } }, BOOST_PRESETS.includes(r.text) ? boostText(r.text) : linkify(r.text))
   const chip = h('span', { class: 'rp' + (r.mine ? ' mine' : '') }, face, text)
   // 管理删除按「这句话」删（同样的话一起删）
   if (manage && m.can_manage) {
@@ -1581,7 +1623,12 @@ function replyForm(m) {
     cnt.classList.toggle('over', n > 12)
     send.disabled = !n || n > 12
   })
-  const form = h('form', { class: 'rp-form' }, stk, input, cnt, send)
+  const quick = h('button', { class: 'rp-stk', type: 'button', 'aria-label': '选择 Boost 回应', 'data-pop': key + 'boost', onclick: e => {
+    openPop(e.currentTarget, h('div', { class: 'boost-pop' }, boostChoices(text => {
+      input.value = text; input.dispatchEvent(new Event('input')); closePop(); form.requestSubmit()
+    }, m.my_reply)), { key: key + 'boost', cls: 'pop-boost' })
+  } }, icon('rocket'))
+  const form = h('form', { class: 'rp-form boost-entry' }, stk, quick, input, cnt, send)
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
     const text = input.value.trim()
@@ -1912,9 +1959,9 @@ function renderDetail(panel, meme) {
 
 function renderActions() {
   const nav = document.getElementById('actions')
-  const theme = document.documentElement.dataset.theme
-  const themeBtn = h('button', { class: 'btn-icon theme-btn', title: '切换深浅色', 'aria-label': '切换深浅色', onclick: toggleTheme },
-    icon(theme === 'dark' ? 'sun' : 'moon'))
+  const mode = themeMode(), themeLabel = '主题：' + THEME_LABELS[mode] + '；点击切换'
+  const themeBtn = h('button', { class: 'btn-icon theme-btn', title: themeLabel, 'aria-label': themeLabel, onclick: toggleTheme },
+    icon(THEME_ICONS[mode]))
   const lookBtn = h('button', { class: 'btn-icon', title: '外观：背景 · 伪装', 'aria-label': '外观', 'data-pop': 'look', onclick: (e) => looksPanel(e.currentTarget) },
     icon('palette'))
   const kids = [moyuBtn(), lookBtn, themeBtn, h('button', { class: 'btn btn-primary share', onclick: openCompose }, icon('plus'), h('span', { class: 'lbl' }, '发帖'))]
@@ -1944,7 +1991,7 @@ function mobileMore(anchor) {
   openPop(anchor,h('div',{class:'mobile-more'},
     item('摸鱼日历','calendar',()=>moyuPanel(anchor)),
     item('外观与伪装','palette',()=>looksPanel(anchor)),
-    item('切换深浅色','moon',toggleTheme),
+    item('主题：'+THEME_LABELS[themeMode()],THEME_ICONS[themeMode()],toggleTheme),
     item('设置','gear',()=>meSettings()),
     h('a',{class:'mobile-more-item',href:'/me','data-link':''},icon('contacts'),'我的主页')),{key:'mobilemore',align:'right',cls:'sheet'})
 }
@@ -4998,15 +5045,12 @@ function looksPanel(anchor) {
     const on = (kind, id) => LOOK.kind === kind && (kind !== 'preset' || LOOK.id === id) && (kind !== 'wall' || LOOK.src === id)
     const tile = (label, sel, onclick, thumb) => h('button', { class: 'lk-tile' + (sel ? ' on' : ''), type: 'button', title: label, onclick },
       thumb, h('span', null, label))
-    const theme = document.documentElement.dataset.theme
     const file = h('input', { type: 'file', accept: 'image/*', class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true', onchange: (e) => uploadBg(e.target.files[0]) })
     const photo = LOOK.kind !== 'preset'
     box.replaceChildren(...nodes(
       h('div', { class: 'lk-sec' },
         h('div', { class: 'lk-title' }, '深浅色'),
-        h('div', { class: 'segs small' },
-          h('button', { class: 'seg' + (theme !== 'dark' ? ' on' : ''), onclick: () => theme === 'dark' && toggleTheme() }, icon('sun', 'i tiny'), '浅色'),
-          h('button', { class: 'seg' + (theme === 'dark' ? ' on' : ''), onclick: () => theme !== 'dark' && toggleTheme() }, icon('moon', 'i tiny'), '深色'))),
+        themeControl()),
       !S.skin && h('div', { class: 'lk-sec' },
         h('div', { class: 'lk-title' }, '背景'),
         h('div', { class: 'lk-grid' },
@@ -5057,14 +5101,39 @@ function lookSlider(label, key, min, max, unit) {
   return h('label', { class: 'lk-slider' }, h('span', null, label), input, val)
 }
 
-function toggleTheme() {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'
-  document.documentElement.dataset.theme = next
-  localStorage.setItem('theme', next)
+const THEME_MEDIA = matchMedia('(prefers-color-scheme: dark)')
+const THEME_LABELS = { light:'浅色', dark:'深色', system:'跟随系统' }
+const THEME_ICONS = { light:'sun', dark:'moon', system:'monitor' }
+const themeMode = () => ['light','dark'].includes(localStorage.getItem('theme')) ? localStorage.getItem('theme') : 'system'
+function applyTheme() {
+  const mode = themeMode()
+  document.documentElement.dataset.themeMode = mode
+  const effective = mode === 'system' ? (THEME_MEDIA.matches ? 'dark' : 'light') : mode
+  document.documentElement.dataset.theme = effective
+  for (const w of PIPS) {
+    try { if (!w.closed) w.document.documentElement.dataset.theme = effective } catch { /* 小窗已跳到其他来源，不影响主页面主题。 */ }
+  }
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.content = effective==='dark'?'#14261F':'#F7F6F0' })
+  syncThemeControls()
   renderActions()
   IM?.drawRail?.()
   if (POP?.key === 'look') POP.redraw?.()
 }
+function setTheme(mode) { localStorage.setItem('theme', mode); applyTheme() }
+function toggleTheme() {
+  const modes = ['light','dark','system']
+  setTheme(modes[(modes.indexOf(themeMode())+1)%modes.length])
+}
+function themeControl() {
+  const mode = themeMode()
+  return h('div', { class:'segs small',role:'group','aria-label':'主题模式' },Object.entries(THEME_LABELS).map(([k,label]) =>
+    h('button', { class:'seg'+(k===mode?' on':''),type:'button','data-theme-choice':k,'aria-pressed':String(k===mode),onclick:()=>setTheme(k) },icon(THEME_ICONS[k],'i tiny'),label)))
+}
+function syncThemeControls() {
+  document.querySelectorAll('[data-theme-choice]').forEach(b => { const on = b.dataset.themeChoice === themeMode(); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)) })
+}
+THEME_MEDIA.addEventListener('change', () => { if(themeMode()==='system')applyTheme() })
+addEventListener('storage', e => { if(e.key==='theme')applyTheme() })
 
 // ---------- 伪装：标签页标题和图标 ----------
 const FISH_MARK = '<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#14866D"/><path d="M5.5 16c3.2-5.2 8.6-7 13.6-4.6L25 7v18l-5.9-4.4C14.1 23 8.7 21.2 5.5 16z" fill="#fff"/><circle cx="11" cy="15.2" r="1.5" fill="#14866D"/></svg>'
@@ -8171,8 +8240,13 @@ function postPicker(anchor, onPick, key) {
 // 回应：每人在一条消息下面挂一句 ≤12 字的短回复（再挂一次就是改，清空就是撤）
 const BOOST_MAX = 12
 // 预设回应各有一套艺术字样式（.bz-0 ~ .bz-11）；自己打的字不加样式
-const BOOST_PRESETS = ['善', '甚好', '欢欢', '妈妈', '666', '太地狱了', '神！', '挂！', '我去~', '大大大', '电！！', '不讲不讲']
+const BOOST_PRESETS = ['善', '甚好', '欢欢', '妈妈', '666', '太地狱了', '神！', '挂！', '我去~', '大大大', '电！！', '不讲不讲', '魔了']
 const boostText = (t) => { const i = BOOST_PRESETS.indexOf(t); return i < 0 ? h('span', null, t) : h('span', { class: 'bz bz-' + i }, t) }
+function boostChoices(pick, current) {
+  return h('div', { class: 'boost-quick' }, BOOST_PRESETS.map(t => h('button', {
+    class: 'chip bz-chip' + (t === current ? ' on' : ''), type: 'button', onclick: () => pick(t)
+  }, boostText(t))))
+}
 async function chatBoost(m, pane, text) {
   if (!requireLogin()) return
   try {
@@ -8194,12 +8268,11 @@ function boostPrompt(m, pane, anchor) {
   const input = h('input', { class: 'input', maxlength: BOOST_MAX, value: old, placeholder: `自己写一句（${BOOST_MAX} 字内）`, enterkeyhint: 'send', 'aria-label': '回应' })
   const go = () => { closePop(); chatBoost(m, pane, input.value.trim()) }
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); go() } })
-  const quick = BOOST_PRESETS
   openPop(anchor, h('div', { class: 'boost-pop' },
-    h('div', { class: 'boost-row' }, icon('rocket', 'i tiny'), input, h('button', { class: 'btn btn-primary sm', type: 'button', onclick: go }, old ? '改' : '挂上')),
-    h('div', { class: 'boost-quick' }, quick.map((t) => h('button', { class: 'chip bz-chip' + (t === old ? ' on' : ''), type: 'button', onclick: () => { input.value = t; go() } }, boostText(t))),
-      old && h('button', { class: 'chip ghost', type: 'button', onclick: () => { input.value = ''; go() } }, '撤掉我的'))), { key, cls: 'pop-boost' })
-  setTimeout(() => input.focus())
+    h('div', { class: 'boost-row boost-entry' }, icon('rocket', 'i tiny'), input, h('button', { class: 'btn btn-primary sm', type: 'button', onclick: go }, old ? '改' : '挂上')),
+    boostChoices(t => { input.value = t; go() }, old),
+    old && h('button', { class: 'chip ghost', type: 'button', onclick: () => { input.value = ''; go() } }, '撤掉我的')), { key, cls: 'pop-boost' })
+  if ((input.ownerDocument.defaultView?.innerWidth || innerWidth) > 760) setTimeout(() => { if (input.isConnected) input.focus() })
 }
 async function chatReact(m, emoji, pane) {
   if (!requireLogin()) return
@@ -9081,7 +9154,7 @@ function ldPost(raw, floor) {
     if (!requireLogin()) return
     p.boosting = !p.boosting
     draw(ITEMS.get(m.id) || m)
-    if (p.boosting) boosts.querySelector('.rp-input')?.focus()
+    if (p.boosting && innerWidth > 760) boosts.querySelector('.rp-input')?.focus()
   }
   draw(m)
   const who = m.author_name || '佚名'
@@ -10019,6 +10092,7 @@ function meSettings(section) {
         } catch (e) { toast(e.message, 'err') }
       } }, '保存资料')))],
     ['deco', '装扮', 'sparkle', () => decoEditor()],
+    ['appearance', '外观', 'palette', () => h('section', { class: 'set-sec' }, h('h3', null, '深浅色'), themeControl())],
     ['badges', '徽章墙', 'trophy', () => h('section', { class: 'set-sec' }, h('h3', null, '徽章墙'),
       h('p', { class: 'muted sm' }, '每日徽章次日结算，可以反复拿，拿得越多等级越高；想佩戴哪个去「装扮」里选'),
       badgeWall(S.me.badges))],
@@ -10048,6 +10122,7 @@ function meSettings(section) {
     // 切走再切回来不丢没保存的改动：每块只建一次
     if (!built.has(k)) built.set(k, secs.find((x) => x[0] === k)[3]())
     body.replaceChildren(built.get(k))
+    syncThemeControls()
     body.scrollTop = 0
     nav.querySelectorAll('button').forEach((b) => { const on = b.dataset.k === k; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'page' : 'false') })
   }

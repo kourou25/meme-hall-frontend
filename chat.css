@@ -118,6 +118,10 @@
 .boost-row { display: flex; align-items: center; gap: 6px; }
 .boost-row .input { flex: 1; min-width: 0; height: 32px; }
 .boost-quick { display: flex; flex-wrap: wrap; gap: 4px; }
+.boost-entry { border-radius: 10px; }
+.boost-entry:focus-within { animation: boost-frame 2.4s ease-in-out infinite; }
+@keyframes boost-frame { 0%,100% { box-shadow: 0 0 0 1px var(--primary); } 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .boost-entry:focus-within { animation: none; box-shadow: 0 0 0 1px var(--primary); } }
 /* @ 已读：@名字后面一个小点，灰 = 还没看，绿 = 看过了 */
 .at-dot { display: inline-block; width: 6px; height: 6px; margin: 0 2px 1px 2px; border-radius: 50%; background: var(--text-3); opacity: .55; vertical-align: middle; }
 .at-dot.read { background: #22b573; opacity: 1; }
@@ -740,6 +744,15 @@ body.lock .chat-dock { visibility: hidden; }
 .bz-10 { color: #e0f2fe; text-shadow: 0 0 2px #fff, 0 0 5px #38bdf8, 0 0 10px #0284c7; font-style: italic; animation: bz-flick 1.4s steps(1) infinite; }
 /* 不讲不讲：竖排小字 + 删除线，欲言又止 */
 .bz-11 { color: var(--text-3); font-weight: 600; text-decoration: line-through wavy #a855f7; letter-spacing: .15em; }
+.bz-12 { background: linear-gradient(110deg,#a83b75,#387cac,#418e63); background-clip: text; -webkit-background-clip: text; color: transparent; }
+.boost-quick .bz { animation: none; }
+.boost-quick .bz-chip.on .bz { color: inherit; background: none; -webkit-text-stroke: 0; text-shadow: none; }
+.boost-quick .bz-5 { text-shadow: none; }
+.boost-quick .bz-6 { color: #996316; text-shadow: none; -webkit-text-stroke: 0; }
+.boost-quick .bz-8 { text-shadow: none; }
+.boost-quick .bz-10 { color: #0878a7; text-shadow: none; }
+[data-theme="dark"] .boost-quick .bz-6 { color: #fcd34d; }
+[data-theme="dark"] .boost-quick .bz-10 { color: #7dd3fc; }
 @keyframes bz-bounce { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-2px) } }
 @keyframes bz-flow { to { background-position: 200% 0 } }
 @keyframes bz-shake { 0% { transform: translate(0, 0) } 50% { transform: translate(.6px, -.4px) } }
@@ -748,23 +761,25 @@ body.lock .chat-dock { visibility: hidden; }
 [data-theme="dark"] .bz-5 { color: #fca5a5; }
 @media (prefers-reduced-motion: reduce) { .bz { animation: none !important; } }
 /* 消息下面的小回应（cm-boost，22px 高）：字太小，艺术字只留颜色，去掉描边 / 发光 / 背景条纹 / 变形 / 动效，保证看得清 */
-.cm-boost .bz { animation: none !important; transform: none !important; text-shadow: none !important; -webkit-text-stroke: 0 !important; font-size: 1em !important;
+:is(.cm-boost,.rp) .bz { animation: none !important; transform: none !important; text-shadow: none !important; -webkit-text-stroke: 0 !important; font-size: 1em !important;
   padding: 0 !important; border: 0 !important; box-shadow: none !important; background: none !important; letter-spacing: normal; font-weight: 700; text-decoration: none; }
 /* 原本靠渐变 / 发光才有颜色的几个，换成同色系实色 */
-.cm-boost .bz-1 { color: #b45309 !important; -webkit-text-fill-color: currentColor; }
-.cm-boost .bz-4 { color: #7c3aed !important; -webkit-text-fill-color: currentColor; }
-.cm-boost .bz-5 { color: #b91c1c; }
-.cm-boost .bz-6 { color: #b45309; }
-.cm-boost .bz-7 { color: #854d0e; }
-.cm-boost .bz-8 { color: #0369a1; }
-.cm-boost .bz-10 { color: #0284c7; }
-[data-theme="dark"] .cm-boost .bz-0 { color: #fca5a5; }
-[data-theme="dark"] .cm-boost .bz-1, [data-theme="dark"] .cm-boost .bz-6, [data-theme="dark"] .cm-boost .bz-7 { color: #fcd34d !important; }
-[data-theme="dark"] .cm-boost .bz-4 { color: #c4b5fd !important; }
-[data-theme="dark"] .cm-boost .bz-5 { color: #fca5a5; }
-[data-theme="dark"] .cm-boost .bz-8, [data-theme="dark"] .cm-boost .bz-10 { color: #7dd3fc; }
-[data-theme="dark"] .cm-boost .bz-9 { color: #4ade80; }
+:is(.cm-boost,.rp) .bz-1 { color: #b45309 !important; -webkit-text-fill-color: currentColor; }
+:is(.cm-boost,.rp) .bz-4 { color: #7c3aed !important; -webkit-text-fill-color: currentColor; }
+:is(.cm-boost,.rp) .bz-5 { color: #b91c1c; }
+:is(.cm-boost,.rp) .bz-6 { color: #b45309; }
+:is(.cm-boost,.rp) .bz-7 { color: #854d0e; }
+:is(.cm-boost,.rp) .bz-8 { color: #0369a1; }
+:is(.cm-boost,.rp) .bz-10 { color: #0284c7; }
+[data-theme="dark"] :is(.cm-boost,.rp) .bz-0 { color: #fca5a5; }
+[data-theme="dark"] :is(.cm-boost,.rp) .bz-1, [data-theme="dark"] :is(.cm-boost,.rp) .bz-6, [data-theme="dark"] :is(.cm-boost,.rp) .bz-7 { color: #fcd34d !important; }
+[data-theme="dark"] :is(.cm-boost,.rp) .bz-4 { color: #c4b5fd !important; }
+[data-theme="dark"] :is(.cm-boost,.rp) .bz-5 { color: #fca5a5; }
+[data-theme="dark"] :is(.cm-boost,.rp) .bz-8, [data-theme="dark"] :is(.cm-boost,.rp) .bz-10 { color: #7dd3fc; }
+[data-theme="dark"] :is(.cm-boost,.rp) .bz-9 { color: #4ade80; }
 .cm-boost { font-size: 12.5px; color: var(--text); }
+:is(.cm-boost,.rp) .bz-12 { background: linear-gradient(110deg,#a83b75,#387cac,#418e63) !important; background-clip: text !important; -webkit-background-clip: text !important; color: transparent !important; }
+[data-theme="dark"] :is(.cm-boost,.rp) .bz-12 { background-image: linear-gradient(110deg,#f5a9cf,#9dcfff,#a7e3ac) !important; }
 /* 帖子卡片上的一句回应：里面也可能嵌着称号 / 徽章 / 气泡类（以后加），统一只留颜色 */
 .rp .u-title, .rp .u-badge, .cm-boost .u-title, .cm-boost .u-badge { animation: none !important; box-shadow: none !important; }
 .rp .u-title::after, .rp .u-badge::after, .rp .u-badge::before, .cm-boost .u-title::after, .cm-boost .u-badge::after, .cm-boost .u-badge::before { display: none !important; }
