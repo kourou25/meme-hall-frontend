@@ -574,15 +574,30 @@ let POP = null
 function closePop() {
   if (!POP) return
   POP.ro?.disconnect()
+  POP.cleanup?.()
   POP.el.remove()
   POP = null
 }
-function openPop(anchor, content, { key, align = 'left', cls = '', up = false } = {}) {
+function openPop(anchor, content, { key, align = 'left', cls = '', up = false, focusScope = null } = {}) {
   if (POP && key && POP.key === key) return closePop()
   closePop()
   const el = h('div', { class: 'pop ' + cls, role: 'dialog' }, content)
   ;(anchor.ownerDocument || document).body.append(el)
   POP = { el, key, anchor, up, align }
+  if (focusScope) {
+    const doc = el.ownerDocument, win = doc.defaultView
+    const inside = (node) => node && (el.contains(node) || focusScope.contains(node))
+    let timer = 0
+    const leave = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => { if (win.innerWidth > 760 && POP?.el === el && !inside(doc.activeElement)) closePop() }, 0)
+    }
+    const blur = () => { if (win.innerWidth > 760 && POP?.el === el) closePop() }
+    doc.addEventListener('focusout', leave)
+    doc.addEventListener('focusin', leave)
+    win.addEventListener('blur', blur)
+    POP.cleanup = () => { clearTimeout(timer); doc.removeEventListener('focusout', leave); doc.removeEventListener('focusin', leave); win.removeEventListener('blur', blur) }
+  }
   placePop(anchor, el, align, up)
   // 内容（表情图等）加载后会变高，重新摆一次，免得往下盖住输入框
   if (up || content.classList?.contains('eb')) {
@@ -614,6 +629,7 @@ function placePop(anchor, el, align, up = false) {
 }
 function popOutside(e) {
   if (!POP || POP.el.contains(e.target)) return
+  if (POP.el.classList.contains('pop-boost') && POP.anchor.closest?.('.rp-form')?.contains(e.target)) return
   const trig = e.target.closest('[data-pop]')
   if (trig && POP.key && trig.dataset.pop === POP.key) return
   closePop()
@@ -1626,7 +1642,7 @@ function replyForm(m) {
   const quick = h('button', { class: 'rp-stk', type: 'button', 'aria-label': '选择 Boost 回应', 'data-pop': key + 'boost', onclick: e => {
     openPop(e.currentTarget, h('div', { class: 'boost-pop' }, boostChoices(text => {
       input.value = text; input.dispatchEvent(new Event('input')); closePop(); form.requestSubmit()
-    }, m.my_reply)), { key: key + 'boost', cls: 'pop-boost' })
+    }, m.my_reply)), { key: key + 'boost', cls: 'pop-boost', focusScope: form })
   } }, icon('rocket'))
   const form = h('form', { class: 'rp-form boost-entry' }, stk, quick, input, cnt, send)
   form.addEventListener('submit', async (e) => {
@@ -6975,10 +6991,11 @@ function chatPane(g, { onHead } = {}) {
   const recount = () => {
     if (!st.newIds.length) { pill.hidden = true; st.newN = 0; return }
     const edge = scroller.scrollTop + scroller.clientHeight
-    st.newIds = st.newIds.filter((id) => { const r = rows.get(id); return r?.isConnected && r.offsetTop + Math.min(r.offsetHeight, 40) > edge })
+    const live = new Set(st.items.filter((m) => !m.deleted).map((m) => m.id))
+    st.newIds = [...new Set(st.newIds)].filter((id) => { const r = rows.get(id); return live.has(id) && r?.isConnected && r.offsetTop + Math.min(r.offsetHeight, 40) > edge })
     st.newN = st.newIds.length
     pill.hidden = !st.newN
-    if (st.newN) pill.textContent = `${st.newN} 条新消息 ↓`
+    if (st.newN) pill.textContent = `${st.newN} 条待阅读 ↓`
     drawDown()
   }
   // 滚动跟随（主列表、历史层、/chat、抽屉、小窗、飞书 / LD 皮肤共用这一个 pane）：
@@ -7013,16 +7030,17 @@ function chatPane(g, { onHead } = {}) {
   const away = () => doc.hidden || st.blur || (st.backAt && Date.now() - st.backAt < 4000 && st.backAt - st.hiddenAt > 1000)
   const back = () => {
     st.backAt = Date.now()
+    st.awayEnd = st.backAt / 1000
     if (st.backAt - st.hiddenAt > 60000) setTimeout(showAway, 1500) // 等切回来那次轮询拉完
   }
   const onVis = () => {
-    if (doc.hidden) { if (!st.blur) st.hiddenAt = Date.now(); return }
+    if (doc.hidden) { if (!st.blur) { st.hiddenAt = Date.now(); st.awayEnd = 0; dropAway(); st.awayDismissed = false } return }
     if (st.blur && doc.hasFocus()) st.blur = false // 有的浏览器切回标签页不发 focus
     if (!st.blur) back()
   }
   // 失焦只看主窗口：弹出的小窗本来就是给「切到别处也一直看得到」用的，照常跟着滚
   const win = doc === document ? doc.defaultView : null
-  const onBlur = () => { if (st.blur || doc.hidden) return; st.blur = true; st.hiddenAt = Date.now() }
+  const onBlur = () => { if (st.blur || doc.hidden) return; st.blur = true; st.hiddenAt = Date.now(); st.awayEnd = 0; dropAway(); st.awayDismissed = false }
   const onFocus = () => { if (!st.blur) return; st.blur = false; if (!doc.hidden) back() }
   win?.addEventListener('blur', onBlur)
   win?.addEventListener('focus', onFocus)
@@ -7030,18 +7048,19 @@ function chatPane(g, { onHead } = {}) {
   st.awayIds = []
   let awayEl = null
   const awayMsgs = () => { const ids = new Set(st.awayIds); return st.items.filter((m) => ids.has(m.id) && !m.deleted) }
-  const dropAway = () => { awayEl?.remove(); awayEl = null; st.awayIds = []; st.awayMark = false }
+  const dropAway = () => { awayEl?.remove(); awayEl = null; st.awayIds = []; st.awayMark = false; st.awayDismissed = true }
   const meRe = () => S.me && new RegExp('@' + S.me.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\w.-])', 'i')
   let awayT = 0
   function showAway() {
     const ms = awayMsgs()
     const ap = awayPrefs()
     if (!ap.on) return
-    if (ms.length < 3 || doc.hidden || !scroller.isConnected) return // 就一两条，「N 条新消息」按钮够用了
+    if (ms.length < 3) { awayEl?.remove(); awayEl = null; return }
+    if (doc.hidden || !scroller.isConnected) return
     clearTimeout(awayT)
     if (ap.sec > 0) awayT = setTimeout(() => { awayEl?.remove(); awayEl = null }, ap.sec * 1000)
-    const mins = Math.max(1, Math.round((Date.now() - (st.awayStart || st.hiddenAt)) / 60000))
-    const people = new Set(ms.map((m) => m.user.id)).size
+    const mins = Math.max(1, Math.round(((st.awayEnd ? st.awayEnd * 1000 : Date.now()) - (st.awayStart || st.hiddenAt)) / 60000))
+    const people = new Set(ms.filter((m) => !m.system_kind).map((m) => m.user.id)).size
     const pics = ms.reduce((n, m) => n + (m.media?.length || (m.image ? 1 : 0)), 0)
     const re = meRe()
     // @ 和回复分开数：回复里带 @ 只算回复
@@ -7055,7 +7074,7 @@ function chatPane(g, { onHead } = {}) {
         repMe.length > 0 && h('span', { class: 'cm-away-at' }, ` · 回复你 ${repMe.length} 次`)),
       h('span', { class: 'cm-away-acts' },
         h('button', { class: 'btn btn-primary sm', type: 'button', onclick: () => digest(ms, atMe, repMe, `离开的 ${mins} 分钟`, true) }, '速览'),
-        h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { pill.click(); dropAway() } }, '从第一条看'),
+        h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { jumpTo(ms[0].id); dropAway() } }, '从第一条看'),
         h('button', { class: 'cm-x', type: 'button', 'aria-label': '知道了', onclick: dropAway }, icon('close', 'i tiny'))))
     el.append(awayEl)
   }
@@ -7163,7 +7182,7 @@ function chatPane(g, { onHead } = {}) {
   // 每条消息一行：日期分隔、「以下是新消息」和消息本体包在一起，换的时候整行换。主列表、历史层都用这一个
   const renderRow = (view, m, prev) => {
     // 回复别人的消息总是带头像和名字，免得看着像接在上一条后面
-    const cont = prev && !prev.deleted && !m.deleted && !m.reply_to && prev.user.id === m.user.id && m.created_at - prev.created_at < 300 && dayOf(prev.created_at) === dayOf(m.created_at)
+    const cont = prev && !prev.deleted && !m.deleted && !prev.system_kind && !m.system_kind && !m.reply_to && prev.user.id === m.user.id && m.created_at - prev.created_at < 300 && dayOf(prev.created_at) === dayOf(m.created_at)
     const kids = []
     if (!prev || dayOf(prev.created_at) !== dayOf(m.created_at)) {
       const lb = dayLabel(dayOf(m.created_at))
@@ -7227,6 +7246,7 @@ function chatPane(g, { onHead } = {}) {
     st.busy = true
     try {
       const d = await api(`/chat/groups/${g.id}/messages` + (st.first ? `?before=${st.first}` : ''))
+      if (st.destroyed) return
       if (!scroller.isConnected && st.first) return
       const initial = !st.first && !st.done
       if (initial) {
@@ -7261,14 +7281,20 @@ function chatPane(g, { onHead } = {}) {
     if (!st.done || st.polling) return
     if (!scroller.isConnected) return destroy()
     st.polling = true
+    let more = false
     try {
+      // 每轮最多追5页，其余短暂让出主线程后继续，不等下一次3秒轮询。
+      for (let batch = 0; batch < 5 && scroller.isConnected && st.done; batch++) {
       const d = await api(`/chat/groups/${g.id}/messages?after=${st.last}&since=${st.since}`)
+      if (st.destroyed || !scroller.isConnected) { more = false; return }
+      more = !!d.more && d.items.length > 0
       st.since = d.now
       d.changed.forEach(update)
-      if (st.after) { st.since = d.now; return } // 在跳转窗口里，最新的消息等回到底部再拉
+      if (st.after) { more = false; return } // 在跳转窗口里，最新的消息等回到底部再拉
       if (d.items.length) {
-        const others = d.items.filter((m) => !m.mine && !rows.has(m.id))
-        const gone = others.length > 0 && away()
+        const others = d.items.filter((m) => !m.mine && !m.deleted && !rows.has(m.id))
+        const duringAway = others.filter((m) => !st.awayDismissed && st.hiddenAt && m.created_at >= Math.floor(st.hiddenAt / 1000) && (!st.awayEnd || m.created_at <= st.awayEnd))
+        const gone = others.length > 0 && (away() || duringAway.length > 0)
         // 来新消息要不要跟着滚：在底部时跟（默认）/ 总是滚到最新 / 不自动滚（只出按钮）
         const ap = chatAuto()
         // 开着历史层：正在看旧消息，主列表也不动，只记数
@@ -7280,11 +7306,10 @@ function chatPane(g, { onHead } = {}) {
           st.awayMark = true
           st.awayStart = st.hiddenAt || Date.now()
         }
-        if (gone) st.awayIds.push(...others.map((m) => m.id))
+        if (duringAway.length) st.awayIds = [...new Set([...st.awayIds, ...duringAway.map((m) => m.id)])]
         // 手机网络抖动时 POST 已经到了服务器、回包丢了：轮询拿到同内容的自己的消息，就把「发送中 / 没发出去」那条收掉
         d.items.forEach((m) => m.mine && inflight.find((j) => !j.done && j.body === (m.body || '') && !!j.tray === !!(m.media?.length || m.image))?.settle())
         add(d.items, 'live')
-        if (gone && !doc.hidden && (awayEl || st.backAt - st.hiddenAt > 60000)) showAway()
         if (stick) toBottom(true)
         else {
           if (gone || ap === 'off' || histEl) st.stick = false // 图片晚加载也别把人拽到底
@@ -7293,7 +7318,14 @@ function chatPane(g, { onHead } = {}) {
           recount()
         }
       }
-    } catch (e) { if (e.status === 403) lost(e) } finally { st.polling = false }
+      if (d.changed.length) recount()
+      if ((d.items.length || d.changed.length) && !doc.hidden && (awayEl || st.backAt - st.hiddenAt > 60000)) showAway()
+      if (!more) break
+      }
+    } catch (e) { more = false; if (e.status === 403) lost(e) } finally {
+      st.polling = false
+      if (more && !st.destroyed && scroller.isConnected) { clearTimeout(st.catchupT); st.catchupT = setTimeout(poll, 250) }
+    }
   }
   // 群里待着的时候被移出 / 在别处退了群：停掉轮询，整块换成「群聊已临时关闭」那张卡
   async function lost(e) {
@@ -7673,7 +7705,7 @@ function chatPane(g, { onHead } = {}) {
     old.el.replaceWith(att.el)
     old.input.replaceWith(att.input)
   }
-  const mention = S.me ? mentionPicker(ta, g, () => st.items.slice().reverse()) : null
+  const mention = S.me ? mentionPicker(ta, g, () => st.items.slice().reverse().map((m) => m.user)) : null
   sendOnEnter(ta, () => st.editing ? saveEdit() : send())
   ta.addEventListener('keydown', (e) => { if (e.key === 'Escape' && st.editing) { e.stopPropagation(); setEdit(null) } })
   const tb = (ic, title, onclick, extra = {}) => h('button', { class: 'cm-ibtn', type: 'button', title, 'aria-label': title, onclick, ...extra }, icon(ic))
@@ -7759,7 +7791,7 @@ function chatPane(g, { onHead } = {}) {
     input.focus()
     if (q0) { input.value = q0; run() }
   }
-  function destroy() { CHAT.panes.delete(api_); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); offNotice() }
+  function destroy() { st.destroyed = true; st.done = false; CHAT.panes.delete(api_); clearTimeout(st.catchupT); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); offNotice() }
 
   // 群公告：顶上一条，点 × 收起（记住这一版），右上角留个小「公告」随时再打开；公告改了会重新弹出来
   const noticeEl = h('div', { class: 'cm-notice-wrap' })
@@ -7912,6 +7944,16 @@ async function redpackDialog(anchor, options) {
 }
 function chatMsg(m, { cont, pane, pending } = {}) {
   const who = m.user.name || m.user.username
+  if (m.system_kind === 'join') return h('div', { class: 'cm-welcome' + (m.deleted ? ' gone' : ''), role: 'note', 'aria-label': m.deleted ? '入群提醒已撤回' : `欢迎 ${who} 加入群聊` },
+    m.deleted ? h('span', null, '入群提醒已撤回') : [
+      h('span', { class: 'cm-welcome-star', 'aria-hidden': 'true' }, '✦'),
+      h('button', { class: 'cm-welcome-face', type: 'button', 'data-pop': 'u' + m.user.username, title: '查看 ' + who,
+        onclick: (e) => userCard(m.user.username, e.currentTarget) }, avatar(m.user.avatar, who, 36)),
+      h('span', { class: 'cm-welcome-copy' }, h('span', { class: 'cm-welcome-hello' }, '欢迎新伙伴！'),
+        h('span', null, h('button', { type: 'button', class: 'cm-welcome-name', 'data-pop': 'u' + m.user.username,
+          onclick: (e) => userCard(m.user.username, e.currentTarget) }, who), ' 加入了群聊')),
+      h('span', { class: 'cm-welcome-spark', 'aria-hidden': 'true' }, '✧'),
+    ])
   // 点头像看资料卡；点名字、右键（手机长按）头像 = 在输入框里 @TA。自己的名字点了还是看资料
   const canAt = !!(pane?.atUser && S.me && !m.mine)
   const card = (e) => userCard(m.user.username, e.currentTarget)
@@ -8310,7 +8352,7 @@ function boostPrompt(m, pane, anchor) {
   openPop(anchor, h('div', { class: 'boost-pop' },
     h('div', { class: 'boost-row boost-entry' }, icon('rocket', 'i tiny'), input, h('button', { class: 'btn btn-primary sm', type: 'button', onclick: go }, old ? '改' : '挂上')),
     boostChoices(t => { input.value = t; go() }, old),
-    old && h('button', { class: 'chip ghost', type: 'button', onclick: () => { input.value = ''; go() } }, '撤掉我的')), { key, cls: 'pop-boost' })
+    old && h('button', { class: 'chip ghost', type: 'button', onclick: () => { input.value = ''; go() } }, '撤掉我的')), { key, cls: 'pop-boost', focusScope: input })
   if ((input.ownerDocument.defaultView?.innerWidth || innerWidth) > 760) setTimeout(() => { if (input.isConnected) input.focus() })
 }
 async function chatReact(m, emoji, pane) {
