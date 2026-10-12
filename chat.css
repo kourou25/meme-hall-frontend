@@ -1290,3 +1290,10 @@ button.notif-row { width: 100%; border: 0; background: none; font: inherit; text
   .flatpickr-calendar.fp-jh.fp-jh-date .flatpickr-innerContainer, .flatpickr-calendar.fp-jh.fp-jh-date .flatpickr-rContainer, .flatpickr-calendar.fp-jh.fp-jh-date .flatpickr-days, .flatpickr-calendar.fp-jh.fp-jh-date .dayContainer { width: 100%; min-width: 0; max-width: none; }
   .flatpickr-calendar.fp-jh.fp-jh-date .flatpickr-day { max-width: none; flex-basis: 14.2857%; }
 }
+
+/* 邀请奖励：叶芽称号与路标气泡，尺寸沿用现有身份组件。 */
+.u-title.reward-guangjie{background:#effbdc;color:#365622;border:1px solid #a2bf78;border-radius:6px 12px 6px 12px;padding:1px 7px;font-weight:700;box-shadow:2px 2px 0 #bad78e}
+.cm-text.bb-yinlu{background:#f1f8dc;color:#31482d;border:1px dashed #94b669;border-radius:16px 16px 16px 5px;box-shadow:3px 3px 0 #bdd595;padding-inline-end:22px}.cm-text.bb-yinlu::after{content:"✧";position:absolute;right:4px;bottom:3px;color:#658b40;pointer-events:none}
+[data-theme=dark] .u-title.reward-guangjie,[data-theme=dark] .cm-text.bb-yinlu{background:#273e2d;color:#d6edb3;box-shadow:2px 2px 0 #577748}
+
+[data-theme=dark] .invite-title-toggle{background:#304a35;color:#e2efc8;border:1px solid #718b56}[data-theme=dark] .bw-guide .bw-lv{color:#9cdbe6}

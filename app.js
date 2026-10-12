@@ -514,7 +514,7 @@ function avatar(url, name, size = 28) {
 // 没头像时按名字取一个稳定的色相，免得一排回应全是灰点
 const hueOf = (s = '') => [...s].reduce((a, ch) => (a * 31 + ch.codePointAt(0)) % 360, 7)
 
-const loginHref = () => '/auth/login?next=' + encodeURIComponent(location.pathname + location.search)
+const loginHref = () => '/login?next=' + encodeURIComponent(location.pathname + location.search)
 function requireLogin(why = '这个操作') {
   if (S.me) return true
   loginPanel(why)
@@ -530,8 +530,8 @@ function loginPanel(why) {
     h('div', { class: 'login-card' },
       h('button', { class: 'btn-icon ghost sm modal-close', 'aria-label': '关闭', onclick: close }, icon('close')),
       h('h2', { id: 'login-t' }, '登录后才能' + why.replace(/^这个操作$/, '继续')),
-      h('p', null, '尽欢用 Linux.DO 账号登录，不另设密码。登录后可以分享图片、回应、收藏、进群聊天，看过的记录也会跨设备同步。'),
-      h('a', { class: 'btn btn-primary block', href: loginHref() }, '用 Linux.DO 登录'),
+      h('p', null, '登录后可以分享图片、回应、收藏、进群聊天，看过的记录也会跨设备同步。'),
+      h('a', { class: 'btn btn-primary block', href: loginHref() }, '前往登录'),
       h('p', { class: 'muted' }, '登录完会回到这个页面。')))
   document.body.append(root)
   document.body.classList.add('lock')
@@ -1412,6 +1412,7 @@ function titleEl(u, where) {
   const d = decoAt(u, where)
   const official = officialOf(u, where)
   if (official && !decoHidden(u, 'title')) return h('span', { class: 'u-title ot-title ot-' + official.id, title: '站长授予 · ' + official.mood }, official.name)
+  if(d?.rt==='guangjie'&&!decoHidden(u,'title'))return h('span',{class:'u-title reward-guangjie',title:'邀请奖励 · 广结善缘'},'✿ 广结善缘')
   if (!d?.t || decoHidden(u, 'title')) return null
   return h('span', { class: `u-title sh-${d.sh || 'pill'} fl-${d.fill || 'solid'} fx-${d.fx || 'none'}${d.f ? ' ft-' + d.f : ''}${userCss(u, 'csst', 'u-title', where)}`, title: '称号',
     style: { '--t1': d.c || '#ffffff', '--t2': d.c2 || '#16a34a', '--t3': d.bc || d.c2 || '#16a34a' } }, h('span', { class: 'u-title-t' }, d.t)) // 包一层，放不下时文字能出省略号
@@ -1419,6 +1420,8 @@ function titleEl(u, where) {
 // ---------- 徽章 ----------
 // tier 决定底色：legend 传说（金色流光）/ epic 史诗（紫）/ rare 稀有（蓝）/ fun 趣味（粉）。每日徽章次日结算，可以反复拿
 const BADGES = {
+  guide: {name:'引路人',tier:'rare',g:'🧭',desc:'邀请好友满 7 天并活跃互动；1 / 3 / 10 / 30 人升级'},
+  newbie: { name: '初来乍到', tier: 'fun', g: '🌱', desc: '通过好友邀请加入尽欢' },
   elder: { name: '太上长老', tier: 'legend', g: '☯', desc: '2026-10-01 开站当天进站的元老' },
   moyu_god: { name: '摸鱼之神', tier: 'epic', g: '🐟', desc: '某天看图最多的人（至少 500 张）' },
   moyu_pro: { name: '摸鱼高手', tier: 'rare', g: '🎣', desc: '一天看了 200 张图以上' },
@@ -1434,7 +1437,7 @@ const BADGE_ORDER = Object.keys(BADGES)
 // 渐进等级：按拿过几次分 Lv1～Lv5，边框从铜 → 银 → 金 → 彩虹 → 传说。元老徽章只发一次，直接算传说
 const BADGE_LV = [1, 3, 7, 15, 30]
 const BADGE_LV_NAME = ['', '铜', '银', '金', '彩虹', '传说']
-const badgeLv = (id, n) => id === 'elder' ? 5 : n > 0 ? BADGE_LV.filter((x) => n >= x).length : 0
+const badgeLv = (id, n) => id === 'elder' ? 5 : n > 0 ? (id==='guide'?[1,3,10,30]:BADGE_LV).filter((x) => n >= x).length : 0
 const badgeLvText = (id, lv) => id === 'elder' ? '唯一' : lv ? `Lv${lv} ${BADGE_LV_NAME[lv]}` : '未获得'
 // 佩戴的徽章：群聊里只显示小图标（不挤消息），别处图标 + 名字；鼠标悬停 / 长按看说明。等级用 deco.bn（服务端同步的次数）
 function badgeEl(u, where, full) {
@@ -1451,7 +1454,7 @@ const badgeChip = (id, mini, n) => {
   const b = BADGES[id]
   if (!b) return null
   const lv = badgeLv(id, n || 1)
-  return h('span', { class: `u-badge bt-${b.tier} lv-${lv}${mini ? ' mini' : ''}`, title: `${b.name} · ${badgeLvText(id, lv)}${n > 1 ? ` · 拿过 ${n} 次` : ''}\n${b.desc}`,
+  return h('span', { class: `u-badge bt-${b.tier} lv-${lv}${mini ? ' mini' : ''}`, title: `${b.name} · ${badgeLvText(id, lv)}${n > 1 ? ` · ${id==='guide'?'合格邀请 '+n+' 人':'拿过 '+n+' 次'}` : ''}\n${b.desc}`,
     'aria-label': `徽章 ${b.name}，${badgeLvText(id, lv)}` },
   h('span', { class: 'ub-g', 'aria-hidden': 'true' }, b.g),
   !mini && h('span', { class: 'ub-n' }, b.name),
@@ -1465,24 +1468,25 @@ function badgeWall(list, pick, cur) {
   const cards = BADGE_ORDER.map((id) => {
     const b = BADGES[id], o = own.get(id), n = o?.n || (o ? 1 : 0)
     const lv = badgeLv(id, n), on = !!o && cur === id
-    const nextAt = id === 'elder' ? 0 : BADGE_LV[lv] || 0 // 0 = 满级
-    const prevAt = BADGE_LV[lv - 1] || 0
+    const levels=id==='guide'?[1,3,10,30]:BADGE_LV
+    const nextAt = id === 'elder' ? 0 : levels[lv] || 0 // 0 = 满级
+    const prevAt = levels[lv - 1] || 0
     const pct = !o ? 0 : !nextAt ? 100 : Math.round(((n - prevAt) / (nextAt - prevAt)) * 100)
     const can = !!(pick && o)
-    return h(can ? 'button' : 'div', { class: `bw-card bt-${b.tier} lv-${lv}${o ? '' : ' off'}${on ? ' on' : ''}`, type: can ? 'button' : null,
+    return h(can ? 'button' : 'div', { class: `bw-card${id==='guide'?' bw-guide':''} bt-${b.tier} lv-${lv}${o ? '' : ' off'}${on ? ' on' : ''}`, type: can ? 'button' : null,
       'aria-pressed': can ? String(on) : null, title: can ? (on ? '点一下摘下' : '点一下戴上') : b.desc, onclick: can ? () => pick(id) : null },
     on && h('span', { class: 'bw-wear' }, '佩戴中'),
     h('span', { class: 'bw-art', 'aria-hidden': 'true' }, h('span', { class: 'bw-g' }, b.g), lv >= 3 && h('span', { class: 'bw-spark' }, '✦')),
     h('span', { class: 'bw-name' }, b.name),
-    h('span', { class: 'bw-lv' }, badgeLvText(id, lv), o && h('small', null, ` · 拿过 ${n} 次`)),
+    h('span', { class: 'bw-lv' }, badgeLvText(id, lv), o && h('small', null, ` · ${id==='guide'?'合格邀请 '+n+' 人':'拿过 '+n+' 次'}`)),
     o && id !== 'elder' && h('span', { class: 'bw-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(pct),
       'aria-label': nextAt ? `升到 Lv${lv + 1} 的进度` : '已满级' }, h('i', { style: { width: pct + '%' } })),
-    o && id !== 'elder' && h('span', { class: 'bw-next' }, nextAt ? `再拿 ${nextAt - n} 次升 Lv${lv + 1}` : '已满级'),
+    o && id !== 'elder' && h('span', { class: 'bw-next' }, nextAt ? id==='guide'?`再邀请 ${nextAt-n} 位合格好友升 Lv${lv+1}`:`再拿 ${nextAt - n} 次升 Lv${lv + 1}` : '已满级'),
     h('span', { class: 'bw-how' }, b.desc),
     h('span', { class: 'bw-date' }, o ? (o.last_day ? `最近 ${o.last_day}` : '已获得') : '还没拿到'))
   })
   return h('div', { class: 'badge-wall-box' },
-    h('div', { class: 'bw-sum' }, `已点亮 ${got} / ${BADGE_ORDER.length}`, h('span', { class: 'muted' }, ' · 等级：1 次 Lv1 铜 · 3 次银 · 7 次金 · 15 次彩虹 · 30 次传说')),
+    h('div', { class: 'bw-sum' }, `已点亮 ${got} / ${BADGE_ORDER.length}`, h('span', { class: 'muted' }, ' · 日常徽章：1 次 Lv1 铜 · 3 次银 · 7 次金 · 15 次彩虹 · 30 次传说')),
     h('div', { class: 'badge-wall' }, cards))
 }
 const badgeWallSection = (list, pick, cur) => badgeWall(list, pick, cur)
@@ -1554,7 +1558,7 @@ function decoEditor() {
   const drawB = () => {
     const open = bubbles.querySelector('details')?.open ?? oldOn
     bubbles.replaceChildren(
-      h('div', { class: 'deco-bubbles' }, bbBtn(['', '默认']), DECO_BUBBLE_NEW.map(bbBtn)),
+      h('div', { class: 'deco-bubbles' }, bbBtn(['', '默认']), DECO_BUBBLE_NEW.map(bbBtn), (S.me.unlocks||[]).includes('bubble:yinlu')&&bbBtn(['yinlu','引路 · 同行'])),
       h('details', { class: 'deco-bb-old', open }, h('summary', null, '经典款'), h('div', { class: 'deco-bubbles' }, DECO_BUBBLE_OLD.map(bbBtn))))
   }
   drawB()
@@ -1578,12 +1582,19 @@ function decoEditor() {
   const officialOptions = h('div', { class: 'ot-options' })
   const drawOfficial = () => officialOptions.replaceChildren(...nodes(
     h('button', { type: 'button', class: 'btn btn-ghost sm', 'aria-pressed': String(!d.ot), onclick: () => { delete d.ot; drawOfficial(); draw() } }, '不佩戴'),
-    (S.me.official_titles || []).map(o => { const t = officialById(o.id); return t && h('button', { type: 'button', class: 'ot-option' + (d.ot === t.id ? ' on' : ''), 'aria-pressed': String(d.ot === t.id), onclick: () => { d.ot = t.id; drawOfficial(); draw() } }, officialChip(t)) })))
+    (S.me.official_titles || []).map(o => { const t = officialById(o.id); return t && h('button', { type: 'button', class: 'ot-option' + (d.ot === t.id ? ' on' : ''), 'aria-pressed': String(d.ot === t.id), onclick: () => { d.ot = t.id; delete d.rt; drawReward(); drawOfficial(); draw() } }, officialChip(t)) })))
+  const rewardOptions = h('div', { class: 'ot-options' })
+  const drawReward = () => rewardOptions.replaceChildren(h('button', {
+    type: 'button', class: 'btn btn-ghost sm invite-title-toggle', 'aria-pressed': String(d.rt === 'guangjie'),
+    onclick: () => { if (d.rt) delete d.rt; else { d.rt = 'guangjie'; delete d.ot } drawReward(); drawOfficial(); draw() },
+  }, '✿ 广结善缘' + (d.rt ? ' · 佩戴中' : '')))
+  drawReward()
   drawOfficial()
   draw()
   return h('section', { class: 'set-sec deco-sec' }, h('h3', null, '装扮'),
     preview,
     S.me.official_titles?.length > 0 && field('官方称号', officialOptions, '称号、徽章、气泡与回应框一起佩戴'),
+    (S.me.unlocks||[]).includes('title:guangjie')&&field('邀请奖励称号',rewardOptions,'固定称号，点击佩戴或摘下'),
     field('称号', t, '显示在昵称后面'),
     field('徽章', wall, S.me.badges?.length ? '点亮着的戴上，再点一次摘下；群聊里只显示小图标' : '还没有徽章。每天看图、发图、水群够多，第二天就会发'),
     S.me.badges?.length > 0 && field('徽章在哪儿显示', seg('bs', [['all', '全站'], ['chat', '只在群聊'], ['post', '只在帖子和评论']])),
@@ -1652,7 +1663,7 @@ async function userCard(username, anchor) {
       S.me?.owner && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); officialTitleManager(u.username) } }, '授予称号'),
       u.posts > 0 && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); saveWallPrefs({ author: u.username }); navigate('/?author=' + encodeURIComponent(u.username)) } }, '看 TA 的图'),
       S.me?.is_admin && !u.is_admin && u.username !== S.me.username && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); memberAdmin(u.username) } }, '管理'),
-      h('a', { class: 'btn btn-ghost sm', href: `https://linux.do/u/${encodeURIComponent(u.username)}`, target: '_blank', rel: 'noopener' },
+      u.linuxdo_username && h('a', { class: 'btn btn-ghost sm', href: `https://linux.do/u/${encodeURIComponent(u.linuxdo_username)}`, target: '_blank', rel: 'noopener' },
         'linux.do 主页', icon('ext', 'i tiny')))))
   placePop(anchor, POP.el, 'left')
 }
@@ -2017,7 +2028,7 @@ function renderActions() {
       avatar(S.me.avatar, S.me.username, 30), h('span', { class: 'lbl' }, '我的')))
   } else {
     kids.push(h('a', { class: 'btn btn-ghost btn-login', href: loginHref() },
-      h('span', { class: 'long' }, 'Linux.DO 登录'), h('span', { class: 'short' }, '登录')))
+      h('span', { class: 'long' }, '登录'), h('span', { class: 'short' }, '登录')))
   }
   kids.push(h('button',{class:'btn-icon mobile-action',type:'button','aria-label':'更多功能','data-pop':'mobilemore',onclick:e=>mobileMore(e.currentTarget)},icon('more')))
   nav.replaceChildren(...kids)
@@ -2104,10 +2115,10 @@ function notifRow(n) {
     const b = BADGES[n.val]
     return h('button', { class: 'notif-row notif-badge' + (n.unread ? ' unread' : ''), type: 'button', onclick: () => { readNotif(n); closePop(); meSettings('badges') } },
       h('i', { class: 'notif-dot', 'aria-hidden': 'true' }),
-      h('span', { class: 'notif-bd' }, badgeChip(n.val, true)),
+      h('span', { class: 'notif-bd' }, n.val==='guide'&&!guideN?'🧭':badgeChip(n.val, true,n.val==='guide'?guideN:undefined)),
       h('div', { class: 'notif-main' },
-        h('div', { class: 'notif-line' }, '你获得了徽章 ', h('strong', null, b?.name || n.val)),
-        b && h('div', { class: 'notif-val muted' }, b.desc + ' · 去设置里戴上'),
+        h('div', { class: 'notif-line' }, n.val==='guide'?'邀请徽章已更新 ':'你获得了徽章 ', h('strong', null, b?.name || n.val)),
+        b && h('div', { class: 'notif-val muted' }, (n.val==='guide'?(guideN?'当前 Lv'+badgeLv('guide',guideN)+' · 合格邀请 '+guideN+' 人':'邀请已作废，徽章暂未点亮'):b.desc) + ' · 查看徽章墙'),
         h('time', { class: 'muted' }, fmtTime(n.at))))
   }
   if (n.kind === 'join_req') {
@@ -2468,7 +2479,7 @@ async function renderWall(base) {
   if (pos) setTimeout(() => { st.ready = true }, 4000)
   let head
   if (base.author) {
-    head = pageHead('@' + st.author, '发过的图', h('a', { class: 'btn btn-ghost sm', href: `https://linux.do/u/${encodeURIComponent(st.author)}`, target: '_blank', rel: 'noopener' }, 'linux.do 主页', icon('ext', 'i tiny')))
+    head = pageHead('@' + st.author, '发过的图', h('button', { class: 'btn btn-ghost sm', type:'button', onclick:e=>userCard(st.author,e.currentTarget) }, '作者资料'))
   } else if (st.series) {
     head = pageHead(st.series, h('span', null, h('a', { href: '/series', 'data-link': '' }, '← 全部图集'), ' · 同一期原帖里的图'))
   } else if (st.q) {
@@ -2990,7 +3001,7 @@ function anchorsMenu(anchor) {
   if (POP?.key === 'anchors') return closePop()
   const list = [...ANCHORS.values()]
   const body = !S.me
-    ? h('div', { class: 'pop-empty' }, h('p', null, '登录后可以在任意一张图上放锚点，下次一键跳回来。'), h('a', { class: 'btn btn-primary sm', href: loginHref() }, 'Linux.DO 登录'))
+    ? h('div', { class: 'pop-empty' }, h('p', null, '登录后可以在任意一张图上放锚点，下次一键跳回来。'), h('a', { class: 'btn btn-primary sm', href: loginHref() }, '前往登录'))
     : !list.length
       ? h('div', { class: 'pop-empty' }, h('p', null, '还没有锚点。'), h('p', { class: 'muted' }, '在图片右上角「···」里选「在这里放锚点」，想从哪接着看就放哪。'))
       : h('div', { class: 'anchor-list' }, list.map((a) => {
@@ -3326,7 +3337,7 @@ const TAB_EMPTY = { fav: '还没收藏过', like: '还没喜欢过', reply: '还
 async function renderMe() {
   if (!S.me) {
     main.replaceChildren(pageHead('我的', '登录后能看到自己的收藏、回应和看过的图'),
-      h('a', { class: 'btn btn-primary', href: loginHref() }, '用 Linux.DO 登录'))
+      h('a', { class: 'btn btn-primary', href: loginHref() }, '前往登录'))
     return
   }
   const p = new URLSearchParams(location.search)
@@ -3387,8 +3398,10 @@ async function renderMe() {
         S.limits?.length ? h('span', { class: 'me-limits' }, '你当前被限制：', ...S.limits.map((l) =>
           h('span', { class: 'badge danger' }, `${LIMIT_KINDS.find((k) => k[0] === l.kind)?.[1] || l.kind} ${untilText(l.until)}${l.reason ? `（${l.reason}）` : ''}`))) : null),
       h('span', { class: 'grow' }),
-      h('a', { class: 'btn btn-ghost sm', href: `https://linux.do/u/${encodeURIComponent(u.username)}`, target: '_blank', rel: 'noopener' }, 'linux.do 主页', icon('ext', 'i tiny')),
+      u.linuxdo_username && h('a', { class: 'btn btn-ghost sm', href: `https://linux.do/u/${encodeURIComponent(u.linuxdo_username)}`, target: '_blank', rel: 'noopener' }, 'linux.do 主页', icon('ext', 'i tiny')),
       h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: meSettings }, icon('gear', 'i tiny'), '设置'),
+      h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { location.href = '/me/invites' } }, icon('users', 'i tiny'), '邀请好友'),
+      h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { location.href = '/me/account' } }, icon('gear', 'i tiny'), '账号安全'),
       S.me?.is_admin ? h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: noticeAdmin }, icon('bell', 'i tiny'), '公告设置') : null,
       S.me?.is_admin ? h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => memberAdmin() }, icon('users', 'i tiny'), '成员管理') : null,
       h('button', { class: 'btn btn-ghost sm', onclick: async () => { await api('/auth/logout', { method: 'POST' }); location.href = '/' } }, icon('logout', 'i tiny'), '退出')),
@@ -3952,7 +3965,7 @@ const CIPHER_NAME = { shou: '兽音译者', fo: '与佛论禅', emoji: 'emoji �
   rail: '栅栏密码', vigenere: '维吉尼亚', aes: 'AES', zwsp: '隐形字', stego: '图片藏字',
   base58: 'Base58', base62: 'Base62', base85: 'Ascii85', decimal: '十进制码点', html: 'HTML 实体', rot47: 'ROT47', affine: '仿射密码',
   bacon: '培根密码', polybius: '棋盘密码', qwerty: '键盘密码', autokey: '自动密钥', rc4: 'RC4', xor: 'XOR 异或' }
-const loadCipher = () => import('/cipher.js?v=4dda7dbd')
+const loadCipher = () => import('/cipher.js?v=8acbc94b')
 
 function rewardView(pz, label) {
   const isLink = pz.reward_type === 'link'
@@ -8524,7 +8537,7 @@ async function renderChat(gid) {
       h('div', { class: 'chat-login-mark' }, icon('users')),
       h('h1', null, '迷友群'),
       h('p', null, '聊梗图、接龙、转发好图，群里的人都来自 linux.do。'),
-      h('a', { class: 'btn btn-primary', href: loginHref() }, '用 Linux.DO 登录')))
+      h('a', { class: 'btn btn-primary', href: loginHref() }, '前往登录')))
     return
   }
   const side = h('aside', { class: 'chat-side' })
@@ -10249,8 +10262,10 @@ async function memberAdmin(q0 = '') {
             avatar(u.avatar, u.name || u.username, 36), h('i', { class: 'gp-dot' + (on ? ' on' : '') })),
           h('span', { class: 'gp-who' },
             h('strong', { class: nameCls(u) }, u.name || u.username),
-            h('span', { class: 'muted' }, `@${u.username} · TL${u.trust_level} · ${u.posts} 帖 · ${u.comments} 评论`)),
+            h('span', { class: 'muted' }, `@${u.username} · TL${u.trust_level} · ${u.posts} 帖 · ${u.comments} 评论`),
+            u.methods?.length ? h('span', { class: 'muted' }, u.methods.map(m => ({ email: '邮箱', google: 'Google', linuxdo: 'Linux.DO', dev: '测试账号' }[m] || m)).join(' / '), u.inviter ? ` · 邀请人 @${u.inviter}` : '') : null),
           h('span', { class: 'ma-tags' }, u.owner ? h('span', { class: 'role-tag admin' }, '站长') : u.is_admin ? h('span', { class: 'role-tag admin' }, '管理员') : u.role === 'gadmin' ? h('span', { class: 'role-tag gadmin' }, '群管') : null,
+            u.disabled ? h('span', { class: 'badge danger' }, '已停用') : null,
             u.silenced ? h('span', { class: 'badge' }, 'L站禁言') : null, ...limitTags(u.limits)),
           h('span', { class: 'gp-seen' + (on ? ' on' : '') }, seen || '—'),
           h('button', { class: 'btn-icon ghost sm ma-more', type: 'button', title: '更多操作', 'aria-label': '更多操作', 'aria-expanded': String(actsOpen),
@@ -10267,6 +10282,16 @@ async function memberAdmin(q0 = '') {
             } catch (err) { toast(err.message, 'err') }
           } }, [['', '炫彩：默认'], ['1', '炫彩：开'], ['0', '炫彩：关']].map(([v, l]) => h('option', { value: v, selected: String(u.fancy_set ?? '') === v }, l))),
           owner && !u.owner && roleSel(u, draw, open),
+          owner && !u.owner && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: async (e) => {
+            const disabled = !u.disabled
+            if (!confirm(disabled ? `停用 ${u.username}？该用户的所有登录设备将退出，API 令牌将撤销。内容会保留。` : `重新启用 ${u.username}？用户需要重新登录。`)) return
+            const button = e.currentTarget; button.disabled = true
+            try {
+              const result = await api(`/admin/users/${u.id}/disabled`, { method: 'PUT', body: { disabled } })
+              u.disabled = result.disabled; USERS.delete(u.username); draw(open)
+              toast(disabled ? '账号已停用' : '账号已启用', 'ok')
+            } catch (error) { button.disabled = false; toast(error.message, 'err') }
+          } }, u.disabled ? '启用账号' : '停用账号'),
           owner && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => officialTitleManager(u.username) }, '授予称号'),
           !u.is_admin && u.id !== S.me.id && h('button', { class: 'btn btn-ghost sm', type: 'button', 'aria-expanded': String(!!open), onclick: () => draw(!open) }, open ? '收起' : '限制'))),
         open && h('div', { class: 'ma-edit' }, LIMIT_KINDS.map(([k, label, what]) => {
