@@ -6832,66 +6832,105 @@ const sendOnEnter = (ta, fn) => {
 const MEMBERS = new Map()
 function groupMembers(gid) {
   const c = MEMBERS.get(gid)
-  if (c && Date.now() - c.at < 300000) return c.p
-  const p = api(`/chat/groups/${gid}/members`).then((d) => { rememberNicks(d.members); return d.members }).catch(() => { MEMBERS.delete(gid); return [] })
-  MEMBERS.set(gid, { at: Date.now(), p })
-  return p
+  if (c && (c.pending || Date.now() - c.at < 300000)) return c.p
+  const entry = { at: Date.now(), pending: true, data: c?.data, p: null }
+  entry.p = api(`/chat/groups/${gid}/members?view=mention`).then((d) => {
+    entry.data = d.members; entry.at = Date.now(); rememberNicks(d.members); return d.members
+  }).catch(() => { if (MEMBERS.get(gid) === entry) MEMBERS.delete(gid); return null }).finally(() => { entry.pending = false })
+  MEMBERS.set(gid, entry)
+  return entry.p
 }
-function mentionPicker(ta, g) {
+function mentionPicker(ta, g, recent = () => []) {
   const box = h('div', { class: 'cm-mention', role: 'listbox', hidden: true })
   let opts = []
   let sel = 0
   let at = -1
+  let endAt = -1
+  let token = ''
   let seq = 0
   let t = 0
-  const close = () => { box.hidden = true; opts = []; at = -1 }
+  const close = () => { ++seq; clearTimeout(t); box.hidden = true; opts = []; at = -1 }
   const pick = (u) => {
     const end = ta.selectionStart
+    // 键盘或脚本移动光标不会触发 input，不能沿用之前的替换范围。
+    if (at < 0 || end !== endAt || ta.selectionEnd !== end || ta.value.slice(at, end) !== token) return close()
     ta.setRangeText('@' + u.username + ' ', at, end, 'end')
     close()
     ta.dispatchEvent(new Event('input'))
     ta.focus()
   }
-  const draw = () => {
+  const draw = (status = '', retry = false) => {
     box.replaceChildren(...opts.map((u, i) => h('button', { class: 'cm-mopt' + (i === sel ? ' on' : ''), type: 'button', role: 'option', 'aria-selected': String(i === sel),
       onpointerdown: (e) => e.preventDefault(), onclick: () => pick(u) },
     avatar(u.avatar, u.name || u.username, 22), h('strong', null, u.name || u.username), h('span', { class: 'muted' }, '@' + u.username))))
-    box.hidden = !opts.length
+    if (!opts.length && status) box.append(retry
+      ? h('button', { class: 'cm-mopt', type: 'button', onpointerdown: (e) => e.preventDefault(), onclick: refresh }, status)
+      : h('div', { class: 'cm-mstatus muted', role: 'status' }, status))
+    box.hidden = !opts.length && !status
   }
-  const refresh = async () => {
+  const refresh = (e) => {
+    clearTimeout(t)
+    const my = ++seq
+    if (e?.isComposing) return close()
     const before = ta.value.slice(0, ta.selectionStart)
-    const m = before.match(/(?:^|[\s(（，。,.!！?？:：])@([\w.\-一-龥]{0,20})$/)
+    const m = before.match(/(?:^|[\s(（，。,.!！?？:：])[@＠]([\w.\-一-龥]{0,20})$/)
     if (!m) return close()
     at = ta.selectionStart - m[1].length - 1
+    endAt = ta.selectionStart
+    token = ta.value.slice(at, endAt)
     const q = m[1].toLowerCase()
-    const my = ++seq
     const hit = (u) => !q || u.username.toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q)
     // 帖子评论里没有群：用默认群的成员，再不够就全站搜
     const gid = g?.id || CHAT.groups.find((x) => x.is_default)?.id || CHAT.groups[0]?.id
-    let list = (gid ? await groupMembers(gid) : []).filter((u) => u.username !== S.me?.username && hit(u))
-    if (my !== seq) return
-    list.sort((a, b) => (b.username.toLowerCase().startsWith(q) ? 1 : 0) - (a.username.toLowerCase().startsWith(q) ? 1 : 0))
-    opts = list.slice(0, 8)
+    // 已到达的成员/消息作者同步显示；慢成员请求不阻塞全站搜索。
+    let members = (gid && MEMBERS.get(gid)?.data) || recent()
+    let users = [], memberPending = !!gid, searchPending = false, failed = false
     sel = 0
-    draw()
-    // 群里没几个对得上：再搜一下全站（防抖）
-    clearTimeout(t)
-    if ((q || !gid) && opts.length < 3) t = setTimeout(async () => {
-      try {
-        const { users } = await api('/chat/users?q=' + encodeURIComponent(q || 'a'))
-        if (my !== seq || at < 0) return
-        const have = new Set(opts.map((u) => u.username))
-        opts = [...opts, ...users.filter((u) => !have.has(u.username) && u.username !== S.me?.username)].slice(0, 8)
-        draw()
-      } catch {}
-    }, 250)
+    const render = () => {
+      if (my !== seq || at < 0 || !ta.isConnected) return
+      const selected = opts[sel]?.username
+      const unique = new Map()
+      for (const u of [...members, ...users]) if (u.username && u.username !== S.me?.username && hit(u) && !unique.has(u.username)) unique.set(u.username, u)
+      const list = [...unique.values()].sort((a, b) => Number(b.username.toLowerCase().startsWith(q)) - Number(a.username.toLowerCase().startsWith(q)))
+      opts = list.slice(0, 8)
+      sel = Math.max(0, opts.findIndex((u) => u.username === selected))
+      draw(memberPending || searchPending ? '正在找人…' : failed ? '加载失败，点此重试' : '没有匹配的用户', failed && !memberPending && !searchPending)
+    }
+    render()
+    if (gid) groupMembers(gid).then((list) => {
+      if (my !== seq) return
+      memberPending = false
+      if (list) members = list
+      else failed = true
+      render()
+    })
+    if ((q || !gid) && opts.length < 3) {
+      searchPending = true
+      render()
+      t = setTimeout(async () => {
+        if (my !== seq) return
+        if (opts.length >= 3) { searchPending = false; render(); return }
+        try { users = (await api('/chat/users?q=' + encodeURIComponent(q || 'a'))).users }
+        catch { failed = true }
+        searchPending = false
+        render()
+      }, 120)
+    }
   }
+  ta.addEventListener('focus', () => { const gid = g?.id || CHAT.groups.find((x) => x.is_default)?.id; if (gid) groupMembers(gid) })
+  ta.addEventListener('compositionstart', close)
+  ta.addEventListener('compositionend', refresh)
   ta.addEventListener('input', refresh)
   ta.addEventListener('click', refresh)
-  ta.addEventListener('blur', () => setTimeout(close, 150))
+  ta.addEventListener('blur', () => setTimeout(() => { if (ta.ownerDocument.activeElement !== ta) close() }, 150))
   // 比回车发送先注册，弹层开着时吃掉方向键 / 回车 / Tab / Esc
   ta.addEventListener('keydown', (e) => {
-    if (box.hidden || !opts.length || e.isComposing) return
+    if (box.hidden || e.isComposing || e.keyCode === 229) return
+    if (!opts.length) {
+      if (e.key === 'Escape' || e.key === 'Tab') close()
+      if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation() }
+      return
+    }
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { sel = (sel + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length; draw() }
     else if (e.key === 'Enter' || e.key === 'Tab') pick(opts[sel])
     else if (e.key === 'Escape') close()
@@ -7634,7 +7673,7 @@ function chatPane(g, { onHead } = {}) {
     old.el.replaceWith(att.el)
     old.input.replaceWith(att.input)
   }
-  const mention = S.me ? mentionPicker(ta, g) : null
+  const mention = S.me ? mentionPicker(ta, g, () => st.items.slice().reverse()) : null
   sendOnEnter(ta, () => st.editing ? saveEdit() : send())
   ta.addEventListener('keydown', (e) => { if (e.key === 'Escape' && st.editing) { e.stopPropagation(); setEdit(null) } })
   const tb = (ic, title, onclick, extra = {}) => h('button', { class: 'cm-ibtn', type: 'button', title, 'aria-label': title, onclick, ...extra }, icon(ic))
