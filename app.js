@@ -2113,6 +2113,7 @@ function notifRow(n) {
   // 徽章：系统发的，不跳页，点开设置看徽章墙
   if (n.kind === 'badge') {
     const b = BADGES[n.val]
+    const guideN = Math.max(0, Number(n.badge_n) || 0)
     return h('button', { class: 'notif-row notif-badge' + (n.unread ? ' unread' : ''), type: 'button', onclick: () => { readNotif(n); closePop(); meSettings('badges') } },
       h('i', { class: 'notif-dot', 'aria-hidden': 'true' }),
       h('span', { class: 'notif-bd' }, n.val==='guide'&&!guideN?'🧭':badgeChip(n.val, true,n.val==='guide'?guideN:undefined)),
