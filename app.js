@@ -93,6 +93,7 @@ const ICON = {
   users: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14a6.5 6.5 0 0 1 3.5 6"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   redpack: '<svg viewBox="0 0 24 24"><path d="M4 8 5 3l4 4h6l4-4 1 5v11c0 2-3 3-8 3s-8-1-8-3Z"/><path d="m4 14 8 5 8-5M9 10v1m6-1v1m-4 2q1 1 2 0"/></svg>',
+  packetBag: '<svg viewBox="0 0 24 24"><path d="M6 4h12l-3 5c5 3 7 7 5 10-2 3-14 3-16 0-2-3 0-7 5-10ZM8 9h8M10 14v1m4-1v1m-4 3q2 2 4 0"/></svg>',
 }
 const icon = (name, cls = 'i') => h('span', { class: cls, html: ICON[name], 'aria-hidden': 'true' })
 
@@ -6283,14 +6284,14 @@ function checkFile(f) {
 // 截图类的长图（高宽比 > 3）只限宽不限高，保证字看得清。压完反而更大就用原图
 const SHRINK_AT = 4 * 1024 * 1024
 const SHRINK_EDGE = 4096
-async function shrinkImage(f) {
+async function shrinkImage(f, { edge = SHRINK_EDGE, threshold = SHRINK_AT, keepTall = true } = {}) {
   if (!/^image\/(jpeg|png|webp)$/.test(f.type) && !isJpg(f)) return f
   let bmp
   try { bmp = await createImageBitmap(f) } catch { return f }
   const { width: w, height: hh } = bmp
-  const tall = hh / w > 3 || w / hh > 3
-  const k = tall ? Math.min(1, 2048 / Math.min(w, hh)) : Math.min(1, SHRINK_EDGE / Math.max(w, hh))
-  if (f.size <= SHRINK_AT && k >= 1) { bmp.close?.(); return f }
+  const tall = keepTall && (hh / w > 3 || w / hh > 3)
+  const k = tall ? Math.min(1, 2048 / Math.min(w, hh)) : Math.min(1, edge / Math.max(w, hh))
+  if (f.size <= threshold && k >= 1) { bmp.close?.(); return f }
   const cw = Math.max(1, Math.round(w * k)), ch = Math.max(1, Math.round(hh * k))
   // 浏览器画布有上限（iOS 约 1600 万像素），太大就再缩一点
   const lim = Math.min(1, Math.sqrt(16e6 / (cw * ch)))
@@ -7308,7 +7309,7 @@ function chatPane(g, { onHead } = {}) {
         }
         if (duringAway.length) st.awayIds = [...new Set([...st.awayIds, ...duringAway.map((m) => m.id)])]
         // 手机网络抖动时 POST 已经到了服务器、回包丢了：轮询拿到同内容的自己的消息，就把「发送中 / 没发出去」那条收掉
-        d.items.forEach((m) => m.mine && inflight.find((j) => !j.done && j.body === (m.body || '') && !!j.tray === !!(m.media?.length || m.image))?.settle())
+        d.items.forEach((m) => m.mine && inflight.find((j) => !j.done && j.body === (m.body || '') && !!j.tray === !!(m.media?.length || m.image))?.settle(m))
         add(d.items, 'live')
         if (stick) toBottom(true)
         else {
@@ -7659,11 +7660,13 @@ function chatPane(g, { onHead } = {}) {
     el.querySelector('.cm-main').append(state)
     pending.append(el)
     // 发出去了（不管是回包还是轮询先看到）：收掉占位
-    job.settle = () => {
+    job.settle = (message) => {
+      if (job.done) return
       job.done = true
       el.remove()
       job.tray?.clear()
       inflight.splice(inflight.indexOf(job) >>> 0, 1)
+      if (message && !st.destroyed) matchRedpackMessage(message, g, api_)
     }
     inflight.push(job)
     // 托盘交给这条消息，输入框换一个新的
@@ -7680,7 +7683,7 @@ function chatPane(g, { onHead } = {}) {
         const media = job.tray ? await job.tray.media() : undefined
         // 第二次起带上 retry：服务器在 2 分钟内认出同一条，不会重复入库
         const { message } = await api(`/chat/groups/${g.id}/messages`, { method: 'POST', body: { body, reply_to: job.reply?.id || 0, media, retry: job.tries++ > 0 || undefined } })
-        if (!job.done) job.settle()
+        if (!job.done) job.settle(message)
         const stick = nearBottom()
         add([message], 'live')
         if (stick) toBottom(false)
@@ -7722,6 +7725,7 @@ function chatPane(g, { onHead } = {}) {
         }), { key, cls: 'pop-stk', up: true }), { 'data-pop': key }),
         tb('image', '发图片 / 视频', () => att.pick()),
         tb('redpack', '发红包', (e) => redpackDialog(e.currentTarget, { group: g, onSent: (message) => { closeHist(); add([message], 'live'); toBottom(false) } }), { class: 'cm-ibtn cm-redpack-btn' }),
+        tb('packetBag', '群红包袋', (e) => redpackDialog(e.currentTarget, { archiveGroup:g, onUpdate:update })),
         tb('doc', '发文件（20MB 以内）', () => fileIn.click()),
         tb('at', '@ 某人', () => { insertAtCursor(ta, (/\S$/.test(ta.value.slice(0, ta.selectionStart)) ? ' ' : '') + '@') }),
         tb('quote', '引用', () => { const m = st.reply || st.items[st.items.length - 1]; if (m) quoteMsg(m) }),
@@ -7938,12 +7942,58 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=3a351da3')
-    if (anchor.isConnected) openRedpacket({ anchor, ...options, h, icon, api })
+    const { openRedpacket } = await import('/redpacket.js?v=c6053d5b')
+    if (anchor.isConnected) openRedpacket({ anchor, ...options, h, icon, api, uploadCover: async file => {
+      const error=checkFile(file)
+      if(error || isVid(file))throw Error(error || '封面请选择图片')
+      const compact=await shrinkImage(file,{edge:1280,threshold:1024*1024,keepTall:false})
+      if(compact.size>MAX_FILE)throw Error('封面超过20MB')
+      const url=URL.createObjectURL(compact)
+      try {const size=await probeMedia(compact,url);if(!size.w || !size.h)throw Error('无法读取这张图片');return await uploadFile(compact,'chat')}
+      finally {URL.revokeObjectURL(url)}
+    } })
   } catch (e) { toast(e.message, 'err') }
+}
+const REDPACK_AUTO = { queue: [], active: false, seen: new Set(), timer: 0 }
+async function matchRedpackMessage(message,g,pane,attempt=0) {
+  const key=(S.me?.id || 0)+':'+message.id
+  if(REDPACK_AUTO.seen.has(key))return
+  REDPACK_AUTO.seen.add(key)
+  if(REDPACK_AUTO.seen.size>200)REDPACK_AUTO.seen.delete(REDPACK_AUTO.seen.values().next().value)
+  try {
+    const d=await api(`/chat/groups/${g.id}/redpacks/matches?message_id=${message.id}`)
+    if(!pane.el.isConnected || !d.items.length)return
+    const enqueue=()=>{
+      let seen=[];try{seen=JSON.parse(localStorage.getItem('redpackAutoSeen') || '[]')}catch{}
+      if(seen.includes(key))return
+      localStorage.setItem('redpackAutoSeen',JSON.stringify([...seen.slice(-79),key]))
+      REDPACK_AUTO.queue.push(...d.items.map(m=>({message:m,pane,at:Date.now()})));drainRedpackAuto()
+    }
+    if(navigator.locks)await navigator.locks.request('redpack-auto',enqueue)
+    else enqueue()
+  } catch {
+    REDPACK_AUTO.seen.delete(key)
+    if(attempt<2 && pane.el.isConnected)setTimeout(()=>{if(pane.el.isConnected)matchRedpackMessage(message,g,pane,attempt+1)},1000*(attempt+1))
+  }
+}
+function drainRedpackAuto() {
+  clearTimeout(REDPACK_AUTO.timer);REDPACK_AUTO.timer=0
+  if(REDPACK_AUTO.active)return
+  const next=REDPACK_AUTO.queue[0]
+  if(!next)return
+  if(!next.pane.el.isConnected || Date.now()-next.at>120000){REDPACK_AUTO.queue.shift();return drainRedpackAuto()}
+  const doc=next.pane.el.ownerDocument
+  if(doc.hidden || doc.querySelector('dialog[open]')){REDPACK_AUTO.timer=setTimeout(drainRedpackAuto,500);return}
+  REDPACK_AUTO.queue.shift();REDPACK_AUTO.active=true
+  const anchor=next.pane.el.querySelector('[aria-label="发红包"]') || next.pane.el
+  redpackDialog(anchor,{message:next.message,autoOpen:true,onUpdate:next.pane.update,onClose:()=>{REDPACK_AUTO.active=false;drainRedpackAuto()}})
+    .then(()=>{if(!doc.querySelector('.rpk-dialog')){REDPACK_AUTO.active=false;drainRedpackAuto()}})
 }
 function chatMsg(m, { cont, pane, pending } = {}) {
   const who = m.user.name || m.user.username
+  if(m.system_kind==='redpack_due')return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},icon('redpack'),
+    h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'红包提醒已撤回':'红包到点啦！'),!m.deleted && h('span',null,'开奖与领取状态以原站为准')),
+    !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>redpackDialog(e.currentTarget,{message:{id:Number(m.system_ref)},onUpdate:fresh=>pane?.update(fresh)})},'去看看'))
   if (m.system_kind === 'join') return h('div', { class: 'cm-welcome' + (m.deleted ? ' gone' : ''), role: 'note', 'aria-label': m.deleted ? '入群提醒已撤回' : `欢迎 ${who} 加入群聊` },
     m.deleted ? h('span', null, '入群提醒已撤回') : [
       h('span', { class: 'cm-welcome-star', 'aria-hidden': 'true' }, '✦'),
@@ -7981,13 +8031,14 @@ function chatMsg(m, { cont, pane, pending } = {}) {
     if (m.road_id) body.push(h('a', { class: 'cm-road', href: `/road?item=${m.road_id}`, 'data-link': '' }, `已转到鞭打 #${m.road_id}`))
     if (m.redpack) body.push(h('button', { type: 'button', class: 'cm-redpack' + (m.redpack.solved ? ' is-open' : ''), 'aria-label': '打开红包',
       onclick: (e) => redpackDialog(e.currentTarget, { message: m, onUpdate: (fresh) => pane?.update(fresh) }) },
+      m.redpack.cover && h('img',{class:'cm-redpack-cover',src:m.redpack.cover,alt:'红包封面',loading:'lazy',onerror:e=>e.currentTarget.remove()}),
       h('span', { class: 'cm-redpack-seal', 'aria-hidden': 'true' }, icon('redpack')),
       h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || '给你一个红包'),
-        h('span', null, `${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆' : ''}`)),
-      h('span', { class: 'cm-redpack-foot' }, m.redpack.solved ? '拆到啦' : '戳我拆开', h('span', null, `${m.redpack.opened} 人拆过`))))
+        h('span', null, `${({hb:'HB · ',credit:'Credit · ',fish:'fish · '})[m.redpack.provider] || ''}${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`)),
+      h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放'})[m.redpack.snapshot?.state] || (m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, `${m.redpack.opened} 人拆过${m.redpack.provider && m.redpack.provider!=='native'?'包装':''}`))))
     if (!m.redpack && m.body && !lnk?.only) body.push(h('div', { class: 'cm-text' + (stkOnly(m.body) ? ' stk-only' : bubbleCls(m.user)) }, richBody(m.body, { md: 'lite' }), edited))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited, lnk.only))
-    const all = m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
+    const all = m.redpack ? [] : m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
     const files = all.filter((x) => x.k === 'f')
     const media = all.filter((x) => x.k !== 'f')
     if (media.length) {
