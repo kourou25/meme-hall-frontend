@@ -6,7 +6,7 @@ const STATES = { active: '可领取', exhausted: '被抢光啦', expired: '已�
 const KINDS = { fixed: '普通', equal: '普通', random: '拼手气', exclusive: '专属', lottery: '抽奖', custom:'自定义金额',timed_draw:'限时开奖',password:'口令兑奖',text:'文本 / CDK' }
 function packetBridge(action, external) {
   return new Promise((resolve,reject) => {
-    const timeout=action==='ping'?3000:external?.provider==='fish'?90000:45000
+    const timeout=action==='ping'?3000:action==='awaitCreate'?190000:external?.provider==='fish'?90000:45000
     const id=crypto.randomUUID(), timer=setTimeout(()=>finish(Error(action==='ping' ? '尚未连接辅助脚本' : '结果尚未确认，请重新查询或到原站核对')),timeout)
     const receive=e=>{if(e.source===window && e.origin===location.origin && e.data?.type==='meme-redpacket-result' && e.data.id===id)finish(e.data.error?Error(e.data.error):null,e.data.result)}
     const finish=(error,value)=>{clearTimeout(timer);window.removeEventListener('message',receive);error?reject(error):resolve(value)}
@@ -40,7 +40,7 @@ const DEFEATS = [
   ['此番落败，下包再战', catFace('<path d="m13 25 8 3m7 0 8-3m-14 9q3-4 6 0M8 38l-4 4m36-4 4 4"/>'), '败'],
 ].map(([text, art, word], i) => { DOODLES['defeat-'+i] = art; return { text, art:'defeat-'+i, word } })
 
-export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen = false, onSent, onUpdate, onClose, h, icon, api, uploadCover, openTitleRaffle }) {
+export function openRedpacket({ anchor, group, archiveGroup, userId, message, autoOpen = false, onSent, onUpdate, onClose, h, icon, api, uploadCover, openTitleRaffle }) {
   let autoInspect=autoOpen
   let externalInspected=false
   let defeatScene
@@ -102,8 +102,21 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
 
   function create() {
     let mode = 'open', selected = null, selectedIndex = 0, mask = 4, searchSeq = 0, busy = false, cover=null, coverBusy=false
-    const nonce = crypto.randomUUID()
+    const draftKey=`creditPacketDraft:${userId}:${group.id}`
+    let draft=null
+    try{draft=JSON.parse(win.localStorage.getItem(draftKey)||'null')}catch{}
+    if(!/^[a-f0-9-]{36}$/i.test(draft?.nonce||'') || draft?.id && !/^[1-9]\d{0,19}$/.test(draft.id))draft=null
+    const nonce=draft?.nonce || crypto.randomUUID()
+    let createdId=draft?.id || null
     const provider = h('select',{class:'rpk-input','aria-label':'红包平台'},Object.entries(PROVIDERS).map(([k,v])=>h('option',{value:k},v)))
+    const creditChoice=h('select',{class:'rpk-input','aria-label':'LDC 红包来源'},h('option',{value:'new'},'直接创建 LDC 红包'),h('option',{value:'existing'},'引用已有红包'))
+    const creditKind=h('select',{class:'rpk-input','aria-label':'LDC 红包类型'},h('option',{value:'random'},'拼手气'),h('option',{value:'fixed'},'普通红包'))
+    const creditAmount=input('LDC 总额',{inputmode:'decimal',placeholder:'至少 1 LDC'})
+    const creditCount=input('红包份数',{type:'number',min:1,max:10000,step:1,placeholder:'发给几个人？'})
+    if(['fixed','random'].includes(draft?.params?.kind))creditKind.value=draft.params.kind
+    if(typeof draft?.params?.amount==='string')creditAmount.value=draft.params.amount
+    if(Number.isSafeInteger(draft?.params?.count))creditCount.value=String(draft.params.count)
+    const creditFields=h('div',{class:'rpk-credit'},field('类型',creditKind),field('总额 · LDC',creditAmount),field('份数',creditCount),h('p',{class:'rpk-help'},'支付口令只在 Credit 来源窗口输入。'))
     const externalRef = input('外站红包链接或口令',{placeholder:'粘贴 HB 口令',maxlength:200})
     const externalField = field('原站红包',externalRef)
     const notifyAt = input('到点提醒',{type:'datetime-local'})
@@ -113,6 +126,7 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
     const count = h('span', { class: 'rpk-count' })
     secret.addEventListener('input', () => { const n = [...secret.value.normalize('NFC').trim()].length; count.textContent = n ? `${n} / 18` : '' })
     const hint = input('红包线索', { placeholder: '给个提示（可不填）', maxlength: 240 })
+    if(typeof draft?.params?.greeting==='string')hint.value=draft.params.greeting
     const phrase = input('群聊口令', { placeholder: '在群里说哪句？', maxlength: 160 })
     const game = h('select', { class: 'rpk-input', 'aria-label': '解密玩法' }, Object.entries(GAMES).map(([key, v]) => h('option', { value: key }, v[0])))
     const gameHelp = h('p', { class: 'rpk-help' }, GAMES.reverse[1])
@@ -142,31 +156,61 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
       const value = secret.value.normalize('NFC').trim(), n = [...value].length
       if (!secretField.hidden && (n < 6 || n > 18)) { msg.textContent = '谜底需要 6–18 个字符'; return }
       if (mode === 'image' && !selected) { msg.textContent = '先选一张帖子的图片'; return }
+      const direct=provider.value==='credit' && creditChoice.value==='new'
+      const packetProvider=provider.value
+      const createParams=direct?{provider:'credit',operation:nonce,kind:creditKind.value,amount:creditAmount.value.trim(),count:Number(creditCount.value),greeting:hint.value.trim()}:null
+      if(direct && !createdId){
+        const total=createParams.amount,pieces=createParams.count
+        if(!/^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/.test(total)||Number(total)<1||!Number.isSafeInteger(pieces)||pieces<1||pieces>10000||Math.round(Number(total)*100)<pieces){msg.textContent='填写至少 1 LDC 的总额，每份至少 0.01 LDC，最多 10000 份';return}
+        if([...hint.value.trim()].length>100){msg.textContent='祝福语最多 100 字';return}
+        try{win.localStorage.setItem(draftKey,JSON.stringify({nonce,status:'pending',params:createParams}))}catch{msg.textContent='此浏览器无法保存待发红包，请启用站点存储后再试';return}
+      }
+      const popup=direct && !createdId ? win.open('https://credit.linux.do/home?jh-credit='+encodeURIComponent(nonce),'jh-credit-'+nonce,'popup,width=500,height=720') : null
+      if(direct && !createdId && !popup){msg.textContent='Chrome 拦截了 Credit 确认窗口；允许本站弹窗后再试';return}
       busy = true; submit.disabled = true; msg.textContent = '正在封装…'
       try {
+        if(direct && !createdId){
+          const bridge=await packetBridge('ping')
+          if(!bridge.creditCreate)throw Error('请更新到 1.1.0 红包连接器，刷新本站后重试')
+          const prepared=await packetBridge('prepareCreate',createParams)
+          const result=prepared.id?prepared:await packetBridge('awaitCreate',{provider:'credit',operation:nonce})
+          if(!/^[1-9]\d{0,19}$/.test(result?.id||''))throw Error('Credit 创建结果未确认，请到已发送记录核对')
+          createdId=result.id
+          win.localStorage.setItem(draftKey,JSON.stringify({nonce,id:createdId,params:createParams}))
+          provider.value='credit';creditChoice.value='new';sync()
+          if(!dialog.isConnected)return
+          msg.textContent='Credit 已创建，正在发到群聊…'
+        }
         const d = await api(`/chat/groups/${group.id}/redpacks`, { method: 'POST', body: {
           nonce, secret: value, mode, prompt: hint.value, phrase: phrase.value, game: game.value,
           post_id: selected?.id, image_index: selectedIndex, mask,
-          provider:provider.value,external_ref:externalRef.value,notify_at:notifyAt.value?Math.floor(new Date(notifyAt.value).getTime()/1000):null,
+          provider:createdId?'credit':packetProvider,external_ref:createdId || externalRef.value,notify_at:notifyAt.value?Math.floor(new Date(notifyAt.value).getTime()/1000):null,
           cover_key:cover?.key,
         } })
+        if(createdId)try{win.localStorage.removeItem(draftKey)}catch{}
         onSent?.(d.message); dialog.close()
-      } catch (e) { msg.textContent = e.message }
+      } catch (e) { msg.textContent = (createdId?'LDC 已创建，编号 '+createdId+'；重试只发布群消息，不再扣款。':'')+e.message }
       finally { busy = false; submit.disabled = false }
-    } }, field('红包平台',provider),externalField,coverInput,coverButton,coverPreview,modes,secretField,count,field('提示', hint), phraseField, gameField, sourceField,reminder,msg,submit)
+    } }, field('红包平台',provider),creditChoice,creditFields,externalField,coverInput,coverButton,coverPreview,modes,secretField,count,field('提示', hint), phraseField, gameField, sourceField,reminder,msg,submit)
     provider.addEventListener('change',sync)
+    creditChoice.addEventListener('change',sync)
+    if(draft){provider.value='credit';creditChoice.value='new'}
     content.replaceChildren(form); sync()
     function sync() {
       [...modes.children].forEach((b, i) => b.setAttribute('aria-pressed', String(Object.keys(MODES)[i] === mode)))
       phraseField.hidden = mode !== 'phrase'; gameField.hidden = mode !== 'cipher'; sourceField.hidden = mode !== 'image'
-      externalField.hidden = provider.value === 'native'
+      if(draft||createdId){provider.value='credit';provider.disabled=true;creditChoice.value='new';creditChoice.disabled=true}
+      const direct=provider.value==='credit'&&creditChoice.value==='new'
+      creditChoice.hidden=provider.value!=='credit';creditFields.hidden=!direct||!!createdId
+      externalField.hidden = provider.value === 'native'||direct
       secretField.hidden = provider.value !== 'native' && ['open','phrase'].includes(mode)
       count.hidden = secretField.hidden
+      submit.textContent=createdId?'将已创建的红包发到群里':direct?'到 Credit 确认扣款':'塞好，发出去！'
       externalRef.placeholder = provider.value === 'credit' ? '粘贴 Credit 红包分享链接' : provider.value==='fish'?'活动链接 / UUID / 6–18字口令':'8位数字口令 / 6–18字文字口令'
       const needed = mode === 'image' || (mode === 'cipher' && game.value === 'tiles')
       hint.placeholder = needed ? '给个提示，让大家有迹可循' : '给个提示（可不填）'
       hint.setAttribute('aria-required', String(needed))
-      msg.textContent = ''
+      msg.textContent = createdId?'已创建 LDC 红包 '+createdId+'，等待发到群里；不会再次扣款。':''
     }
     async function findPosts() {
       const ticket = ++searchSeq, q = search.value.trim()
