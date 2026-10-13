@@ -3239,26 +3239,35 @@ async function renderSeries() {
   }
 }
 
-// ---------- 鞭打模块（原成长路线）：需求 / Bug / 改进意见，大家投票，管理员标状态；可以带图片 / 文件 ----------
-// 附件：图片直接看，其他（含视频、日志、压缩包）当文件下载；选了马上在后台传
+// ---------- 鞭打模块（原成长路线）：需求 / Bug / 改进意见，大家投票，管理员标状态；可以带图片 / 视频 / 文件 ----------
+// 附件选完即上传；视频另传封面，普通文件继续强制下载。
 function roadAttach() {
   const input = h('input', { type: 'file', multiple: true, class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true' })
   const list = h('div', { class: 'rd-att-list' })
   const a = { items: [] }
+  const release = (it) => { if (it.url) URL.revokeObjectURL(it.url); if (it.previewUrl) URL.revokeObjectURL(it.previewUrl) }
   const draw = () => list.replaceChildren(...a.items.map((it) => h('span', { class: 'rd-att-it ' + it.state, title: it.err || it.file.name },
-    it.img ? h('img', { src: it.url, alt: '' }) : icon('doc', 'i tiny'),
+    it.img || it.previewUrl ? h('img', { src: it.previewUrl || it.url, alt: '' }) : icon(it.video ? 'video' : 'doc', 'i tiny'),
     h('span', { class: 'rd-att-n' }, it.file.name), h('span', { class: 'muted' }, it.state === 'up' ? '上传中' : it.state === 'err' ? '失败' : fmtBytes(it.file.size)),
-    h('button', { class: 'cm-x', type: 'button', 'aria-label': '移除 ' + it.file.name, onclick: () => { a.items = a.items.filter((x) => x !== it); draw() } }, icon('close', 'i tiny')))))
+    h('button', { class: 'cm-x', type: 'button', 'aria-label': '移除 ' + it.file.name, onclick: () => { a.items = a.items.filter((x) => x !== it); release(it); draw() } }, icon('close', 'i tiny')))))
   a.add = (files) => {
     for (const f of files) {
       if (a.items.length >= 9) { toast('最多 9 个附件', 'err'); break }
       if (f.size > MAX_FILE) { toast(`「${f.name}」超过 20MB`, 'err'); continue }
       const img = /^image\/(png|jpeg|gif|webp)$/.test(f.type)
-      const it = { file: f, img, url: img ? URL.createObjectURL(f) : '', state: 'up' }
+      const video = isVid(f)
+      const it = { file: f, img, video, url: img || video ? URL.createObjectURL(f) : '', state: 'up' }
       it.job = (async () => {
-        const meta = img ? await probeMedia(f, it.url).catch(() => ({})) : {}
-        const r = await uploadFile(f, 'chat', img ? undefined : 'file')
-        it.out = { key: r.key, name: f.name, ...(meta.w ? { w: meta.w, h: meta.h } : {}) }
+        const meta = img || video ? await probeMedia(f, it.url).catch(() => ({})) : {}
+        if (video) {
+          if (meta.bad || !meta.poster) throw new Error('视频截不到封面，请换 MP4 或 WebM')
+          if (a.items.includes(it)) { it.previewUrl = URL.createObjectURL(meta.poster); draw() }
+          const [poster, clip] = await Promise.all([uploadFile(meta.poster, 'chat'), uploadFile(f, 'chat')])
+          it.out = { key: clip.key, poster: poster.key, kind: 'v', w: meta.w, h: meta.h }
+        } else {
+          const r = await uploadFile(f, 'chat', img ? undefined : 'file')
+          it.out = { key: r.key, name: f.name, ...(meta.w ? { w: meta.w, h: meta.h } : {}) }
+        }
         it.state = 'ok'
       })().catch((e) => { it.state = 'err'; it.err = e.message }).finally(draw)
       a.items.push(it)
@@ -3271,10 +3280,11 @@ function roadAttach() {
     if (bad) throw new Error(`「${bad.file.name}」没传上去：${bad.err || ''}`)
     return a.items.map((it) => it.out)
   }
-  a.clear = () => { a.items = []; draw() }
+  a.clear = () => { a.items.forEach(release); a.items = []; draw() }
   input.addEventListener('change', () => { a.add([...input.files]); input.value = '' })
-  a.btn = h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => input.click() }, icon('image', 'i tiny'), '图片 / 文件')
+  a.btn = h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => input.click() }, icon('image', 'i tiny'), '图片 / 视频 / 文件')
   a.el = h('div', { class: 'rd-att' }, input, list)
+  onRemoval(a.el, a.clear)
   // 粘贴截图、拖文件进来也行
   a.bind = (zone) => {
     zone.addEventListener('paste', (e) => { const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); a.add(fs) } })
@@ -3286,9 +3296,26 @@ function roadAttach() {
 function roadMedia(media) {
   if (!media?.length) return null
   const pics = media.filter((x) => x.k !== 'f'), files = media.filter((x) => x.k === 'f')
+  const pic = (im, i) => {
+    const open = () => openViewer({ images: pics, image: pics[0].u }, i)
+    const thumb = h('button', { class: 'rd-pic', type: 'button', 'aria-label': im.v ? `在卡片中播放第 ${i + 1} 个视频` : `看第 ${i + 1} 张图`,
+      onclick: im.v ? () => {
+        shell.classList.add('playing')
+        shell.replaceChildren(mediaVideo(im), expand)
+        shell.querySelector('video')?.play().catch(() => {})
+      } : open }, h('img', { src: im.u, alt: '', loading: 'lazy', width: im.w || null, height: im.h || null }),
+      im.v && h('span', { class: 'rd-play', 'aria-hidden': 'true' }, icon('play')))
+    if (!im.v) return thumb
+    const shell = h('div', { class: 'rd-video' })
+    const expand = h('button', { class: 'rd-video-expand', type: 'button', 'aria-label': `完整预览第 ${i + 1} 个视频`, onclick: () => {
+      shell.querySelector('video')?.pause()
+      open()
+    } }, icon('ext', 'i tiny'))
+    shell.append(thumb, expand)
+    return shell
+  }
   return h('div', { class: 'rd-media' },
-    pics.length > 0 && h('div', { class: 'rd-pics' }, pics.map((im, i) => h('button', { class: 'rd-pic', type: 'button', 'aria-label': `看第 ${i + 1} 张图`,
-      onclick: () => openViewer({ images: pics, image: pics[0].u }, i) }, h('img', { src: im.u, alt: '', loading: 'lazy', width: im.w || null, height: im.h || null })))),
+    pics.length > 0 && h('div', { class: 'rd-pics' }, pics.map(pic)),
     files.length > 0 && h('div', { class: 'cm-files' }, files.map((f) =>
       h('a', { class: 'cm-file', href: f.u + '?n=' + encodeURIComponent(f.n || '文件'), download: f.n || '文件', target: '_blank', rel: 'noopener' },
         h('span', { class: 'cm-file-ic' }, icon('doc')), h('span', { class: 'cm-file-main' }, h('strong', null, f.n || '文件'), h('span', { class: 'muted' }, fmtBytes(f.s || 0)))))))
@@ -3453,7 +3480,7 @@ function roadForm(done) {
         toast('提交了，感谢', 'ok')
         done()
       } catch (err) { toast(err.message, 'err'); pub.disabled = false }
-    } }, field('类型', kinds), field('标题', title), field('详情', body), field('附件（图片 / 文件，单个 20MB 内）', h('div', null, att.el, att.btn)), h('div', { class: 'row-end' }, pub)))
+    } }, field('类型', kinds), field('标题', title), field('详情', body), field('附件（图片 / 视频 / 文件，单个 20MB 内）', h('div', null, att.el, att.btn)), h('div', { class: 'row-end' }, pub)))
   setTimeout(() => title.focus())
 }
 function roadAdmin(it, anchor, reload) {

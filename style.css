@@ -1760,8 +1760,14 @@ html[data-skin] .site-notice { display: none; }
 .rd-att-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .rd-media { margin-top: 8px; display: grid; gap: 6px; }
 .rd-pics { display: flex; flex-wrap: wrap; gap: 6px; }
-.rd-pic { padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: none; cursor: zoom-in; }
+.rd-pic { position:relative; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: none; cursor: zoom-in; }
 .rd-pic img { display: block; width: auto; height: 96px; max-width: 200px; object-fit: cover; }
+.rd-play { position:absolute; inset:0; display:grid; place-items:center; color:#fff; }
+.rd-play .i { width:32px; height:32px; padding:7px; border-radius:50%; background:rgba(0,0,0,.58); box-sizing:border-box; }
+.rd-video { position:relative; display:inline-grid; max-width:100%; }
+.rd-video.playing { width:min(200px,100%); }
+.rd-video .vid video { display:block; width:100%; max-height:180px; height:auto; border-radius:8px; background:#101615; }
+.rd-video-expand { position:absolute; top:4px; right:4px; z-index:1; width:28px; height:28px; display:grid; place-items:center; color:#fff; border-radius:6px; background:rgba(0,0,0,.58); }
 
 /* ---------- 横向浏览：帖子左右排，一帖一列；同一帖的图上下排 ---------- */
 .wall.hz { --hz-h: calc(100vh - 60px - var(--tb-h, 56px) - 56px); --hz-h: calc(100dvh - 60px - var(--tb-h, 56px) - 56px); }
