@@ -7383,7 +7383,7 @@ function mentionPicker(ta, g, recent = () => []) {
 
 // 一个群的消息区 + 输入框：站内群聊页、飞书伪装、LINUX DO 聊天抽屉共用，外观由各自的 CSS 决定
 function chatPane(g, { onHead } = {}) {
-  const st = { first: 0, last: 0, more: true, busy: false, since: 0, items: [], unreadAt: null, sentRead: 0, stick: true, done: false }
+  const st = { first: 0, last: 0, more: true, busy: false, olderFailed: false, since: 0, items: [], unreadAt: null, sentRead: 0, stick: true, done: false }
   let aiPanel, aiLoading
   async function openAi(anchor, mode = 'summary', range = '200') {
     try {
@@ -7717,9 +7717,10 @@ function chatPane(g, { onHead } = {}) {
     redraw(i + 1)
   }
 
-  async function older() {
-    if (st.busy || !st.more) return
+  async function older(manual = false) {
+    if (st.busy || !st.more || (st.olderFailed && !manual)) return
     st.busy = true
+    let loaded = false
     try {
       const d = await api(`/chat/groups/${g.id}/messages` + (st.first ? `?before=${st.first}` : ''))
       if (st.destroyed) return
@@ -7745,13 +7746,16 @@ function chatPane(g, { onHead } = {}) {
         // 从提醒 / 搜索点进来的：首屏加载完再跳到那条
         if (CHAT.jump?.gid === g.id) { const id = CHAT.jump.id; CHAT.jump = null; setTimeout(() => jumpTo(id)) }
       }
+      loaded = d.items.length > 0
+      st.olderFailed = false
     } catch (e) {
       if (e.status === 403 && !st.first) { st.busy = false; return lost(e) }
-      topSpin.replaceChildren(h('button', { class: 'btn-text', onclick: () => older() }, e.message + ' · 重试'))
+      st.olderFailed = true
+      topSpin.replaceChildren(h('button', { class: 'btn-text', onclick: () => older(true) }, e.message + ' · 重试'))
     } finally {
       st.busy = false
     }
-    if (st.more && scroller.scrollTop < 300 && scroller.isConnected) requestAnimationFrame(() => older())
+    if (loaded && st.more && scroller.scrollTop < 300 && scroller.isConnected) requestAnimationFrame(() => older())
   }
 
   async function poll() {
@@ -7953,6 +7957,7 @@ function chatPane(g, { onHead } = {}) {
   async function backToLatest() {
     st.after = 0
     st.more = true
+    st.olderFailed = false
     resetList()
     drawLatest()
     st.busy = false
