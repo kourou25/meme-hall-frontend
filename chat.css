@@ -94,16 +94,12 @@
 .cm-linkimg .cm-img, .cm-linkimg-failed { width: 100%; aspect-ratio: 4 / 3; }
 .cm-linkimg-failed { display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--text-2); }
 .cm-linkimg-src { display: block; max-width: min(320px, 100%); margin-top: 2px; font-size: 11.5px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* 引用单独占一整行，下面才是头像和正文 */
-.cm-ref-row { flex: 0 0 100%; min-width: 0; display: flex; }
+/* 引用属于当前作者的消息，放在作者名下方，避免看起来插进上一条消息。 */
+.cm-ref-row { width: 100%; min-width: 0; display: flex; }
 .cm-ref {
-  position: relative; margin: 0 0 4px 46px; display: flex; align-items: center; gap: 5px; min-width: 0; max-width: min(560px, calc(100% - 46px));
+  position: relative; margin: 0 0 2px 8px; padding: 2px 7px; display: flex; align-items: center; gap: 5px; min-width: 0; max-width: min(560px, calc(100% - 8px));
+  border-left: 2px solid var(--line); border-radius: 0 5px 5px 0; background: color-mix(in srgb, var(--surface-2) 70%, transparent);
   font-size: 12.5px; line-height: 18px; color: var(--text-3); text-align: left;
-}
-/* 从头像那一列弯上来的连线，一眼看出是谁回复了谁 */
-.cm-ref::before {
-  content: ""; position: absolute; left: -9px; top: 9px; width: 7px; height: 15px;
-  border: 2px solid var(--line); border-right: 0; border-bottom: 0; border-top-left-radius: 7px; pointer-events: none;
 }
 .cm-ref .avatar { flex: none; border-radius: 50%; }
 .cm-ref strong { color: var(--text-2); flex: none; font-weight: 600; }
@@ -111,7 +107,7 @@
 .cm-ref-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cm-ref-pic { display: inline-flex; align-items: center; gap: 3px; flex: none; font-style: italic; }
 .cm-ref:hover, .cm-ref:hover strong { color: var(--text); }
-.cm-ref:hover::before { border-color: var(--text-3); }
+.cm-ref:hover { border-left-color: var(--text-3); }
 /* 撤回：不当一条正经消息显示，缩成一行小灰字居中，像系统提示 */
 .cm-gone { font-size: 11px; color: var(--text-3); opacity: .7; text-align: center; }
 .cm-msg.gone { padding-top: 0 !important; padding-bottom: 0 !important; min-height: 0; }

@@ -8178,7 +8178,7 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=bf7f8855')
+    const { openRedpacket } = await import('/redpacket.js?v=6b2e2327')
     if (anchor.isConnected) openRedpacket({ anchor, ...options, h, icon, api, openTitleRaffle: titleRaffleDialog, uploadCover: async file => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
@@ -8283,9 +8283,9 @@ function chatMsg(m, { cont, pane, pending } = {}) {
       h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || '给你一个红包'),
         h('span', null, `${({hb:'HB · ',credit:'Credit · ',fish:'fish · '})[m.redpack.provider] || ''}${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`)),
       h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放'})[m.redpack.snapshot?.state] || (m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, `${m.redpack.opened} 人拆过${m.redpack.provider && m.redpack.provider!=='native'?'包装':''}`))))
-    if (!m.redpack && m.body && !lnk?.only) body.push(h('div', { class: 'cm-text' + (stkOnly(m.body) ? ' stk-only' : bubbleCls(m.user)) }, richBody(m.body, { md: 'lite' }), edited))
+    if ((!m.redpack || m.redpack.shared) && m.body && !lnk?.only) body.push(h('div', { class: 'cm-text' + (stkOnly(m.body) ? ' stk-only' : bubbleCls(m.user)) }, richBody(m.body, { md: 'lite' }), edited))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited))
-    const all = m.redpack ? [] : m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
+    const all = m.redpack && !m.redpack.shared ? [] : m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
     const files = all.filter((x) => x.k === 'f')
     const media = all.filter((x) => x.k !== 'f')
     if (media.length) {
@@ -8364,13 +8364,13 @@ function chatMsg(m, { cont, pane, pending } = {}) {
   const atMe = S.me && !m.mine && !m.deleted && m.body && new RegExp('@' + S.me.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\w.-])', 'i').test(stripQuotes(m.body))
   return h('div', { class: 'cm-msg' + (cont ? ' cont' : '') + (m.mine ? ' mine' : '') + (m.deleted ? ' gone' : '') + (ref ? ' has-ref' : '') + (atMe || ref?.classList.contains('me') ? ' at-me' : ''),
     'data-msg': m.id, id: 'msg-' + m.id },
-  ref && h('div', { class: 'cm-ref-row' }, ref),
   h('div', { class: 'cm-side' }, cont ? h('time', null, clock(m.created_at)) : face),
   h('div', { class: 'cm-main' },
     !cont && h('div', { class: 'cm-head' },
       compactIdentity(m.user, 'chat', uName('button', m.user, { class: 'cm-name', type: 'button', title: canAt ? `@${m.user.username}` : who, 'data-pop': 'u' + m.user.username, onclick: at }, who, 'chat')[0]),
       h('time', { title: new Date(m.created_at * 1000).toLocaleString('zh-CN', { hour12: false }) }, clock(m.created_at)),
       m.floor && h('span', { class: 'cm-floor' }, m.floor + '楼')),
+    ref && h('div', { class: 'cm-ref-row' }, ref),
     body),
   !m.deleted && S.me && !pending && chatTools(m, pane),
   !m.deleted && S.me && !pending && h('span', { class: 'cm-sw', 'aria-hidden': 'true' }, icon('reply')))

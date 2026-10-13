@@ -310,18 +310,29 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
   function archive() {
     title.textContent='群红包袋'
     dialog.classList.add('rpk-archive')
-    let view='all',scope='today',before=null,loading=false,ticket=0
+    let view='all',scope='today',before=null,loading=false,ticket=0,scanBefore=null
     const list=h('div',{class:'rpk-archive-list'}),info=status()
     const pending=btn('今天',()=>change('today')),history=btn('历史',()=>change('all')),refresh=btn('刷新',()=>change(scope)),more=btn('再翻一页',()=>draw(false))
     const filter=h('select',{class:'rpk-input','aria-label':'红包状态',onchange:e=>{view=e.target.value;change(scope)}},[['all','全部状态'],['pending','待拆'],['history','已领 / 已结束']].map(([k,v])=>h('option',{value:k},v)))
-    const tabs=h('div',{class:'rpk-actions'},pending,history,refresh)
+    const scan=btn('继续整理旧分享',()=>draw(true))
+    scan.hidden=true
+    const tabs=h('div',{class:'rpk-actions'},pending,history,refresh,scan)
     content.replaceChildren(tabs,filter,list,info,more)
-    function change(next){scope=next;before=null;ticket++;loading=false;draw(true)}
+    function change(next){if(loading)return;scope=next;before=null;scanBefore=null;draw(true)}
+    async function importShares(){
+      scan.disabled=true
+      try {
+        const d=await api(`/chat/groups/${archiveGroup.id}/redpacks/import`,{method:'POST',body:{scope,before:scanBefore}})
+        scanBefore=d.next;scan.hidden=!d.next
+      } finally {scan.disabled=false}
+    }
     async function draw(reset){
       if(loading)return;loading=true;const mine=++ticket;info.textContent='正在装进红包袋…';more.disabled=true
       pending.setAttribute('aria-pressed',String(scope==='today'));history.setAttribute('aria-pressed',String(scope==='all'))
       if(reset)list.replaceChildren()
       try {
+        let importError=''
+        if(reset){before=null;try{await importShares()}catch(e){importError='旧分享暂未整理：'+e.message}}
         const d=await api(`/chat/groups/${archiveGroup.id}/redpacks?view=${view}&scope=${scope}${before?'&before='+before:''}`)
         if(mine!==ticket || !dialog.isConnected)return
         list.append(...d.items.map(m=>{
@@ -336,7 +347,7 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
             },'rpk-archive-item'+(m.deleted?' is-gone':''))
         }))
         list.querySelectorAll('.is-gone').forEach(b=>b.disabled=true)
-        before=d.next;more.hidden=!d.more;info.textContent=list.children.length?'':'红包袋还是空的'
+        before=d.next;more.hidden=!d.more;info.textContent=importError || (list.children.length?'':'红包袋还是空的')
       }catch(e){if(mine===ticket)info.textContent=e.message}
       finally{if(mine===ticket){loading=false;more.disabled=false}}
     }
