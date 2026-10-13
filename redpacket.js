@@ -48,7 +48,46 @@ const DEFEATS = [
   ['此番落败，下包再战', catFace('<path d="m13 25 8 3m7 0 8-3m-14 9q3-4 6 0M8 38l-4 4m36-4 4 4"/>'), '败'],
 ].map(([text, art, word], i) => { DOODLES['defeat-'+i] = art; return { text, art:'defeat-'+i, word } })
 
-export function openRedpacket({ anchor, group, archiveGroup, userId, message, autoOpen = false, onSent, onUpdate, onClose, h, icon, api, uploadCover, openTitleRaffle }) {
+// 合成后的线索文件只含马赛克和选中的清晰格；领取者不能靠改 CSS 复原红包里的原图。
+export async function makePacketClue(url, bits, doc = document) {
+  if (!Number.isInteger(bits) || bits < 1 || bits > 511) throw Error('至少选择一个清晰区域')
+  const win = doc.defaultView
+  const image = new win.Image()
+  image.crossOrigin = 'anonymous'
+  await new Promise((resolve, reject) => {
+    const timer = win.setTimeout(() => { image.src = ''; reject(Error('图片读取超时，请换一张本站图片')) }, 10000)
+    image.onload = () => { win.clearTimeout(timer); resolve() }
+    image.onerror = () => { win.clearTimeout(timer); reject(Error('这张图片不能制作线索，请换一张本站图片')) }
+    image.src = url
+  })
+  const original = Math.max(image.naturalWidth, image.naturalHeight)
+  if (!original) throw Error('图片无法读取')
+  const scale = Math.min(1, 1200 / original)
+  const w = Math.max(1, Math.round(image.naturalWidth * scale)), h = Math.max(1, Math.round(image.naturalHeight * scale))
+  const canvas = doc.createElement('canvas'), mini = doc.createElement('canvas')
+  canvas.width = w; canvas.height = h
+  mini.width = Math.max(1, Math.ceil(w / 40)); mini.height = Math.max(1, Math.ceil(h / 40))
+  const ctx = canvas.getContext('2d'), tiny = mini.getContext('2d')
+  if (!ctx || !tiny) throw Error('当前浏览器无法制作图片线索')
+  tiny.drawImage(image, 0, 0, mini.width, mini.height)
+  ctx.imageSmoothingEnabled = false
+  ctx.drawImage(mini, 0, 0, w, h)
+  ctx.imageSmoothingEnabled = true
+  for (let i = 0; i < 9; i++) if (bits & (1 << i)) {
+    const x = Math.floor(i % 3 * w / 3), y = Math.floor(Math.floor(i / 3) * h / 3)
+    const x2 = Math.ceil((i % 3 + 1) * w / 3), y2 = Math.ceil((Math.floor(i / 3) + 1) * h / 3)
+    ctx.save(); ctx.beginPath(); ctx.rect(x, y, x2 - x, y2 - y); ctx.clip()
+    ctx.drawImage(image, 0, 0, w, h); ctx.restore()
+  }
+  let blob
+  try { blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82)) }
+  catch { throw Error('图片来源不允许安全合成，请换一张本站图片') }
+  if (!blob) throw Error('图片线索生成失败')
+  if (blob.size > 3 * 1024 * 1024) throw Error('图片线索超过 3 MB，请换一张图片')
+  return new win.File([blob], 'redpack-clue.' + (blob.type === 'image/webp' ? 'webp' : 'png'), { type: blob.type })
+}
+
+export function openRedpacket({ anchor, group, archiveGroup, userId, message, autoOpen = false, onSent, onUpdate, onClose, h, icon, api, uploadCover, uploadClue, openTitleRaffle }) {
   let autoInspect=autoOpen
   let externalInspected=false
   let defeatScene
@@ -95,12 +134,18 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
     return label && h('div',{class:'rpk-medal rpk-medal-'+p.rank},h('span',{class:'rpk-medal-mark','aria-hidden':'true'},label[0]),h('strong',null,label[1]),h('span',null,`${p.rank_scope || '开包次序'} · 第 ${p.rank} 名`))
   }
   const preview = (image, solved = false) => {
-    const box = h('div', { class: 'rpk-image' + (solved ? ' revealed' : '') })
+    const box = h('div', { class: 'rpk-image' + (solved ? ' revealed' : '') + (image.creator ? ' creator' : '') })
     const draw = () => {
-      const r = Math.floor(image.mask / 3), c = image.mask % 3
+      if (!image.u) { box.replaceChildren(h('p', { class: 'rpk-status' }, '旧红包没有安全图片线索，可根据文字提示猜谜底')); return }
       const failed = () => box.replaceChildren(h('p', { class: 'rpk-status' }, '图片加载失败，请关闭后重试'))
-      box.replaceChildren(...[h('img', { src: image.u, alt: solved ? '完整的帖子图片' : '模糊的图片线索', onerror: failed, draggable: false }),
-        !solved && h('img', { class: 'rpk-image-peek', src: image.u, alt: '', draggable: false, style: { clipPath: `inset(${r * 100 / 3}% ${100 - (c + 1) * 100 / 3}% ${100 - (r + 1) * 100 / 3}% ${c * 100 / 3}%)` } })].filter(Boolean))
+      const base = h('img', { src: image.u, alt: solved ? '完整的帖子图片' : '马赛克图片线索', onerror: failed, draggable: false })
+      const peeks = image.creator && !solved ? Array.from({ length: 9 }, (_, i) => {
+        if (!(image.bits & (1 << i))) return null
+        const r = Math.floor(i / 3), c = i % 3
+        return h('img', { class: 'rpk-image-peek', src: image.u, alt: '', draggable: false,
+          style: { clipPath: `inset(${r * 100 / 3}% ${100 - (c + 1) * 100 / 3}% ${100 - (r + 1) * 100 / 3}% ${c * 100 / 3}%)` } })
+      }).filter(Boolean) : []
+      box.replaceChildren(base, ...peeks)
     }
     if (image.nsfw) box.append(btn('敏感图片 · 点击查看线索', draw))
     else draw()
@@ -112,7 +157,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
   else load()
 
   function create() {
-    let mode = 'open', selected = null, selectedIndex = 0, mask = 4, searchSeq = 0, busy = false, cover=null, coverBusy=false
+    let mode = 'open', selected = null, selectedIndex = 0, maskBits = 1 << 4, searchSeq = 0, busy = false, cover=null, coverBusy=false, clueUpload=null, clueFor=''
     const draftKey=`creditPacketDraft:${userId}:${group.id}`
     let draft=null
     try{draft=JSON.parse(win.localStorage.getItem(draftKey)||'null')}catch{}
@@ -187,6 +232,14 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
       busy = true; submit.disabled = true; msg.textContent = '正在封装…'
       let creditNavigated=false
       try {
+        if (mode === 'image') {
+          const source = `${selected.id}:${selectedIndex}:${maskBits}`
+          if (clueFor !== source || !clueUpload) {
+            msg.textContent = '正在制作图片线索…'
+            const file = await makePacketClue(selected.images[selectedIndex].u, maskBits, doc)
+            clueUpload = await uploadClue(file); clueFor = source
+          }
+        }
         if(direct && !createdId){
           const bridge=await packetBridge('ping')
           if(!bridge.creditCreate)throw Error('请更新到 1.1.0 红包连接器，刷新本站后重试')
@@ -206,7 +259,8 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
         }
         const d = await api(`/chat/groups/${group.id}/redpacks`, { method: 'POST', body: {
           nonce, secret: value, mode, prompt: hint.value, phrase: phrase.value, game: game.value,
-          post_id: selected?.id, image_index: selectedIndex, mask,
+          post_id: selected?.id, image_index: selectedIndex, mask: Math.floor(Math.log2(maskBits & -maskBits)),
+          mask_bits: mode === 'image' ? maskBits : undefined, clue_key: mode === 'image' ? clueUpload?.key : undefined,
           provider:createdId?'credit':packetProvider,external_ref:createdId || externalRef.value,notify_at:notifyAt.value?Math.floor(new Date(notifyAt.value).getTime()/1000):null,
           cover_key:cover?.key,
         } })
@@ -261,11 +315,12 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
     function drawChosen() {
       const images = h('select', { class: 'rpk-input', 'aria-label': '选择帖子图片', onchange: e => { selectedIndex = Number(e.target.value); drawChosen() } }, selected.images.map((im, i) => im.u && im.k !== 'v' && im.k !== 'f' ? h('option', { value: i, selected: i === selectedIndex }, `第 ${i + 1} 张图片`) : null))
       const windows = h('div', { class: 'rpk-windows', role: 'group', 'aria-label': '选择清晰窗口' }, Array.from({ length: 9 }, (_, i) => {
-        const b = btn(String(i + 1), () => { mask = i; drawChosen() }); b.setAttribute('aria-pressed', String(mask === i)); b.setAttribute('aria-label', `清晰窗口 ${i + 1}`); return b
+        const b = btn(String(i + 1), () => { const next = maskBits ^ (1 << i); if (next) { maskBits = next; drawChosen() } }); b.setAttribute('aria-pressed', String(!!(maskBits & (1 << i)))); b.setAttribute('aria-label', `清晰区域 ${i + 1}`); return b
       }))
       chosen.replaceChildren(h('strong', null, `已选 No.${selected.id}`), images,
-        preview({ u: selected.images[selectedIndex].u, nsfw: selected.sensitive || selected.spoiler, mask }),
-        h('div', { class: 'rpk-window-row' }, h('p', { class: 'rpk-help' }, '露出哪一格？'), windows))
+        preview({ u: selected.images[selectedIndex].u, nsfw: selected.sensitive || selected.spoiler, bits: maskBits, creator: true }),
+        h('div', { class: 'rpk-window-row' }, h('p', { class: 'rpk-help' }, '选择清晰区域，可多选'), windows),
+        h('p', { class: 'rpk-help' }, '公开帖子本身仍可查看原图；请勿用公开图藏保密答案。'))
     }
   }
 

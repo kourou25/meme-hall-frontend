@@ -269,8 +269,8 @@
 .rpk-post { text-align: left; }
 .rpk-chosen { display: grid; gap: 12px; margin-top: 12px; }
 .rpk-image { position: relative; aspect-ratio: 4 / 3; width: 100%; min-height: 120px; border-radius: 10px; overflow: hidden; background: var(--rpk-soft); display: grid; place-items: center; isolation: isolate; }
-.rpk-image > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: blur(14px); }
-.rpk-image > .rpk-image-peek, .rpk-image.revealed > img { filter: none; }
+.rpk-image > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.rpk-image.creator > img:first-of-type { filter: blur(14px); }
 .rpk-image > button, .rpk-image > p { position: relative; z-index: 2; max-width: 90%; }
 .rpk-window-row { display: flex; gap: 20px; align-items: center; }
 .rpk-window-row p { flex: 1; }

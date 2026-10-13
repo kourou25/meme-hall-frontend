@@ -8450,7 +8450,7 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=2160f7b7')
+    const { openRedpacket } = await import('/redpacket.js?v=b3e88865')
     if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, openTitleRaffle: titleRaffleDialog, uploadCover: async file => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
@@ -8459,7 +8459,7 @@ async function redpackDialog(anchor, options) {
       const url=URL.createObjectURL(compact)
       try {const size=await probeMedia(compact,url);if(!size.w || !size.h)throw Error('无法读取这张图片');return await uploadFile(compact,'chat')}
       finally {URL.revokeObjectURL(url)}
-    } })
+    }, uploadClue: file => uploadFile(file, 'chat') })
   } catch (e) { toast(e.message, 'err') }
 }
 async function titleRaffleDialog(anchor, packetId = null) {
