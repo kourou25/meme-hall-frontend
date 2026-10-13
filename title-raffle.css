@@ -1,0 +1,25 @@
+.tr-dialog { width:min(580px,calc(100vw - 20px)); max-height:min(760px,calc(100dvh - 24px)); padding:0; border:1px solid var(--line); border-radius:16px; background:var(--surface); color:var(--text); box-shadow:0 18px 60px #0005; overflow:auto; }
+.tr-dialog::backdrop { background:#1619229c; }
+.tr-head { display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:2; padding:12px 16px; background:var(--surface); border-bottom:1px solid var(--line); }
+.tr-head h2 { flex:1; margin:0; font-size:19px; }
+.tr-spark { color:#a681c9; font-size:26px; line-height:1; }
+.tr-close { width:32px; height:32px; border:0; border-radius:8px; background:transparent; color:var(--text); cursor:pointer; }
+.tr-body { padding:14px; }
+.tr-controls,.tr-actions,.tr-create-fields { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.tr-controls { justify-content:flex-end; margin-bottom:10px; }
+.tr-create { display:grid; gap:10px; margin-bottom:14px; padding:12px; border:1px solid #b7a0d2; border-radius:12px; background:color-mix(in srgb,#8e6cb4 9%,var(--surface)); }
+.tr-create-fields > * { flex:1 1 100px; }
+.tr-input { min-height:36px; max-width:100%; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--text); padding:5px 8px; }
+.tr-action { min-height:34px; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--text); cursor:pointer; font:inherit; font-size:13px; }
+.tr-action.primary { border-color:#8964ac; background:#76519b; color:white; font-weight:700; }
+.tr-action:disabled { opacity:.55; cursor:default; }
+.tr-list { display:grid; gap:9px; }
+.tr-card { min-width:0; padding:11px 12px; border:1px solid var(--ot-edge); border-radius:var(--ot-shape); background:var(--ot-soft); color:var(--ot-ink); }
+.tr-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.tr-name { font-size:15px; }
+.tr-status { font-size:12px; white-space:nowrap; }
+.tr-meta { margin:6px 0; font-size:12px; opacity:.9; }
+.tr-winner { margin:8px 0; font-weight:700; }
+.tr-empty,.tr-info { margin:20px 0; text-align:center; color:var(--text-2); }
+.tr-error { color:#c83348; font-size:12px; }
+@media(max-width:480px) { .tr-dialog { width:calc(100vw - 12px); max-height:calc(100dvh - 12px); border-radius:12px; } .tr-create-fields > .tr-input { flex:1 1 calc(50% - 5px); } .tr-create-fields > button { flex-basis:100%; } }

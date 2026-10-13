@@ -58,3 +58,34 @@
 [data-theme=dark] .ot-card-heading > .ot-art { box-shadow:none; }
 @media(max-width:480px) { .ot-grid { grid-template-columns:1fr; gap:12px; } .official-title-manager { width:100%; padding:14px; } .official-title-manager .modal-head { top:-14px; } }
 @media(prefers-reduced-motion:reduce) { .ot-frame:focus-within, .ot-badge:hover .ot-art { animation:none !important; } }
+
+/* 群聊抽奖称号：小尺寸仍能辨认，不能被“隐藏他人装扮”覆盖。 */
+.rt-mona,.tr-mona { --ot-ink:#4b4e87; --ot-soft:#eef5f4; --ot-edge:#91a9c5; --ot-accent:#c5bfdc; --ot-shape:18px 12px 18px 12px; }
+.rt-lace,.tr-lace { --ot-ink:#5b367d; --ot-soft:#f4ecff; --ot-edge:#a986cc; --ot-accent:#d7b8ef; --ot-shape:19px 19px 7px 7px; }
+.rt-giant,.tr-giant { --ot-ink:#913d52; --ot-soft:#fff8e7; --ot-edge:#ec8c9d; --ot-accent:#f8cc8f; --ot-shape:20px; }
+.rt-worship,.tr-worship { --ot-ink:#49417d; --ot-soft:#f0eefd; --ot-edge:#9486c4; --ot-accent:#bdd0ee; --ot-shape:5px 15px 5px 15px; }
+.rt-muscle,.tr-muscle { --ot-ink:#674326; --ot-soft:#fff6d9; --ot-edge:#cb9c49; --ot-accent:#f5cb75; --ot-shape:17px 17px 5px 17px; }
+.rt-title.u-title { display:inline-flex; align-items:center; gap:3px; height:22px; flex:none; max-width:none; padding:0 7px; border:1px solid var(--ot-edge); border-radius:var(--ot-shape); background:var(--ot-soft); color:var(--ot-ink); box-shadow:0 2px 0 var(--ot-accent); font-weight:750; white-space:nowrap; }
+.rt-level { border-radius:4px; padding:0 3px; background:var(--ot-ink); color:var(--ot-soft); font-size:10px; line-height:1.4; white-space:nowrap; }
+.rt-badge { display:inline-flex; align-items:center; gap:3px; flex:none; min-width:0; color:var(--ot-ink); font-size:11px; font-weight:700; white-space:nowrap; }
+.rt-art { width:24px; height:24px; display:inline-flex; flex:none; padding:2px; border:1px solid var(--ot-edge); border-radius:var(--ot-shape); background:var(--ot-soft); box-shadow:1px 2px 0 var(--ot-accent); }
+.rt-art svg { width:100%; height:100%; display:block; }
+.rt-bubble.cm-text { color:var(--ot-ink); background:var(--ot-soft); border:2px solid var(--ot-edge); border-radius:var(--ot-shape); box-shadow:2px 3px 0 var(--ot-accent); position:relative; }
+.rt-bubble.rt-mona { border-bottom-style:double; background:linear-gradient(120deg,#f1f6f0,#e9eef9); }
+.rt-bubble.rt-lace { border-top-style:dotted; border-bottom:3px double var(--ot-edge); background:linear-gradient(135deg,#faf4ff,#efe7fc); }
+.rt-bubble.rt-giant { max-width:min(900px,calc(100vw - 40px)); width:max-content; margin-left:-44px; padding:10px 16px; border-width:3px; border-radius:25px 13px 25px 13px; background:linear-gradient(110deg,#fffdf3,#fff0e2); box-shadow:4px 4px 0 var(--ot-accent); }
+.rt-bubble.rt-worship { border-left-width:5px; border-right-style:dashed; background:linear-gradient(130deg,#f8f4ff,#eaf2ff); }
+.rt-bubble.rt-muscle { padding-right:49px; }
+.rt-bubble.rt-muscle::after { content:''; position:absolute; right:-12px; bottom:-17px; width:48px; height:45px; background:url('/assets/raffle/muscle-tail.webp') center/contain no-repeat; pointer-events:none; }
+.rt-frame:is(.boost-row,.cm-boost) { color:var(--ot-ink); background:var(--ot-soft); border-color:var(--ot-edge); box-shadow:2px 2px 0 var(--ot-accent); }
+@media(max-width:600px) { .rt-bubble.rt-giant { margin-left:0; width:auto; max-width:100%; } .rt-title.u-title { font-size:11px; } }
+@media(prefers-reduced-motion:reduce) { .rt-bubble.rt-muscle::after { background-image:url('/assets/raffle/muscle-tail-still.webp'); } }
+[data-theme=dark] :is(.rt-mona,.tr-mona) { --ot-soft:#293547; --ot-ink:#e4e9ff; --ot-edge:#7f91b8; --ot-accent:#585c82; }
+[data-theme=dark] :is(.rt-lace,.tr-lace) { --ot-soft:#372a4c; --ot-ink:#edd9ff; --ot-edge:#8e6db2; --ot-accent:#665176; }
+[data-theme=dark] :is(.rt-giant,.tr-giant) { --ot-soft:#45303b; --ot-ink:#ffe2e8; --ot-edge:#bd768f; --ot-accent:#76515d; }
+[data-theme=dark] :is(.rt-worship,.tr-worship) { --ot-soft:#332d4f; --ot-ink:#e8dcff; --ot-edge:#9184ba; --ot-accent:#5b577e; }
+[data-theme=dark] .rt-bubble.rt-mona { background:linear-gradient(120deg,#293547,#304156); }
+[data-theme=dark] .rt-bubble.rt-lace { background:linear-gradient(135deg,#372a4c,#413052); }
+[data-theme=dark] .rt-bubble.rt-giant { background:linear-gradient(110deg,#45303b,#503744); }
+[data-theme=dark] .rt-bubble.rt-worship { background:linear-gradient(130deg,#332d4f,#333e5b); }
+[data-theme=dark] :is(.rt-muscle,.tr-muscle) { --ot-soft:#453a25; --ot-ink:#ffe6a6; --ot-edge:#ac8848; --ot-accent:#725c37; }

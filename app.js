@@ -1419,12 +1419,24 @@ const OFFICIAL_ART = {
   diver: '<path d="M5 13h22v9a7 7 0 0 1-7 7h-8a7 7 0 0 1-7-7ZM20 13V5h7v5h-3v3M4 8l3-2m-5 6 3-1"/><rect x="8" y="16" width="16" height="7" rx="3"/><path d="M12 19h1m6 0h1"/>',
   reborn: '<path d="M5 11l5 4 6-10 6 10 5-4-2 15H7ZM8 22h16M12 18h1m6 0h1M3 5l2 2m22-2 2-2"/>',
 }
+const RAFFLE_TITLES = {
+  mona: { name: '莫奈之王', mood: '睡莲色的画中主角', art: '<path d="M4 21q6-8 12 0 6-8 12 0M6 25q10 5 20 0M16 4v7m-5-3 5-4 5 4M9 15q7-5 14 0"/>' },
+  lace: { name: '摸蕾丝紫奈', mood: '紫色蕾丝与小恶魔的心动', art: '<path d="M5 9q4-6 11 0 7-6 11 0v15H5Z M5 12l4 3 4-3 3 3 3-3 4 3 4-3M12 21q4-5 8 0m-4-3v8m-3-3 3 3 3-3"/>' },
+  giant: { name: '一根巨物', mood: '气泡也装不下的大场面', art: '<path d="M8 10a4 4 0 1 1 5 4l6 6a4 4 0 1 1 4 5 4 4 0 1 1-5-4l-6-6a4 4 0 1 1-4-5Z"/>' },
+  worship: { name: '寄吧几拜', mood: '一边吐槽，一边认真参拜', art: '<path d="M16 4l10 7-3 16H9L6 11ZM7 11h18M11 16l5 4 5-4M12 25h8m-10-5-3 3m15-3 3 3"/>' },
+  muscle: { name: '筋肉欢欢', mood: '一拳打出今日份快乐', art: '<path d="M8 13q-5-4-5 4 0 8 9 10h9q8-2 8-10 0-8-5-4l-4 3-4-5-4 5ZM9 20h2m10 0h2m-12 3q5 4 10 0M8 7l-3-3m20 3 3-3"/>' },
+}
+const raffleOf = u => RAFFLE_TITLES[u?.deco?.ft] ? { ...RAFFLE_TITLES[u.deco.ft], id: u.deco.ft, n: Math.max(1, Number(u.deco.fn) || 1) } : null
+const raffleArt = id => h('span', { class: 'rt-art', 'aria-hidden': 'true', html: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${RAFFLE_TITLES[id]?.art || ''}</svg>` })
+const raffleChip = (t, mini) => h('span', { class: 'rt-badge rt-' + t.id, title: `群聊抽奖 · ${t.name} · Lv${t.n}`, 'aria-label': `${t.name} 徽章，等级 ${t.n}` }, raffleArt(t.id), !mini && h('span', null, t.name), !mini && t.n > 1 && h('small', { class: 'rt-level' }, `×${t.n}`))
 const officialById = id => (S.officialTitles || []).find(t => t.id === id && OFFICIAL_ART[id])
 const officialOf = (u, where) => officialById(decoAt(u, where)?.ot)
 const officialArt = id => h('span', { class: 'ot-art', 'aria-hidden': 'true', html: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${OFFICIAL_ART[id] || ''}</svg>` })
-const officialFrame = (u, where) => { const t = officialOf(u, where); return t ? ' ot-frame ot-' + t.id : '' }
+const officialFrame = (u, where) => { const forced=raffleOf(u); if(forced)return ' ot-frame rt-frame rt-' + forced.id; const t = officialOf(u, where); return t ? ' ot-frame ot-' + t.id : '' }
 const officialChip = (t, mini = false) => h('span', { class: 'ot-badge ot-' + t.id, title: `站长授予 · ${t.name}`, 'aria-label': '官方徽章：' + t.name }, officialArt(t.id), !mini && h('span', null, t.name))
 function titleEl(u, where) {
+  const forced = raffleOf(u)
+  if (forced) return h('span', { class: 'u-title rt-title rt-' + forced.id, title: `群聊抽奖 · ${forced.mood}` }, forced.name, forced.n > 1 && h('small', { class: 'rt-level' }, `Lv${forced.n}`))
   const d = decoAt(u, where)
   const official = officialOf(u, where)
   if (official && !decoHidden(u, 'title')) return h('span', { class: 'u-title ot-title ot-' + official.id, title: '站长授予 · ' + official.mood }, official.name)
@@ -1457,6 +1469,8 @@ const badgeLv = (id, n) => id === 'elder' ? 5 : n > 0 ? (id==='guide'?[1,3,10,30
 const badgeLvText = (id, lv) => id === 'elder' ? '唯一' : lv ? `Lv${lv} ${BADGE_LV_NAME[lv]}` : '未获得'
 // 佩戴的徽章：群聊里只显示小图标（不挤消息），别处图标 + 名字；鼠标悬停 / 长按看说明。等级用 deco.bn（服务端同步的次数）
 function badgeEl(u, where, full) {
+  const forced = raffleOf(u)
+  if (forced) return raffleChip(forced, where !== 'card')
   const official = officialOf(u, where)
   if (official && !decoHidden(u, 'badge')) return officialChip(official, true)
   const d = u?.deco
@@ -1522,6 +1536,8 @@ function compactIdentity(u, where, name, ...meta) {
 }
 // 气泡类名：预设气泡 + 自己写的气泡样式（只作用在这个人自己的 .cm-text 上）
 const bubbleCls = (u) => {
+  const forced = raffleOf(u)
+  if (forced) return ' ot-bubble rt-bubble rt-' + forced.id
   const official = officialOf(u, 'chat')
   if (official && !decoHidden(u, 'bubble')) return ' ot-bubble ot-' + official.id
   const b = decoAt(u, 'chat')?.bb
@@ -7932,6 +7948,7 @@ function chatPane(g, { onHead } = {}) {
         tb('image', '发图片 / 视频', () => att.pick()),
         tb('redpack', '发红包', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { group: g, onSent: (message) => { closeHist(); add([message], 'live'); toBottom(false) } }), { class: 'cm-ibtn cm-redpack-btn' }),
         tb('packetBag', '群红包袋', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { archiveGroup:g, onUpdate:update })),
+        tb('packetBag', '称号抽奖', (e) => titleRaffleDialog(e.currentTarget)),
         tb('doc', '发文件（20MB 以内）', () => fileIn.click()),
         tb('at', '@ 某人', () => { insertAtCursor(ta, (/\S$/.test(ta.value.slice(0, ta.selectionStart)) ? ' ' : '') + '@') }),
         tb('quote', '引用', () => { const m = st.reply || st.items[st.items.length - 1]; if (m) quoteMsg(m) }),
@@ -7947,7 +7964,7 @@ function chatPane(g, { onHead } = {}) {
   if (S.me) acceptImages(compose, ta, { add: (fs) => att.add(fs) })
   if (S.me) {
     const bar = compose.querySelector('.cm-bar')
-    const extras = [...bar.querySelectorAll('button')].filter(b => ['发红包', '群红包袋', '发文件（20MB 以内）', '@ 某人', '引用', '引用帖子（插入 No.编号，会带预览卡）', '搜索聊天记录', 'AI 小伙伴'].includes(b.title))
+    const extras = [...bar.querySelectorAll('button')].filter(b => ['发红包', '群红包袋', '称号抽奖', '发文件（20MB 以内）', '@ 某人', '引用', '引用帖子（插入 No.编号，会带预览卡）', '搜索聊天记录', 'AI 小伙伴'].includes(b.title))
     extras.forEach(b => b.classList.add('cm-secondary'))
     bar.querySelector('[data-pop="cmrange"]')?.classList.add('desktop-only')
     const more = tb('more', '更多聊天操作', e => openPop(e.currentTarget,
@@ -8161,8 +8178,8 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=c028d692')
-    if (anchor.isConnected) openRedpacket({ anchor, ...options, h, icon, api, uploadCover: async file => {
+    const { openRedpacket } = await import('/redpacket.js?v=bf7f8855')
+    if (anchor.isConnected) openRedpacket({ anchor, ...options, h, icon, api, openTitleRaffle: titleRaffleDialog, uploadCover: async file => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
       const compact=await shrinkImage(file,{edge:1280,threshold:1024*1024,keepTall:false})
@@ -8171,6 +8188,13 @@ async function redpackDialog(anchor, options) {
       try {const size=await probeMedia(compact,url);if(!size.w || !size.h)throw Error('无法读取这张图片');return await uploadFile(compact,'chat')}
       finally {URL.revokeObjectURL(url)}
     } })
+  } catch (e) { toast(e.message, 'err') }
+}
+async function titleRaffleDialog(anchor, packetId = null) {
+  try {
+    closePop()
+    const { openTitleRaffle } = await import('/title-raffle.js?v=20261013')
+    openTitleRaffle({ anchor, packetId, api, h, icon })
   } catch (e) { toast(e.message, 'err') }
 }
 const REDPACK_AUTO = { queue: [], active: false, seen: new Set(), timer: 0 }
@@ -8210,6 +8234,10 @@ function drainRedpackAuto() {
 }
 function chatMsg(m, { cont, pane, pending } = {}) {
   const who = m.user.name || m.user.username
+  if(m.system_kind==='title_raffle')return h('div',{class:'cm-welcome cm-title-raffle',role:'note'},
+    h('span',{class:'cm-welcome-star','aria-hidden':'true'},'✦'),
+    h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'称号抽奖已撤回':m.body)),
+    !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>titleRaffleDialog(e.currentTarget)},'看结果'))
   if(m.system_kind==='redpack_due')return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},icon('redpack'),
     h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'红包提醒已撤回':'红包到点啦！'),!m.deleted && h('span',null,'开奖与领取状态以原站为准')),
     !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>redpackDialog(e.currentTarget,{message:{id:Number(m.system_ref)},onUpdate:fresh=>pane?.update(fresh)})},'去看看'))

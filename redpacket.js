@@ -39,7 +39,7 @@ const DEFEATS = [
   ['此番落败，下包再战', catFace('<path d="m13 25 8 3m7 0 8-3m-14 9q3-4 6 0M8 38l-4 4m36-4 4 4"/>'), '败'],
 ].map(([text, art, word], i) => { DOODLES['defeat-'+i] = art; return { text, art:'defeat-'+i, word } })
 
-export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen = false, onSent, onUpdate, onClose, h, icon, api, uploadCover }) {
+export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen = false, onSent, onUpdate, onClose, h, icon, api, uploadCover, openTitleRaffle }) {
   let autoInspect=autoOpen
   let externalInspected=false
   let defeatScene
@@ -214,6 +214,10 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
     }
     catch (e) { if (dialog.isConnected) content.replaceChildren(h('p', { class: 'rpk-status', role: 'alert' }, e.message), btn('重试', load)) }
   }
+  const raffleAction = p => p.id && openTitleRaffle && btn('抽一枚称号', () => {
+    dialog.addEventListener('close', () => openTitleRaffle(anchor, p.id), { once: true })
+    dialog.close()
+  }, 'rpk-secondary')
   function render(p) {
     if (p.solved && p.external) return renderExternal(p)
     title.textContent = p.solved ? '拆到啦！' : MODES[p.mode]
@@ -221,7 +225,7 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
     if (p.solved) {
       content.replaceChildren(...[coverImage(p.cover),medal(p),h('div', { class: 'rpk-win' }, doodle('happy', 'rpk-celebrate'),
         h('div', { class: 'rpk-secret' }, p.secret), h('p', null, `${p.opened} 人拆过`)),
-        p.image && preview(p.image, true), p.post_id && h('a', { class: 'rpk-secondary rpk-source', href: `/m/${p.post_id}`, target: '_blank', rel: 'noopener' }, `查看原帖 No.${p.post_id}`), btn('收好红包', () => dialog.close(), 'rpk-primary')].filter(Boolean))
+        p.image && preview(p.image, true), p.post_id && h('a', { class: 'rpk-secondary rpk-source', href: `/m/${p.post_id}`, target: '_blank', rel: 'noopener' }, `查看原帖 No.${p.post_id}`), raffleAction(p), btn('收好红包', () => dialog.close(), 'rpk-primary')].filter(Boolean))
       return
     }
     if (p.unavailable) { content.replaceChildren(h('p', { class: 'rpk-status' }, '图片暂不可用，请联系发包人。')); return }
@@ -254,7 +258,7 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
       } catch (e) { info.textContent = e.message }
       finally { busy = false; submit.disabled = false }
     } }, coverImage(p.cover),tagline, extras, !['open', 'phrase'].includes(p.mode) && p.game !== 'tiles' && field('谜底', answer), info, submit)
-    content.replaceChildren(form)
+    content.replaceChildren(form, raffleAction(p) || '')
   }
 
   function renderExternal(p) {
@@ -287,7 +291,7 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
       btn('复制脚本',async()=>{try{const r=await win.fetch('/meme-redpacket.user.js',{cache:'no-store'});const source=await r.text();if(!r.ok||!source.startsWith('// ==UserScript=='))throw Error('脚本获取失败，请重试');await win.navigator.clipboard.writeText(source);info.textContent='已复制。在脚本管理器中新建脚本、粘贴保存，然后刷新本站。'}catch(e){info.textContent=e.message||'复制失败，请下载脚本文件'}}),
       btn('检查连接',async()=>{try{const state=await packetBridge('ping');info.textContent='连接器已运行 · '+state.version+'。若原站返回未登录，请在这个浏览器中登录原站。'}catch(e){info.textContent=e.message+'。请确认脚本已启用、允许在本站运行，并刷新页面。'}}))
     const copy=btn('复制原站口令',async()=>{try{await win.navigator.clipboard.writeText(p.external.ref);info.textContent='已复制'}catch{info.textContent='请手动复制：'+p.external.ref}})
-    content.replaceChildren(...[coverImage(p.cover),won&&medal(p),visual,queried,fishPasswordField,claim,h('div',{class:'rpk-actions'},query,link),...(['hb','fish'].includes(p.provider)&&p.external.ref_kind!=='id'?[h('blockquote',{class:'rpk-cipher'},p.external.ref),copy]:[]),info,helper].filter(Boolean))
+    content.replaceChildren(...[coverImage(p.cover),won&&medal(p),visual,queried,fishPasswordField,claim,h('div',{class:'rpk-actions'},query,link),raffleAction(p),...(['hb','fish'].includes(p.provider)&&p.external.ref_kind!=='id'?[h('blockquote',{class:'rpk-cipher'},p.external.ref),copy]:[]),info,helper].filter(Boolean))
     let busy=false
     async function connect(action) {
       if(busy)return;busy=true;query.disabled=claim.disabled=true;info.textContent=action==='claim'?'正在核对并领取…':'正在查询…'
@@ -327,7 +331,7 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
             s?.expires_at && h('time',null,'截止 '+new Date(s.expires_at*1000).toLocaleString('zh-CN',{hour12:false})))],()=>{
               if(m.deleted)return
               // close 事件异步派发；等旧对话框移除后再打开，避免被单实例守卫拦住。
-              dialog.addEventListener('close',()=>openRedpacket({anchor,message:m,onUpdate,h,icon,api}),{once:true})
+              dialog.addEventListener('close',()=>openRedpacket({anchor,message:m,onUpdate,h,icon,api,openTitleRaffle}),{once:true})
               dialog.close()
             },'rpk-archive-item'+(m.deleted?' is-gone':''))
         }))
