@@ -2795,7 +2795,10 @@ async function initDays(st) {
   st.sentinel.replaceChildren(loadingBox())
   let list
   try {
-    list = (await browseApi('/days?' + listParams(st), st)).days
+    const query = listParams(st).toString()
+    const warm = START_DAYS?.query === query ? START_DAYS.promise : null
+    START_DAYS = null
+    list = ((warm && await warm) || await browseApi('/days?' + query, st)).days
   } catch (e) {
     if (st.qCount) st.qCount.textContent = '搜索出错了'
     return st.sentinel.replaceChildren(h('div', { class: 'empty' }, h('div', { class: 'empty-title' }, '加载失败'),
@@ -11092,6 +11095,20 @@ function nsfwHint(tries = 0) {
 
 // 表情、贴纸、图片走 Service Worker 缓存（Cache Storage），第二次起直接从本地读
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) navigator.serviceWorker.register('/sw.js').catch(() => {})
+// 只有首页的普通日期目录可在 /me 尚未返回时安全地并行取：请求自身仍带同一登录 Cookie。
+// 未看筛选、游客本地已看快照和热门列表有额外前置条件，继续走原路径。
+let START_DAYS = null
+if (location.pathname === '/' && !S.skin && !SEEN.local.size) {
+  const p = new URLSearchParams(location.search)
+  if (!location.search) for (const [k, v] of Object.entries(wallPrefs())) if (v && !(k === 'sort' && v === 'new')) p.set(k, v)
+  if (p.get('unseen') !== '1' && p.get('sort') !== 'hot') {
+    const st = { sort: p.get('sort') || 'new', q: p.get('q') || '', tag: p.get('tag') || '',
+      author: (p.get('author') || '').split(/[,，\s]+/).filter(Boolean).slice(0, 20).join(','),
+      text: ['only', '0'].includes(p.get('text')) ? p.get('text') : '' }
+    const query = listParams(st).toString()
+    START_DAYS = { query, promise: api('/days?' + query).catch(() => null) }
+  }
+}
 ;(async () => {
   try {
     const me = await api('/me')
