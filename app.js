@@ -7620,6 +7620,28 @@ function chatPane(g, { onHead } = {}) {
     topSpin.replaceChildren(h('div', { class: 'spinner' }))
     redraw(0) // 第一行在旧行移除后需要重新绘制日期和头像
   }
+  // 历史阅读保留一段连续窗口；向上翻时卸下远处的新消息，向下翻时卸下远处的旧消息。
+  // 1000 条仍覆盖「选一段聊天记录」的最大导出范围，超过 1200 才裁剪以避免边界处来回请求。
+  const trimHistory = (direction) => {
+    if (st.items.length <= 1200) return
+    const n = st.items.length - 1000
+    const top = scroller.scrollTop, height = scroller.scrollHeight
+    const removed = direction === 'older' ? st.items.splice(-n) : st.items.splice(0, n)
+    removed.forEach((m) => { rows.get(m.id)?.remove(); rows.delete(m.id) })
+    st.newIds = st.newIds.filter((id) => rows.has(id))
+    st.awayIds = st.awayIds.filter((id) => rows.has(id))
+    if (direction === 'older') {
+      st.after = st.items.at(-1).id
+    } else {
+      st.first = st.items[0].id
+      st.more = true
+      topSpin.replaceChildren(h('div', { class: 'spinner' }))
+      redraw(0)
+      scroller.scrollTop = Math.max(0, top - (height - scroller.scrollHeight))
+    }
+    drawLatest()
+    drawDown()
+  }
   // 编辑 / 撤回 / 表情 / 回应 / 转帖 / 轮询 changed：主列表和历史层里有这条的都重画
   const update = (m) => {
     histView?.apply(m)
@@ -7647,6 +7669,7 @@ function chatPane(g, { onHead } = {}) {
       st.more = d.more
       add(d.items, initial ? 'bottom' : 'top')
       topSpin.replaceChildren(st.more ? h('div', { class: 'spinner' }) : h('div', { class: 'cm-begin' }, d.items.length || st.items.length ? `这是「${g.name}」最早的消息` : `「${g.name}」还没有消息，来说第一句`))
+      if (!initial) trimHistory('older')
       if (initial) {
         const mark = list.querySelector('.cm-unread')
         if (mark) scroller.scrollTop = mark.offsetTop - 40
@@ -7705,6 +7728,7 @@ function chatPane(g, { onHead } = {}) {
           if (gone || ap === 'off' || histEl) st.stick = false // 图片晚加载也别把人拽到底
           // 往上翻着看的时候来了新消息：一样出按钮（以前只在离开时才出）
           st.newIds.push(...others.map((m) => m.id))
+          trimHistory('older')
           recount()
         }
       }
@@ -7843,6 +7867,7 @@ function chatPane(g, { onHead } = {}) {
       const items = d.items.filter((m) => m.id > st.after)
       add(items, 'bottom')
       st.after = d.more_after ? items[items.length - 1]?.id || 0 : 0
+      trimHistory('newer')
       drawLatest()
     } catch {} finally { st.busy = false }
   }
