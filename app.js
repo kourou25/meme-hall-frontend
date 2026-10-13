@@ -8233,7 +8233,7 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=6b2e2327')
+    const { openRedpacket } = await import('/redpacket.js?v=a6b159ef')
     if (anchor.isConnected) openRedpacket({ anchor, ...options, h, icon, api, openTitleRaffle: titleRaffleDialog, uploadCover: async file => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')

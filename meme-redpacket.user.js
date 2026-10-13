@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         尽欢红包连接器
 // @namespace    https://52dmeme.com/
-// @version      1.0.1
+// @version      1.0.2
 // @downloadURL  https://52dmeme.com/meme-redpacket.user.js
 // @updateURL    https://52dmeme.com/meme-redpacket.user.js
 // @description  使用自己的HB/Credit/fish登录态查询和领取；不托管积分，不上传登录凭据。
@@ -125,7 +125,7 @@ window.addEventListener('message', async event => {
   const data=event.data
   if(data?.type!=='meme-redpacket-request' || !/^[a-f0-9-]{36}$/i.test(data.id))return
   const reply=(result,error)=>window.postMessage({type:'meme-redpacket-result',id:data.id,result,error},location.origin)
-  if(data.action==='ping'){reply({version:'1.0.1'});return}
+  if(data.action==='ping'){reply({version:'1.0.2'});return}
   if(!['query','claim'].includes(data.action))return
   try {
     const ext=data.external,provider=ext?.provider,ref=String(ext?.ref || '')
@@ -137,10 +137,13 @@ window.addEventListener('message', async event => {
     if(!navigator.locks?.request)throw Error('浏览器不支持领取锁，请前往原站')
     await navigator.locks.request('meme-redpacket-'+provider,{ifAvailable:true},async lock=>{
       if(!lock)throw Error('另一页面正在查询或领取，请稍后重试')
-      const timeKey='memeRedpacketTime:'+provider,last=Number(localStorage.getItem(timeKey)||0)
-      if(!Number.isFinite(last) || last>Date.now())throw Error('本机时间异常，请到原站核对')
-      if(Date.now()-last<5000)throw Error('稍等 '+Math.ceil((5000-Date.now()+last)/1000)+' 秒再试')
-      localStorage.setItem(timeKey,String(Date.now()))
+      // 查询不消费领取冷却。用户看过状态后应能立即开包；连续领取仍限流。
+      if(data.action==='claim'){
+        const timeKey='memeRedpacketClaimTime:'+provider,last=Number(localStorage.getItem(timeKey)||0)
+        if(!Number.isFinite(last) || last>Date.now())throw Error('本机时间异常，请到原站核对')
+        if(Date.now()-last<5000)throw Error('稍等 '+Math.ceil((5000-Date.now()+last)/1000)+' 秒再试')
+        localStorage.setItem(timeKey,String(Date.now()))
+      }
       const request=(url,method='GET',body,extraHeaders={})=>new Promise((resolve,reject)=>GM_xmlhttpRequest({
         url,method,responseType:'json',timeout:15000,anonymous:false,
         headers:{Accept:'application/json',...(provider==='credit'?{'X-Requested-With':'XMLHttpRequest'}:{}),...(method==='POST'?{'Content-Type':'application/json'}:{}),...extraHeaders},

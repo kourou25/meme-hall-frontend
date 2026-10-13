@@ -6,7 +6,8 @@ const STATES = { active: '可领取', exhausted: '被抢光啦', expired: '已�
 const KINDS = { fixed: '普通', equal: '普通', random: '拼手气', exclusive: '专属', lottery: '抽奖', custom:'自定义金额',timed_draw:'限时开奖',password:'口令兑奖',text:'文本 / CDK' }
 function packetBridge(action, external) {
   return new Promise((resolve,reject) => {
-    const id=crypto.randomUUID(), timer=setTimeout(()=>finish(Error(action==='ping' ? '尚未连接辅助脚本' : '结果尚未确认，请重新查询或到原站核对')),action==='ping'?700:40000)
+    const timeout=action==='ping'?3000:external?.provider==='fish'?90000:45000
+    const id=crypto.randomUUID(), timer=setTimeout(()=>finish(Error(action==='ping' ? '尚未连接辅助脚本' : '结果尚未确认，请重新查询或到原站核对')),timeout)
     const receive=e=>{if(e.source===window && e.origin===location.origin && e.data?.type==='meme-redpacket-result' && e.data.id===id)finish(e.data.error?Error(e.data.error):null,e.data.result)}
     const finish=(error,value)=>{clearTimeout(timer);window.removeEventListener('message',receive);error?reject(error):resolve(value)}
     window.addEventListener('message',receive)
@@ -285,10 +286,10 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
       h('a',{class:'rpk-secondary',href:'https://www.tampermonkey.net/index.php?browser=chrome',target:'_blank',rel:'noopener noreferrer'},'1. 获取 Tampermonkey'),
       h('p',{class:'rpk-help'},'Chrome：扩展程序 → Tampermonkey → 详情，检查“允许用户脚本”以及本站的访问权限。脚本管理器中启用“尽欢红包连接器”，刷新本站后点“检查连接”。'),
       h('a',{href:'https://www.tampermonkey.net/faq.php?locale=zh&q=Q209',target:'_blank',rel:'noopener noreferrer'},'Chrome 官方脚本权限说明'),
-      h('a',{class:'rpk-secondary rpk-source',href:'/meme-redpacket.user.js',target:'_blank',rel:'noopener'},'2. 安装 / 更新连接脚本'),
-      h('p',{class:'rpk-help'},'仍只显示代码：点下方“复制脚本”，在 Tampermonkey 中新建脚本，替换全部内容并保存。先在对应红包站登录自己的账号；不支持脚本的手机浏览器使用“去原站领取”。'),
+      h('a',{class:'rpk-secondary rpk-source',href:'/meme-redpacket.user.js',target:'_blank',rel:'noopener'},'2. 打开脚本安装页'),
+      h('p',{class:'rpk-help'},'若只看到一页代码，说明 Chrome 未接管安装。回到这里点“复制脚本”，在 Tampermonkey 中新建脚本、粘贴保存，再刷新本站。原站仍需登录自己的账号。'),
       h('a',{class:'rpk-secondary',href:'/meme-redpacket.user.js',download:'meme-redpacket.user.js'},'下载脚本文件'),
-      btn('复制脚本',async()=>{try{const r=await win.fetch('/meme-redpacket.user.js',{cache:'no-store'});const source=await r.text();if(!r.ok||!source.startsWith('// ==UserScript=='))throw Error('脚本获取失败，请重试');await win.navigator.clipboard.writeText(source);info.textContent='已复制。在脚本管理器中新建脚本、粘贴保存，然后刷新本站。'}catch(e){info.textContent=e.message||'复制失败，请下载脚本文件'}}),
+      btn('复制脚本',async()=>{try{const r=await win.fetch('/meme-redpacket.user.js',{cache:'no-store'});const source=await r.text();if(!r.ok||!source.startsWith('// ==UserScript=='))throw Error('脚本获取失败，请重试');await win.navigator.clipboard.writeText(source);info.textContent='已复制。在脚本管理器中新建脚本、粘贴保存，然后刷新本站。'}catch(e){info.textContent=e.message||'复制失败，请下载脚本文件'}},'rpk-primary'),
       btn('检查连接',async()=>{try{const state=await packetBridge('ping');info.textContent='连接器已运行 · '+state.version+'。若原站返回未登录，请在这个浏览器中登录原站。'}catch(e){info.textContent=e.message+'。请确认脚本已启用、允许在本站运行，并刷新页面。'}}))
     const copy=btn('复制原站口令',async()=>{try{await win.navigator.clipboard.writeText(p.external.ref);info.textContent='已复制'}catch{info.textContent='请手动复制：'+p.external.ref}})
     content.replaceChildren(...[coverImage(p.cover),won&&medal(p),visual,queried,fishPasswordField,claim,h('div',{class:'rpk-actions'},query,link),raffleAction(p),...(['hb','fish'].includes(p.provider)&&p.external.ref_kind!=='id'?[h('blockquote',{class:'rpk-cipher'},p.external.ref),copy]:[]),info,helper].filter(Boolean))
