@@ -388,14 +388,15 @@ const spoilerSpan = (kids) => h('span', { class: 'spoiler-text', title: '点击�
 function mdInline(s) {
   const out = []
   let last = 0
-  const re = /`([^`\n]+)`|\[([^\]\n]{1,200})\]\((https?:\/\/[^\s)]+|\/(?!\/)[^\s)]*)\)|~~([^~\n]{1,300})~~|(?<!\*)\*(?![*\s])([^*\n]{1,300}?)(?<!\s)\*(?!\*)|\[spoiler\]([^\n]*?)\[\/spoiler\]/g
+  const re = /`([^`\n]+)`|\[([^\]\n]{1,200})\]\((https?:\/\/[^\s)]+|\/(?!\/)[^\s)]*)\)|~~([^~\n]{1,300})~~|(?<!\*)\*\*(?!\s)([^*\n]{1,300}?)(?<!\s)\*\*(?!\*)|(?<!\*)\*(?![*\s])([^*\n]{1,300}?)(?<!\s)\*(?!\*)|\[spoiler\]([^\n]*?)\[\/spoiler\]/g
   for (const m of s.matchAll(re)) {
     out.push(linkify(s.slice(last, m.index)))
     if (m[1] != null) out.push(h('code', { class: 'md-ic' }, m[1]))
     else if (m[2] != null) out.push(m[3].startsWith('/') ? h('a', { href: m[3], 'data-link': '' }, m[2]) : h('a', { href: m[3], target: '_blank', rel: 'noopener noreferrer' }, m[2]))
     else if (m[4] != null) out.push(h('del', null, mdInline(m[4])))
-    else if (m[5] != null) out.push(h('em', null, mdInline(m[5])))
-    else out.push(spoilerSpan(mdInline(m[6])))
+    else if (m[5] != null) out.push(h('strong', null, mdInline(m[5])))
+    else if (m[6] != null) out.push(h('em', null, mdInline(m[6])))
+    else out.push(spoilerSpan(mdInline(m[7])))
     last = m.index + m[0].length
   }
   out.push(linkify(s.slice(last)))
