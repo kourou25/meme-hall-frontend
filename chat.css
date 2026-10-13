@@ -1,5 +1,25 @@
 /* 群聊：消息区（站内 / 飞书 / LINUX DO 共用）、站内群聊页、成员面板、引用块、站内链接预览 */
 
+/* 私信：复用站点色彩，保留单独的消息树和权限边界。 */
+.dm-page{display:flex;flex-direction:column;min-height:0;overflow:hidden;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text)}
+.dm-top{height:56px;flex:none;display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--line)}
+.dm-top h1{margin:0;font-size:18px}.dm-back{color:var(--primary);text-decoration:none;font-size:13px}
+.dm-layout{display:grid;grid-template-columns:minmax(220px,290px) minmax(0,1fr);flex:1;min-height:0}
+.dm-side{min-width:0;overflow:auto;border-right:1px solid var(--line);padding:14px}.dm-side h2{margin:0 0 10px;font-size:15px}
+.dm-search,.dm-input{box-sizing:border-box;width:100%;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--text);font:inherit}
+.dm-search{height:40px;padding:0 10px;font-size:14px}.dm-search-results{margin:6px 0 14px}
+.dm-user,.dm-thread{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;min-height:46px;padding:8px 10px;border:0;border-radius:9px;background:none;color:var(--text);text-align:left;font:inherit;cursor:pointer}
+.dm-user:hover,.dm-thread:hover,.dm-thread.on{background:var(--surface-2)}.dm-thread strong{font-size:14px}.dm-thread-last{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2);font-size:12px}
+.dm-unread{position:absolute;right:10px;top:10px;min-width:19px;height:19px;border-radius:10px;padding:0 4px;background:var(--primary);color:#fff;text-align:center;font:600 11px/19px system-ui}
+.dm-pane{display:flex;flex-direction:column;min-width:0;min-height:0}.dm-pane-head{display:flex;align-items:center;gap:8px;height:52px;padding:0 16px;border-bottom:1px solid var(--line);flex:none}
+.dm-pane-back{border:0;background:none;color:var(--primary);font-size:20px;cursor:pointer}.dm-feed{flex:1;min-height:0;overflow-y:auto;padding:12px 16px;overscroll-behavior:contain}
+.dm-message{display:flex;flex-direction:column;align-items:flex-start;gap:3px;margin:9px 0}.dm-message.mine{align-items:flex-end}.dm-bubble{max-width:min(75%,560px);padding:8px 12px;border-radius:4px 13px 13px;background:var(--surface-2);white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
+.dm-message.mine .dm-bubble{border-radius:13px 4px 13px 13px;background:color-mix(in srgb,var(--primary) 14%,var(--surface))}.dm-time{font-size:11px;color:var(--text-3)}
+.dm-older{align-self:center;flex:none;margin:7px;padding:3px 9px;border:0;background:none;color:var(--primary);cursor:pointer}.dm-older[hidden]{display:none}
+.dm-compose{display:flex;align-items:flex-end;gap:8px;padding:10px 14px;border-top:1px solid var(--line);flex:none}.dm-input{min-height:58px;max-height:140px;resize:vertical;padding:9px 11px;font-size:16px}.dm-send{flex:none;min-width:54px;min-height:42px;padding:0 12px;white-space:nowrap;border:0;border-radius:9px;background:var(--primary);color:#fff;font:600 14px var(--font);cursor:pointer}.dm-send:disabled{opacity:.55}
+.dm-notice{margin:0;padding:7px 16px;color:var(--err);font-size:13px}.dm-empty{color:var(--text-3);font-size:13px;line-height:1.6}
+@media(max-width:760px){.dm-page{margin:0 -10px;border-radius:0;border-left:0;border-right:0}.dm-layout{display:block}.dm-side,.dm-pane{height:100%}.dm-pane{display:none}.dm-page.thread-open .dm-side{display:none}.dm-page.thread-open .dm-pane{display:flex}.dm-feed{padding:10px}.dm-bubble{max-width:85%}.dm-compose{padding-bottom:max(9px,env(safe-area-inset-bottom))}}
+
 /* ---------- 消息区 ---------- */
 .cm-pane { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .cm-ai { position: absolute; inset: 0; z-index: 45; display: flex; flex-direction: column; min-width: 0; background: var(--surface); color: var(--text); border-top: 2px solid var(--brand-accent); overflow: hidden; }

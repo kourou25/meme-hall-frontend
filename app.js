@@ -1,5 +1,6 @@
 // 尽欢前端：无构建、无框架
 import { onRemoval, windowContent } from '/resource-memory.js?v=e187d34d'
+import { renderDmPage } from '/dm.js'
 const S = { me: null, emojis: [], minPostTL: 1, bgKey: null, modal: null, wall: null, meSt: null, folders: null, viewer: null }
 const main = document.getElementById('main')
 
@@ -1675,6 +1676,7 @@ async function userCard(username, anchor) {
     (u.joined_at || u.last_seen) && h('div', { class: 'muted ucard-join' }, u.joined_at && `${fmtTime(u.joined_at)} 加入尽欢`,
       u.last_seen && seenText(u.last_seen, Date.now() / 1000)[0] && ` · ${seenText(u.last_seen, Date.now() / 1000)[0]}`),
     h('div', { class: 'ucard-acts' },
+      S.me && Number.isSafeInteger(u.id) && u.id !== S.me.id && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); navigate('/dm/new/' + u.id) } }, '发私信'),
       S.me?.owner && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); officialTitleManager(u.username) } }, '授予称号'),
       u.posts > 0 && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); saveWallPrefs({ author: u.username }); navigate('/?author=' + encodeURIComponent(u.username)) } }, '看 TA 的图'),
       S.me?.is_admin && !u.is_admin && u.username !== S.me.username && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); memberAdmin(u.username) } }, '管理'),
@@ -2256,11 +2258,11 @@ function markNav() {
   const p = location.pathname
   const cur = p === '/' || p.startsWith('/t/') || p.startsWith('/u/') ? 'wall'
     : p.startsWith('/series') || p.startsWith('/s/') ? 'series'
-      : p.startsWith('/chat') ? 'chat' : p.startsWith('/road') ? 'road' : p.startsWith('/me') ? 'me' : ''
+      : p.startsWith('/chat') || p.startsWith('/dm') ? 'chat' : p.startsWith('/road') ? 'road' : p.startsWith('/me') ? 'me' : ''
   if (p.startsWith('/m/')) return
   document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === cur))
   const title=document.getElementById('mobile-page-title')
-  if(title) title.textContent=({wall:'图廊',series:'图集',chat:'群聊',road:'鞭打',me:'我的'})[cur] || '尽欢'
+  if(title) title.textContent=p.startsWith('/dm')?'私信':({wall:'图廊',series:'图集',chat:'群聊',road:'鞭打',me:'我的'})[cur] || '尽欢'
 }
 
 document.getElementById('search').addEventListener('submit', (e) => {
@@ -8666,8 +8668,8 @@ async function renderChat(gid) {
   requestAnimationFrame(fit)
   onPageLeave(() => { ro.disconnect(); visualViewport?.removeEventListener('resize', fit); visualViewport?.removeEventListener('scroll', fit); removeEventListener('resize', fit) })
   const drawSide = () => side.replaceChildren(
-    h('div', { class: 'chat-side-head' }, h('strong', null, '群聊'), h('span', { class: 'grow' }),
-      CHAT.canCreate && h('button', { class: 'btn btn-ghost sm', onclick: () => groupCreate() }, icon('plus', 'i tiny'), '建群')),
+    h('div', { class: 'chat-side-head' }, h('strong', null, '迷友群'), h('span', { class: 'grow' }),
+      h('a', { class: 'btn btn-ghost sm', href: '/dm', 'data-link': true }, '私信')),
     h('div', { class: 'chat-groups' }, CHAT.groups.map((g) => groupRow(g, g.id === gid, () => navigate('/chat/' + g.id))),
       (CHAT.gone || []).map((x) => groupRow(goneAsGroup(x), x.id === gid, () => navigate('/chat/' + x.id)))))
   onPageLeave(onChat(drawSide))
@@ -8721,6 +8723,7 @@ function chatHead(g, { back, pane } = {}) {
     groupAvatar(g.name, 34),
     h('span', { class: 'chat-head-title' }, h('strong', { title:g.name }, g.name), memberCount(g, (x) => `${x.members} 人${x.online ? ` · ${x.online} 人在线` : ''}${x.is_default && innerWidth>640 ? ' · 登录即入群' : ''}`)),
     pane && h('button', { class: 'btn-icon ghost', title: '搜索聊天记录', 'aria-label': '搜索聊天记录', onclick: () => pane.search() }, icon('search')),
+    h('a', { class: 'btn-icon ghost', href: '/dm', 'data-link': true, title: '私信', 'aria-label': '私信' }, icon('chat')),
     pane && h('button', { class: 'btn-icon ghost', title: '弹出小窗', 'aria-label': '弹出小窗', onclick: () => chatPopout(g) }, icon('popout')),
     h('button', { class: 'btn btn-ghost sm chat-members', 'aria-label':CHAT.canManage ? '成员与设置' : '成员',title:CHAT.canManage ? '成员与设置' : '成员', onclick: () => groupPanel(g) }, icon('users', 'i tiny'), h('span',{class:'lbl'},CHAT.canManage ? '成员与设置' : '成员'),
       CHAT.canManage && findGroup(g.id)?.reqs > 0 && h('i', { class: 'chat-badge', title: '有人申请回群' }, findGroup(g.id).reqs)))
@@ -9347,7 +9350,7 @@ function imOpenGroup(c) {
 function imPlus(anchor) {
   if (!CHAT.canCreate) return openCompose()
   const it = (label, ic, fn) => h('button', { class: 'menu-item', onclick: () => { closePop(); fn() } }, icon(ic), label)
-  openPop(anchor, h('div', { class: 'menu-list' }, it('发图片', 'image', openCompose), it('新建群组', 'users', groupCreate)), { key: 'implus', align: 'right' })
+  openPop(anchor, h('div', { class: 'menu-list' }, it('发图片', 'image', openCompose)), { key: 'implus', align: 'right' })
 }
 // 在某天的群里直接发图：发完刷新会话列表；正好在看今天且已经翻到底，就把新图接在最后
 async function imAfterPost(id) {
@@ -9873,7 +9876,7 @@ function ldSide() {
     h('div', { class: 'ld-s-sec' }, h('div', { class: 'ld-s-h' }, '类别'),
       LD_CATS.map(([n, c]) => h('button', { class: 'ld-s-link' + (n === LD_TOPIC.cat ? ' on' : ''), type: 'button', onclick: toTop },
         h('i', { class: 'ld-sq', style: { background: c } }), h('span', null, n)))),
-    h('div', { class: 'ld-s-sec' }, h('div', { class: 'ld-s-h' }, '频道', CHAT.canCreate && h('button', { class: 'ld-s-add', type: 'button', title: '新建群组', onclick: groupCreate }, icon('plus', 'i tiny'))),
+    h('div', { class: 'ld-s-sec' }, h('div', { class: 'ld-s-h' }, '频道'),
       S.me
         ? CHAT.groups.map((g) => a('chat', g.name, () => { document.documentElement.classList.remove('ld-side-open'); ldChat(g.id) },
           g.unread > 0 && h('i', { class: 'ld-s-n' }, g.unread > 99 ? '99+' : g.unread)))
@@ -9904,7 +9907,7 @@ function ldChat(gid) {
   }
   if (!g) {
     if (!CHAT.loaded) loadGroups().then(() => LD?.chat && !LD.chatPane && ldChat(null))
-    LD.chatEl.replaceChildren(head('聊天', null, CHAT.canCreate && h('button', { class: 'ld-ib', type: 'button', title: '新建群组', onclick: groupCreate }, icon('plus'))),
+    LD.chatEl.replaceChildren(head('聊天', null),
       h('div', { class: 'ld-chat-list' }, CHAT.groups.map((x) => groupRow(x, false, () => ldChat(x.id))),
         (CHAT.gone || []).map((x) => groupRow(goneAsGroup(x), false, () => ldChat(x.id)))))
     return
@@ -9983,6 +9986,7 @@ const ROUTES = [
   [/^\/(puzzles|tools)$/, () => navigate('/', { replace: true })],
   [/^\/me$/, () => renderMe()],
   [/^\/road$/, () => renderRoad()],
+  [/^\/dm(?:\/(?:\d+|new\/-?\d+))?$/, () => renderDmPage(main,{path:location.pathname,me:S.me,navigate,onLeave:onPageLeave})],
   [/^\/chat(?:\/(\d+))?$/, (m) => renderChat(Number(m[1]) || 0)],
   [/^\/u\/(.+)$/, (m) => renderWall({ author: decodeURIComponent(m[1]) })],
   [/^\/t\/(.+)$/, (m) => renderWall({ tag: decodeURIComponent(m[1]) })],
@@ -9997,6 +10001,15 @@ function navigate(path, { replace = false } = {}) {
 
 function route() {
   dockSync()
+  if (location.pathname.startsWith('/dm') && S.skin) {
+    sessionStorage.setItem('dmReturnSkin',S.skin)
+    setSkin('')
+    return
+  }
+  if (!location.pathname.startsWith('/dm') && !S.skin) {
+    const previousSkin=sessionStorage.getItem('dmReturnSkin')
+    if (previousSkin) { sessionStorage.removeItem('dmReturnSkin'); setSkin(previousSkin); return }
+  }
   if (S.skin === 'feishu') return imRoute()
   if (S.skin === 'linuxdo') return ldRoute()
   S.viewer?.close()
@@ -10060,6 +10073,7 @@ function pageTitle(path, search) {
   if (path.startsWith('/puzzles')) return '解密'
   if (path.startsWith('/tools')) return '解密工具箱'
   if (path.startsWith('/chat')) return '群聊'
+  if (path.startsWith('/dm')) return '私信'
   if (path.startsWith('/me')) return '我的'
   if (path.startsWith('/road')) return '鞭打模块'
   if (path.startsWith('/u/')) return '@' + dec(path.slice(3))
