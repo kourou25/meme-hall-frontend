@@ -7596,6 +7596,17 @@ function chatPane(g, { onHead } = {}) {
       redraw(i)
     })
   }
+  // 长时间挂在群聊底部时只保留最近一段；更早的消息仍可通过原有 before 游标重新加载。
+  const trimLive = (following) => {
+    if (!following || histEl || st.after || st.items.length <= 360) return
+    const remove = st.items.length - 300
+    const old = st.items.splice(0, remove)
+    old.forEach((m) => { rows.get(m.id)?.remove(); rows.delete(m.id) })
+    st.first = st.items[0].id
+    st.more = true
+    topSpin.replaceChildren(h('div', { class: 'spinner' }))
+    redraw(0) // 第一行在旧行移除后需要重新绘制日期和头像
+  }
   // 编辑 / 撤回 / 表情 / 回应 / 转帖 / 轮询 changed：主列表和历史层里有这条的都重画
   const update = (m) => {
     histView?.apply(m)
@@ -7675,6 +7686,7 @@ function chatPane(g, { onHead } = {}) {
         // 手机网络抖动时 POST 已经到了服务器、回包丢了：轮询拿到同内容的自己的消息，就把「发送中 / 没发出去」那条收掉
         d.items.forEach((m) => m.mine && inflight.find((j) => !j.done && j.body === (m.body || '') && !!j.tray === !!(m.media?.length || m.image))?.settle(m))
         add(d.items, 'live')
+        trimLive(stick)
         if (stick) toBottom(true)
         else {
           if (gone || ap === 'off' || histEl) st.stick = false // 图片晚加载也别把人拽到底
