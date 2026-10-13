@@ -6450,13 +6450,19 @@ function goneView(x, { onBack } = {}) {
   return box
 }
 const goneAsGroup = (x) => ({ id: x.id, name: x.kind === 'left' ? x.name : '群聊', gone: x, members: 0, latest: null, unread: 0 })
+let groupsRequestSeq = 0, groupsAppliedSeq = 0
 async function loadGroups() {
-  if (!S.me) return CHAT.groups
+  const userId = S.me?.id
+  if (!userId) return CHAT.groups
+  const seq = ++groupsRequestSeq
   try {
     const d = await api('/chat/groups')
+    // 后发的成功请求若先返回，不能再让旧快照覆盖群名、未读数和成员状态。
+    if (S.me?.id !== userId || seq < groupsAppliedSeq) return CHAT.groups
+    groupsAppliedSeq = seq
     Object.assign(CHAT, { groups: d.groups, gone: d.gone || [], canManage: d.can_manage, canCreate: !!d.can_create, loaded: true, at: Date.now() })
   } catch {}
-  CHAT.subs.forEach((fn) => fn())
+  if (S.me?.id === userId && seq === groupsAppliedSeq) CHAT.subs.forEach((fn) => fn())
   return CHAT.groups
 }
 setInterval(() => {
@@ -8863,9 +8869,10 @@ async function renderChat(gid) {
       (CHAT.gone || []).map((x) => groupRow(goneAsGroup(x), x.id === gid, () => navigate('/chat/' + x.id)))))
   onPageLeave(onChat(drawSide))
   if (!CHAT.loaded) await loadGroups()
+  if (!page.isConnected) return
   // 只有一个群：不要群列表这一层，直接进
   const solo = CHAT.groups.length + (CHAT.gone?.length || 0) === 1 && !CHAT.canManage
-  main.firstChild.classList.toggle('solo', solo)
+  page.classList.toggle('solo', solo)
   const g = findGroup(gid) || (!gid && (solo || innerWidth > 760) ? CHAT.groups[0] : null)
   drawSide()
   const gx = !g && (findGone(gid) || (!gid && !CHAT.groups.length && CHAT.gone?.[0]))
