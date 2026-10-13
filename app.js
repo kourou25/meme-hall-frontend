@@ -656,14 +656,38 @@ const SEEN = {
   queue: new Set(),
   timers: new Map(),
   flushT: 0,
+  retryT: 0,
+  inflight: null,
+  owner: 0,
 }
-const isSeen = (m) => (S.me ? !!m.seen_at : SEEN.local.has(m.id))
+const seenPendingKey = (uid) => `seen-pending:${uid}`
+function savePendingSeen() {
+  if (!SEEN.owner) return
+  try {
+    if (SEEN.queue.size) localStorage.setItem(seenPendingKey(SEEN.owner), JSON.stringify([...SEEN.queue]))
+    else localStorage.removeItem(seenPendingKey(SEEN.owner))
+  } catch {}
+}
+function restorePendingSeen() {
+  const uid = Number(S.me?.id) || 0
+  if (!uid || SEEN.owner === uid) return
+  savePendingSeen()
+  SEEN.queue.clear()
+  SEEN.owner = uid
+  try {
+    const ids = JSON.parse(localStorage.getItem(seenPendingKey(uid)) || '[]')
+    if (Array.isArray(ids)) for (const id of ids) if (Number.isSafeInteger(id) && id > 0) SEEN.queue.add(id)
+  } catch {}
+}
+const isSeen = (m) => (S.me ? !!m.seen_at || (SEEN.owner === S.me.id && SEEN.queue.has(m.id)) : SEEN.local.has(m.id))
 function markSeen(m) {
   if (!(m.id > 0) || isSeen(m)) return
   if (S.me) {
+    restorePendingSeen()
     SEEN.queue.add(m.id)
+    savePendingSeen()
     clearTimeout(SEEN.flushT)
-    SEEN.flushT = setTimeout(flushSeen, 1500)
+    SEEN.flushT = setTimeout(() => flushSeen().catch(() => {}), SEEN.queue.size >= 100 ? 0 : 1500)
     syncItem({ ...m, seen_at: Math.floor(Date.now() / 1000) })
   } else {
     SEEN.local.add(m.id)
@@ -674,24 +698,52 @@ function markSeen(m) {
   S.wall?.onSeen?.(m)
   imSeen(m)
 }
+function retrySeenLater() {
+  if (SEEN.retryT) return
+  SEEN.retryT = setTimeout(() => {
+    SEEN.retryT = 0
+    flushSeen().catch(() => {})
+  }, 5000)
+}
 function flushSeen() {
   clearTimeout(SEEN.flushT)
   if (!S.me) {
     const arr = [...SEEN.local]
     localStorage.setItem('seen', JSON.stringify(arr.slice(-20000)))
-    return
+    return Promise.resolve()
   }
-  if (!SEEN.queue.size) return
-  const ids = [...SEEN.queue].slice(0, 100)
-  ids.forEach((id) => SEEN.queue.delete(id))
-  const body = JSON.stringify({ ids })
-  if (!navigator.sendBeacon?.('/api/views', new Blob([body], { type: 'text/plain' }))) {
-    fetch('/api/views', { method: 'POST', body, credentials: 'same-origin', keepalive: true }).catch(() => {})
-  }
-  if (SEEN.queue.size) flushSeen()
+  restorePendingSeen()
+  if (SEEN.inflight) return SEEN.inflight
+  if (!SEEN.queue.size) return Promise.resolve()
+  const uid = SEEN.owner
+  SEEN.inflight = (async () => {
+    while (SEEN.owner === uid && SEEN.queue.size) {
+      const ids = [...SEEN.queue].slice(0, 100)
+      const res = await fetch('/api/views', { method: 'POST', body: JSON.stringify({ ids }), credentials: 'same-origin', keepalive: true,
+        headers: { 'content-type': 'text/plain' } })
+      if (!res.ok || !(await res.json().catch(() => null))?.ok) throw new Error('已看记录尚未同步，请重试')
+      if (SEEN.owner !== uid) break
+      ids.forEach((id) => SEEN.queue.delete(id))
+      savePendingSeen()
+    }
+  })().catch((error) => { retrySeenLater(); throw error }).finally(() => { SEEN.inflight = null })
+  return SEEN.inflight
 }
-addEventListener('pagehide', flushSeen)
-document.addEventListener('visibilitychange', () => { if (document.hidden) flushSeen() })
+// 离页时 Beacon 只表示浏览器接收，不能当作 D1 已确认；保留队列供下次登录重发。
+function flushSeenOnExit() {
+  if (!S.me) return flushSeen()
+  restorePendingSeen()
+  savePendingSeen()
+  const ids = [...SEEN.queue]
+  for (let i = 0; i < ids.length; i += 100) {
+    navigator.sendBeacon?.('/api/views', new Blob([JSON.stringify({ ids: ids.slice(i, i + 100) })], { type: 'text/plain' }))
+  }
+}
+addEventListener('pagehide', flushSeenOnExit)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) flushSeenOnExit()
+  else if (SEEN.queue.size) flushSeen().catch(() => {})
+})
 
 const seenIO = new IntersectionObserver((entries) => {
   for (const en of entries) {
@@ -2395,9 +2447,10 @@ function listParams(st, extra = {}) {
   return p
 }
 // 游客只读查询携带进入列表时的已看快照；POST 不保存快照或创建记录。
-function browseApi(path, st) {
+async function browseApi(path, st) {
   st.seenSnap ||= new Set(SEEN.local)
   const guest = !S.me && st.seenSnap.size
+  if (S.me && st.unseen) await flushSeen()
   return api(guest ? '/browse' + path : path, guest ? { method: 'POST', body: { seen: [...st.seenSnap] } } : {})
 }
 const AUTHOR_CHOICES = new Map()
@@ -3069,8 +3122,9 @@ function anchorsMenu(anchor) {
   { key: 'anchors', align: 'right', cls: 'pop-anchors' })
 }
 
-async function loadMore(st) {
-  if (st.loading || !st.more || S.wall !== st) return
+async function loadMore(st, { retry = false } = {}) {
+  if (st.loading || !st.more || S.wall !== st || (st.loadFailed && !retry)) return
+  st.loadFailed = false
   st.loading = true
   st.sentinel.replaceChildren(st.page ? h('div', { class: 'spinner' }) : loadingBox())
   try {
@@ -3096,12 +3150,13 @@ async function loadMore(st) {
       st.sentinel.replaceChildren(st.more ? '' : h('div', { class: 'end' }, '— 到底了，起来走两步 —'))
     }
   } catch (e) {
-    st.sentinel.replaceChildren(h('div', { class: 'end' }, e.message, ' ', h('button', { class: 'btn-text', onclick: () => loadMore(st) }, '重试')))
+    st.loadFailed = true
+    st.sentinel.replaceChildren(h('div', { class: 'end' }, e.message, ' ', h('button', { class: 'btn-text', onclick: () => loadMore(st, { retry: true }) }, '重试')))
   } finally {
     st.loading = false
   }
   // 首屏不足一屏时继续加载
-  if (st.more && S.wall === st && nearEnd(st)) loadMore(st)
+  if (!st.loadFailed && st.more && S.wall === st && nearEnd(st)) loadMore(st)
 }
 
 // ---------- 图集 ----------
@@ -11023,6 +11078,10 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localho
   try {
     const me = await api('/me')
     S.me = me.user
+    if (S.me) {
+      restorePendingSeen()
+      if (SEEN.queue.size) flushSeen().catch(() => {})
+    }
     S.officialTitles = me.official_titles || []
     S.limits = me.limits || []
     S.emojis = me.emojis
