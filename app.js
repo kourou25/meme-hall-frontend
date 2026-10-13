@@ -2121,7 +2121,23 @@ function renderActions() {
   kids.push(h('button',{class:'btn-icon mobile-action',type:'button','aria-label':'更多功能','data-pop':'mobilemore',onclick:e=>mobileMore(e.currentTarget)},icon('more')))
   nav.replaceChildren(...kids)
   document.querySelectorAll('.mobile-nav [data-nav]').forEach(a=>a.querySelector('span').replaceChildren(icon(({wall:'image',series:'apps',chat:'chat',road:'pen',me:'contacts'})[a.dataset.nav])))
+  document.getElementById('mobile-page-title').onclick = e => mobilePages(e.currentTarget)
   markNav()
+}
+const MOBILE_NAV_KEY = 'mobileNavCompact'
+function setMobileNavCompact(compact) {
+  document.documentElement.dataset.mobileNav = compact ? 'compact' : 'full'
+  localStorage.setItem(MOBILE_NAV_KEY, compact ? '1' : '0')
+}
+document.documentElement.dataset.mobileNav = localStorage.getItem(MOBILE_NAV_KEY) === '1' ? 'compact' : 'full'
+function mobilePages(anchor) {
+  const cur = document.querySelector('.mobile-nav [data-nav].on')?.dataset.nav
+  const pages = [['wall', '图廊', 'image', '/'], ['series', '图集', 'apps', '/series'],
+    ['chat', '群聊', 'chat', '/chat'], ['road', '鞭打', 'pen', '/road'], ['me', '我的', 'contacts', '/me']]
+  openPop(anchor, h('nav', { class: 'mobile-more mobile-pages', 'aria-label': '切换页面' }, pages.map(([key, label, ic, path]) =>
+    h('button', { class: 'mobile-more-item' + (cur === key ? ' on' : ''), type: 'button',
+      'aria-current': cur === key ? 'page' : null, onclick: () => { closePop(); navigate(path) } }, icon(ic), label))),
+  { key: 'mobilepages', align: 'left', cls: 'sheet' })
 }
 function mobileSearch(anchor) {
   const input=h('input',{class:'input',type:'search','aria-label':'搜索帖子和标签',placeholder:'搜索帖子和标签',value:new URLSearchParams(location.search).get('q') || ''})
@@ -2133,6 +2149,11 @@ function mobileMore(anchor) {
     item('摸鱼日历','calendar',()=>moyuPanel(anchor)),
     item('外观与伪装','palette',()=>looksPanel(anchor)),
     item('主题：'+THEME_LABELS[themeMode()],THEME_ICONS[themeMode()],toggleTheme),
+    item('底部导航：'+(document.documentElement.dataset.mobileNav === 'compact' ? '已收起' : '显示中'), 'apps', () => {
+      const compact = document.documentElement.dataset.mobileNav !== 'compact'
+      setMobileNavCompact(compact)
+      toast(compact ? '已收起底部导航，可点顶栏页名切换页面' : '已显示底部导航')
+    }),
     item('设置','gear',()=>meSettings()),
     h('a',{class:'mobile-more-item',href:'/me','data-link':''},icon('contacts'),'我的主页')),{key:'mobilemore',align:'right',cls:'sheet'})
 }
@@ -2332,7 +2353,10 @@ function markNav() {
   if (p.startsWith('/m/')) return
   document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === cur))
   const title=document.getElementById('mobile-page-title')
-  if(title) title.textContent=p.startsWith('/dm')?'私信':({wall:'图廊',series:'图集',chat:'群聊',road:'鞭打',me:'我的'})[cur] || '尽欢'
+  if(title) {
+    title.textContent=p.startsWith('/dm')?'私信':({wall:'图廊',series:'图集',chat:'群聊',road:'鞭打',me:'我的'})[cur] || '尽欢'
+    title.setAttribute('aria-label', '切换页面，当前' + title.textContent)
+  }
 }
 
 document.getElementById('search').addEventListener('submit', (e) => {
@@ -3349,16 +3373,19 @@ function roadCard(it, reload) {
   const cmtBtn = h('button', { class: 'btn-text sm', type: 'button', 'aria-expanded': 'false', onclick: () => roadComments(it, cmt, cmtBtn, cmtN) }, cmtN)
   const acts = []
   if (S.me?.is_admin) acts.push(h('button', { class: 'btn-text sm', type: 'button', onclick: (e) => roadAdmin(it, e.currentTarget, reload), 'data-pop': 'rda' + it.id }, '改状态 / 回复'))
-  if (it.mine || S.me?.is_admin) acts.push(h('button', { class: 'btn-text sm danger', type: 'button', onclick: async () => {
-    if (!confirm(`删除「${it.title}」？`)) return
-    try { await api(`/road/${it.id}`, { method: 'DELETE' }); reload() } catch (e) { toast(e.message, 'err') }
-  } }, '删除'))
+  const removeLabel = it.mine ? '撤回' : '删除'
+  const remove = (it.mine || S.me?.is_admin) && h('button', { class: 'btn-text sm danger rd-remove', type: 'button',
+    'aria-label': `${removeLabel}鞭打 #${it.id}`, onclick: async () => {
+      if (!confirm(`${removeLabel}鞭打「${it.title}」？${it.source_msg_id ? '原群聊消息会保留。' : ''}`)) return
+      try { await api(`/road/${it.id}`, { method: 'DELETE' }); reload() } catch (e) { toast(e.message, 'err') }
+    } }, removeLabel)
   return h('article', { class: 'rd-card st-' + it.status, id: 'road-' + it.id },
     h('div', { class: 'rd-vote' }, up, score, down),
     h('div', { class: 'rd-main' },
       h('div', { class: 'rd-head' },
         h('span', { class: 'rd-kind k-' + it.kind }, icon(ki, 'i tiny'), kl),
         h('span', { class: 'rd-st s-' + it.status }, ROAD_ST[it.status] || it.status),
+        remove,
         h('h3', null, it.title)),
       it.body && h('div', { class: 'rd-body' }, richBody(it.body, { md: 'lite' })),
       it.source_msg_id && h('button', { class: 'rd-source', type: 'button', 'data-msg': it.source_msg_id, onclick: () => openChatMsg(it.source_group_id, it.source_msg_id) },
