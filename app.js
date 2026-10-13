@@ -1,6 +1,5 @@
 // 尽欢前端：无构建、无框架
 import { onRemoval, windowContent } from '/resource-memory.js?v=af516e27'
-import { renderDmPage } from '/dm.js'
 const S = { me: null, emojis: [], minPostTL: 1, bgKey: null, modal: null, wall: null, meSt: null, folders: null, viewer: null }
 const main = document.getElementById('main')
 
@@ -832,7 +831,7 @@ function seenTag(m) {
 }
 
 // stack：横向浏览时，同一帖的多张图上下排开（不用宫格 / 轮播）
-function memeCard(m, { stack = false } = {}) {
+function memeCard(m, { stack = false, priority = false } = {}) {
   m = syncItem(m)
   const slot = 'c' + Math.random().toString(36).slice(2, 8)
   const status = h('span', null, seenTag(m))
@@ -863,7 +862,7 @@ function memeCard(m, { stack = false } = {}) {
       h('button', { class: 'btn-icon ghost sm', 'aria-label': '更多操作', 'data-pop': slot + 'm', onclick: (e) => moreMenu(m, e.currentTarget, slot + 'm') }, icon('more'))),
     cardText(m),
     m.tags?.length > 0 && h('nav', { class: 'card-tags', 'aria-label': '帖子标签' }, m.tags.map(t => h('a', { href: '/t/' + encodeURIComponent(t) + location.search, 'data-link': '' }, '#' + t))),
-    isText ? textMedia(m) : cardMedia(m, { stack }),
+    isText ? textMedia(m) : cardMedia(m, { stack, priority }),
     h('div', { class: 'card-bottom' }, actions, rpBtn,
       h('button', { class: 'btn-icon ghost sm card-share', 'aria-label': '分享帖子', type: 'button', onclick: () => copyText(location.origin + memeHref(m)) }, icon('send'))),
     replies,
@@ -965,7 +964,7 @@ function peekOrig(e, im) {
 }
 const cellMark = (im) => nodes(kindBadge(im), im?.o && h('span', { class: 'mask-badge' }, maskTap() === 'view' ? '已打码 · 大图里可看原图' : '已打码 · 点一下看原图'), im?.k === 'v' && h('span', { class: 'play-mark' }, icon('play')))
 // 轮播：横向滑动、圆点、左右键；高度按第一张定，夹在 3:4 和 16:9 之间
-function carousel(m, imgs, { detail = false } = {}) {
+function carousel(m, imgs, { detail = false, priority = false } = {}) {
   const n = imgs.length
   const r0 = imgs[0].w && imgs[0].h ? imgs[0].w / imgs[0].h : 1
   const ratio = Math.min(16 / 9, Math.max(3 / 4, r0))
@@ -975,7 +974,8 @@ function carousel(m, imgs, { detail = false } = {}) {
         mediaVideo(im, { onOpen: () => openViewer(m, i) }),
         h('button', { class: 'stage-open', type: 'button', onclick: () => openViewer(m, i) }, icon('ext', 'i tiny'), '完整预览'))
       : h('button', { class: 'cell car-cell', type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': `查看第 ${i + 1} 张，共 ${n} 张` },
-        cellPic(im, detail ? im.u : im.t || im.u, { loading: i < 2 ? null : 'lazy', alt: altOf(m, i, n) }), cellMark(im))))
+        cellPic(im, detail ? im.u : im.t || im.u, { loading: priority && i === 0 ? 'eager' : i < 2 ? null : 'lazy',
+          fetchpriority: priority && i === 0 ? 'high' : null, alt: altOf(m, i, n) }), cellMark(im))))
   const count = h('span', { class: 'car-count' }, `1 / ${n}`)
   const dots = h('div', { class: 'car-dots', 'aria-hidden': 'true' }, imgs.slice(0, 12).map((_, i) => h('i', { class: i ? '' : 'on' })))
   const go = (d) => track.scrollBy({ left: d * track.clientWidth, behavior: REDUCED.matches ? 'auto' : 'smooth' })
@@ -1013,7 +1013,7 @@ function textMedia(m) {
   applyBlur(box)
   return box
 }
-function cardMedia(m, { stack = false } = {}) {
+function cardMedia(m, { stack = false, priority = false } = {}) {
   if (m.kind === 'text') return textMedia(m)
   const imgs = m.images?.length ? m.images : [{ u: m.image, t: m.thumb, w: m.width, h: m.height }]
   let box
@@ -1023,12 +1023,13 @@ function cardMedia(m, { stack = false } = {}) {
       style: im.w && im.h ? { aspectRatio: `${im.w} / ${im.h}` } : null,
       onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': `查看第 ${i + 1} 张，共 ${imgs.length} 张` },
     cellPic(im, im.t || im.u, { loading: i < 2 ? null : 'lazy', width: im.w || null, height: im.h || null, alt: altOf(m, i, imgs.length) }), cellMark(im))))
-  } else if (m.layout === 'carousel' && imgs.length > 1) box = carousel(m, imgs)
+  } else if (m.layout === 'carousel' && imgs.length > 1) box = carousel(m, imgs, { priority })
   else if (m.image_count > 1 && imgs.length > 1) {
     const show = imgs.slice(0, 4)
     box = h('div', { class: 'media grid-' + show.length },
       show.map((im, i) => h('button', { class: 'cell', type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': `查看第 ${i + 1} 张` },
-        cellPic(im, im.t || im.u, { loading: 'lazy', alt: altOf(m, i, m.image_count) }), cellMark(im),
+        cellPic(im, im.t || im.u, { loading: priority && i === 0 ? 'eager' : 'lazy',
+          fetchpriority: priority && i === 0 ? 'high' : null, alt: altOf(m, i, m.image_count) }), cellMark(im),
         i === show.length - 1 && m.image_count > show.length && h('span', { class: 'more-n' }, '+' + (m.image_count - show.length)))))
   } else {
     const im = imgs[0]
@@ -1038,7 +1039,8 @@ function cardMedia(m, { stack = false } = {}) {
     box = h('div', { class: 'media single' + (tall ? ' tall' : ' fit') + (anim ? ' anim' : ''),
       style: !tall && im.w && im.h ? { '--ar': (im.w / im.h).toFixed(4), '--nw': im.w + 'px' } : null },
       h('button', { class: 'cell', type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, 0), 'aria-label': im.o ? '已打码，点一下看原图' : '查看大图' },
-        cellPic(im, im.u || m.image, { loading: 'lazy', width: im.w || null, height: im.h || null, alt: altOf(m, 0, 1) }), cellMark(im)))
+        cellPic(im, im.u || m.image, { loading: priority ? 'eager' : 'lazy', fetchpriority: priority ? 'high' : null,
+          width: im.w || null, height: im.h || null, alt: altOf(m, 0, 1) }), cellMark(im)))
     if (tall) {
       box.append(h('span', { class: 'long-badge' }, '长图'),
         h('button', { class: 'expand', type: 'button', 'aria-expanded': 'false', onclick: (e) => {
@@ -3001,10 +3003,12 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
     }
     sec.offset = data.offset + data.items.length
     sec.loaded = true
+    let firstVisibleCard = first && st.sections[0] === sec && !st.hz && !sec.collapsed && sec.offset === data.items.length
     for (const m of data.items) {
       if (st.ids.has(m.id) || (st.unseen && !S.me && st.seenSnap.has(m.id))) continue
       st.ids.add(m.id)
-      const card = wallCard(m, { stack: st.hz })
+      const card = wallCard(m, { stack: st.hz, priority: firstVisibleCard && m.kind !== 'text' })
+      firstVisibleCard = false
       sec.cols.add(card)
       // 要定位的帖子在折叠起来的那天：临时展开（不写回 DAY_FOLD），不然卡片是隐藏的，定位和高亮都落空
       if (m.id === focus && sec.collapsed) sec.setFold(false)
@@ -10062,6 +10066,20 @@ function disguiseBtn(skin, mark, name, desc) {
 
 // ---------- 路由 ----------
 
+let dmRouteSeq = 0
+async function renderDmRoute() {
+  const seq = ++dmRouteSeq
+  const path = location.pathname
+  main.replaceChildren(loadingBox())
+  try {
+    const { renderDmPage } = await import('/dm.js')
+    if (seq !== dmRouteSeq || location.pathname !== path) return
+    renderDmPage(main, { path, me: S.me, navigate, onLeave: onPageLeave })
+  } catch {
+    if (seq === dmRouteSeq && location.pathname === path) main.replaceChildren(emptyState('私信暂时打不开', '请重试',
+      h('button', { class: 'btn btn-primary sm', type: 'button', onclick: renderDmRoute }, '重试')))
+  }
+}
 const ROUTES = [
   [/^\/$/, () => renderWall({})],
   [/^\/series$/, () => renderSeries()],
@@ -10069,7 +10087,7 @@ const ROUTES = [
   [/^\/(puzzles|tools)$/, () => navigate('/', { replace: true })],
   [/^\/me$/, () => renderMe()],
   [/^\/road$/, () => renderRoad()],
-  [/^\/dm(?:\/(?:\d+|new\/-?\d+))?$/, () => renderDmPage(main,{path:location.pathname,me:S.me,navigate,onLeave:onPageLeave})],
+  [/^\/dm(?:\/(?:\d+|new\/-?\d+))?$/, () => renderDmRoute()],
   [/^\/chat(?:\/(\d+))?$/, (m) => renderChat(Number(m[1]) || 0)],
   [/^\/u\/(.+)$/, (m) => renderWall({ author: decodeURIComponent(m[1]) })],
   [/^\/t\/(.+)$/, (m) => renderWall({ tag: decodeURIComponent(m[1]) })],

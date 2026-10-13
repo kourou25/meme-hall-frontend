@@ -351,7 +351,7 @@
 
 /* ---------- 站内群聊页 ---------- */
 .mainnav .nav-badge, .chat-badge {
-  display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  display: inline-flex; flex: none; white-space: nowrap; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
   background: var(--like); color: #fff; font: 600 11px/1 var(--font); font-style: normal; font-variant-numeric: tabular-nums;
 }
 .mainnav .nav-badge[hidden], .chat-badge[hidden] { display: none; }
