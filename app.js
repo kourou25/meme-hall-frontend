@@ -7927,7 +7927,7 @@ function chatPane(g, { onHead } = {}) {
     } catch (e) { if (histView === hv) close(); toast(e.message, 'err') }
   }
   // 跳转窗口：清空列表，只放 id 前后各 25 条
-  const resetList = () => { rows.clear(); list.replaceChildren(); st.items = []; st.first = 0; st.newIds = []; pill.hidden = true; st.unreadAt = -1 }
+  const resetList = () => { rows.clear(); list.replaceChildren(); st.items = []; st.first = 0; st.olderFailed = false; st.newIds = []; pill.hidden = true; st.unreadAt = -1 }
   async function openWindow(id) {
     st.busy = true
     try {
@@ -7957,7 +7957,6 @@ function chatPane(g, { onHead } = {}) {
   async function backToLatest() {
     st.after = 0
     st.more = true
-    st.olderFailed = false
     resetList()
     drawLatest()
     st.busy = false
