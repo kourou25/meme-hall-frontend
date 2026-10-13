@@ -7815,25 +7815,39 @@ function chatPane(g, { onHead } = {}) {
         hv.after ? h('button', { class: 'btn-text cm-hist-more', type: 'button', onclick: () => extend('down') }, '↓ 更晚的 25 条')
           : h('button', { class: 'btn-text cm-hist-more', type: 'button', onclick: close }, '已经到最新了 · 回到当前聊天'))
     }
+    // 历史层允许双向翻阅，但只保留附近 150 条；裁掉的一侧仍可从边界重新加载。
+    const HISTORY_WINDOW = 150
+    let extending = false
     const extend = async (dir) => {
+      if (extending) return
       const edge = dir === 'up' ? hv.items[0]?.id : hv.items[hv.items.length - 1]?.id
+      if (!edge) return
+      extending = true
       try {
         const d = await api(`/chat/groups/${g.id}/messages?around=${edge}`)
         if (histView !== hv) return
         const have = new Set(hv.items.map((m) => m.id))
         const fresh = d.items.filter((m) => !have.has(m.id))
+        const oldTop = hv.rows.get(edge)?.getBoundingClientRect().top
         if (dir === 'up') {
-          const h0 = box.scrollHeight, t0 = box.scrollTop
           hv.items = [...fresh.filter((m) => m.id < edge), ...hv.items]
           hv.more = d.more
-          draw()
-          box.scrollTop = t0 + box.scrollHeight - h0
+          if (hv.items.length > HISTORY_WINDOW) {
+            hv.items.length = HISTORY_WINDOW
+            hv.after = true
+          }
         } else {
           hv.items = [...hv.items, ...fresh.filter((m) => m.id > edge)]
           hv.after = !!d.more_after
-          draw()
+          if (hv.items.length > HISTORY_WINDOW) {
+            hv.items = hv.items.slice(-HISTORY_WINDOW)
+            hv.more = true
+          }
         }
-      } catch (e) { toast(e.message, 'err') }
+        draw()
+        const newTop = hv.rows.get(edge)?.getBoundingClientRect().top
+        if (oldTop != null && newTop != null) box.scrollTop += newTop - oldTop
+      } catch (e) { toast(e.message, 'err') } finally { extending = false }
     }
     try {
       const d = await api(`/chat/groups/${g.id}/messages?around=${id}`)
