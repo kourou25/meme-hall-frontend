@@ -963,6 +963,31 @@ function peekOrig(e, im) {
   return true
 }
 const cellMark = (im) => nodes(kindBadge(im), im?.o && h('span', { class: 'mask-badge' }, maskTap() === 'view' ? '已打码 · 大图里可看原图' : '已打码 · 点一下看原图'), im?.k === 'v' && h('span', { class: 'play-mark' }, icon('play')))
+// 图廊视频先只绘制封面；用户点开后才创建 video，离屏/卸载由 mediaVideo 释放资源。
+function galleryCell(m, im, i, { cls = '', src, imgOpts = {}, style = null, label = '', more = null } = {}) {
+  const attrs = { class: 'cell' + (cls ? ' ' + cls : ''), style }
+  const cover = cellPic(im, src, imgOpts)
+  if (im.k !== 'v' || !im.v) return h('button', { ...attrs, type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': label }, cover, cellMark(im), more)
+  const shell = h('div', { ...attrs, class: attrs.class + ' gallery-video-cell' })
+  const thumb = h('button', { class: 'gallery-video-cover', type: 'button', 'aria-label': `在卡片中播放第 ${i + 1} 个视频`, onclick: () => {
+    const player = mediaVideo(im)
+    shell.classList.add('playing')
+    thumb.replaceWith(player)
+    const video = player.querySelector('video')
+    video.addEventListener('error', () => {
+      shell.classList.remove('playing')
+      player.replaceWith(thumb)
+      toast('视频加载失败，请尝试完整预览')
+    }, { once: true })
+    video.play().catch(() => {})
+  } }, cover, cellMark(im), more)
+  const expand = h('button', { class: 'gallery-video-expand', type: 'button', 'aria-label': `完整预览第 ${i + 1} 个视频`, onclick: () => {
+    shell.querySelector('video')?.pause()
+    openViewer(m, i)
+  } }, icon('ext', 'i tiny'))
+  shell.append(thumb, expand)
+  return shell
+}
 // 轮播：横向滑动、圆点、左右键；高度按第一张定，夹在 3:4 和 16:9 之间
 function carousel(m, imgs, { detail = false, priority = false } = {}) {
   const n = imgs.length
@@ -973,9 +998,9 @@ function carousel(m, imgs, { detail = false, priority = false } = {}) {
       ? h('div', { class: 'cell car-cell', role: 'group', 'aria-label': `第 ${i + 1} 项，共 ${n} 项` },
         mediaVideo(im, { onOpen: () => openViewer(m, i) }),
         h('button', { class: 'stage-open', type: 'button', onclick: () => openViewer(m, i) }, icon('ext', 'i tiny'), '完整预览'))
-      : h('button', { class: 'cell car-cell', type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': `查看第 ${i + 1} 张，共 ${n} 张` },
-        cellPic(im, detail ? im.u : im.t || im.u, { loading: priority && i === 0 ? 'eager' : i < 2 ? null : 'lazy',
-          fetchpriority: priority && i === 0 ? 'high' : null, alt: altOf(m, i, n) }), cellMark(im))))
+      : galleryCell(m, im, i, { cls: 'car-cell', src: detail ? im.u : im.t || im.u,
+        imgOpts: { loading: priority && i === 0 ? 'eager' : i < 2 ? null : 'lazy',
+          fetchpriority: priority && i === 0 ? 'high' : null, alt: altOf(m, i, n) }, label: `查看第 ${i + 1} 张，共 ${n} 张` })))
   const count = h('span', { class: 'car-count' }, `1 / ${n}`)
   const dots = h('div', { class: 'car-dots', 'aria-hidden': 'true' }, imgs.slice(0, 12).map((_, i) => h('i', { class: i ? '' : 'on' })))
   const go = (d) => track.scrollBy({ left: d * track.clientWidth, behavior: REDUCED.matches ? 'auto' : 'smooth' })
@@ -1006,9 +1031,9 @@ function textMedia(m) {
   const imgs = m.images || []
   if (!imgs.length) return null
   const show = imgs.slice(0, 6)
-  const box = h('div', { class: 'media thumbs' }, show.map((im, i) => h('button', { class: 'cell', type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': `查看第 ${i + 1} 张` },
-    cellPic(im, im.t || im.u, { loading: 'lazy', alt: altOf(m, i, imgs.length) }), cellMark(im),
-    i === show.length - 1 && imgs.length > show.length && h('span', { class: 'more-n' }, '+' + (imgs.length - show.length)))))
+  const box = h('div', { class: 'media thumbs' }, show.map((im, i) => galleryCell(m, im, i, {
+    src: im.t || im.u, imgOpts: { loading: 'lazy', alt: altOf(m, i, imgs.length) }, label: `查看第 ${i + 1} 张`,
+    more: i === show.length - 1 && imgs.length > show.length && h('span', { class: 'more-n' }, '+' + (imgs.length - show.length)) })))
   box.dataset.blur = m.id
   applyBlur(box)
   return box
@@ -1019,18 +1044,18 @@ function cardMedia(m, { stack = false, priority = false } = {}) {
   let box
   if (stack && imgs.length > 1) {
     // 横向浏览：每张图按原比例上下排，帖子里上下滚动看
-    box = h('div', { class: 'media stack' }, imgs.map((im, i) => h('button', { class: 'cell', type: 'button',
+    box = h('div', { class: 'media stack' }, imgs.map((im, i) => galleryCell(m, im, i, {
       style: im.w && im.h ? { aspectRatio: `${im.w} / ${im.h}` } : null,
-      onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': `查看第 ${i + 1} 张，共 ${imgs.length} 张` },
-    cellPic(im, im.t || im.u, { loading: i < 2 ? null : 'lazy', width: im.w || null, height: im.h || null, alt: altOf(m, i, imgs.length) }), cellMark(im))))
+      src: im.t || im.u, imgOpts: { loading: i < 2 ? null : 'lazy', width: im.w || null, height: im.h || null, alt: altOf(m, i, imgs.length) },
+      label: `查看第 ${i + 1} 张，共 ${imgs.length} 张` })))
   } else if (m.layout === 'carousel' && imgs.length > 1) box = carousel(m, imgs, { priority })
   else if (m.image_count > 1 && imgs.length > 1) {
     const show = imgs.slice(0, 4)
     box = h('div', { class: 'media grid-' + show.length },
-      show.map((im, i) => h('button', { class: 'cell', type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': `查看第 ${i + 1} 张` },
-        cellPic(im, im.t || im.u, { loading: priority && i === 0 ? 'eager' : 'lazy',
-          fetchpriority: priority && i === 0 ? 'high' : null, alt: altOf(m, i, m.image_count) }), cellMark(im),
-        i === show.length - 1 && m.image_count > show.length && h('span', { class: 'more-n' }, '+' + (m.image_count - show.length)))))
+      show.map((im, i) => galleryCell(m, im, i, { src: im.t || im.u,
+        imgOpts: { loading: priority && i === 0 ? 'eager' : 'lazy', fetchpriority: priority && i === 0 ? 'high' : null, alt: altOf(m, i, m.image_count) },
+        label: `查看第 ${i + 1} 张`,
+        more: i === show.length - 1 && m.image_count > show.length && h('span', { class: 'more-n' }, '+' + (m.image_count - show.length)) })))
   } else {
     const im = imgs[0]
     const tall = im.w && im.h && im.h / im.w > LONG_RATIO
@@ -1038,9 +1063,9 @@ function cardMedia(m, { stack = false, priority = false } = {}) {
     const anim = !!im.k || /\.gif(\?|$)/i.test(im.u || m.image || '')
     box = h('div', { class: 'media single' + (tall ? ' tall' : ' fit') + (anim ? ' anim' : ''),
       style: !tall && im.w && im.h ? { '--ar': (im.w / im.h).toFixed(4), '--nw': im.w + 'px' } : null },
-      h('button', { class: 'cell', type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, 0), 'aria-label': im.o ? '已打码，点一下看原图' : '查看大图' },
-        cellPic(im, im.u || m.image, { loading: priority ? 'eager' : 'lazy', fetchpriority: priority ? 'high' : null,
-          width: im.w || null, height: im.h || null, alt: altOf(m, 0, 1) }), cellMark(im)))
+      galleryCell(m, im, 0, { src: im.u || m.image,
+        imgOpts: { loading: priority ? 'eager' : 'lazy', fetchpriority: priority ? 'high' : null,
+          width: im.w || null, height: im.h || null, alt: altOf(m, 0, 1) }, label: im.o ? '已打码，点一下看原图' : '查看大图' }))
     if (tall) {
       box.append(h('span', { class: 'long-badge' }, '长图'),
         h('button', { class: 'expand', type: 'button', 'aria-expanded': 'false', onclick: (e) => {
@@ -1093,6 +1118,7 @@ function applyBlur(box) {
   box.querySelectorAll(':scope > .veil, :scope > .recover').forEach((e) => e.remove())
   box._open = false
   if (!m || !wantBlur(m)) return box.classList.remove('blur')
+  box.querySelectorAll('video').forEach((video) => video.pause())
   const risky = isRisky(m)
   const veil = h('button', { class: 'veil', type: 'button', onclick: (e) => {
     e.stopPropagation()
@@ -1105,14 +1131,14 @@ function applyBlur(box) {
       : m.spoiler ? '发布者标了「慎点」' : `带有 ${(m.tags || []).filter((t) => S.nsfwTags.includes(t)).map((t) => '#' + t).join(' ') || '敏感'} 标签`),
     h('span', null, maskTap() === 'view' ? '点一下打开大图看（页面上一直盖着）' : '点一下只看这张，再点一下盖回去'))
   const cover = h('button', { class: 'recover', type: 'button', title: '重新遮住（直接点图也行）', onclick: (e) => {
-    e.stopPropagation(); box.classList.add('blur'); cover.replaceWith(veil); box._open = false
+    e.stopPropagation(); box.querySelectorAll('video').forEach((video) => video.pause()); box.classList.add('blur'); cover.replaceWith(veil); box._open = false
   } }, icon('eyeOff', 'i tiny'), '遮住')
   box._cover = cover
   // 揭开后再点图 = 盖回去；想看大图用右键菜单
   if (!box._bt) {
     box._bt = true
     box.addEventListener('click', (e) => {
-      if (!box._open || e.target.closest('.recover, .car-nav, .expand')) return
+      if (!box._open || e.target.closest('.recover, .car-nav, .expand, .gallery-video-cell')) return
       if (!e.target.closest('.cell, .stage-img, figure')) return
       e.preventDefault()
       e.stopPropagation()

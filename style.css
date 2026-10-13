@@ -1108,6 +1108,15 @@ span.img-broken:hover { color: var(--text-2); }
 }
 .play-mark .i { width: 22px; height: 22px; margin-left: 3px; }
 .media.blur .kind-badge, .media.blur .play-mark { display: none; }
+.gallery-video-cell { position: relative; min-width: 0; }
+.gallery-video-cover { display: block; width: 100%; height: 100%; position: relative; cursor: pointer; }
+.gallery-video-cover > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.gallery-video-cell .vid { width: 100%; height: 100%; }
+.gallery-video-cell .vid video { display: block; width: 100%; height: 100%; max-height: 100%; object-fit: contain; }
+.gallery-video-expand { position: absolute; top: 8px; left: 8px; z-index: 2; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; background: rgba(0,0,0,.65); }
+.gallery-video-expand .i { width: 17px; height: 17px; }
+.media.blur .gallery-video-cell video { filter: blur(24px) saturate(.8); }
+.media.blur .gallery-video-expand { display: none; }
 
 .media.carousel { position: relative; }
 .car-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
@@ -1719,6 +1728,10 @@ html[data-skin] .site-notice { display: none; }
 .media.single.fit.anim { --mh: min(320px, 42vh); }
 .media.single.fit .cell { display: flex; justify-content: center; align-items: center; }
 .media.single.fit .cell > :is(img, video) { width: auto; height: auto; max-width: 100%; max-height: var(--mh); object-fit: contain; }
+.media.single.fit .gallery-video-cell { width: min(100%, var(--nw, 100%), calc(var(--mh) * var(--ar, 1.5))); max-height: var(--mh); aspect-ratio: var(--ar, 1.5); }
+.media.single.fit .gallery-video-cell.playing { width: min(100%, 320px); margin-inline: auto; }
+.media.single.fit .gallery-video-cover > img { object-fit: contain; }
+.media.thumbs .gallery-video-cell.playing { width: min(100%, 260px); height: 170px; }
 /* 知道尺寸的直接算好宽度：加载前就占对位置，不跳动；小图不放大 */
 .media.single.fit[style*="--ar"] .cell > :is(img, video) { width: min(100%, var(--nw), calc(var(--mh) * var(--ar))); aspect-ratio: var(--ar); max-height: none; }
 .fish.zoom .media.single.fit { --mh: calc(100vh - 90px); }
