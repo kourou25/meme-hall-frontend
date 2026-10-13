@@ -2421,6 +2421,8 @@ class Columns {
       this.cols = Array.from({ length: this.n }, () => h('div', { class: 'col' }))
       this.el.append(h('div', { class: 'feed-row' }, this.cols))
     }
+    // 单列只有一个候选，读高度只会强制重排，不影响落点。
+    if (this.n === 1) { this.cols[0].append(card); return }
     let best = this.cols[0]
     for (const c of this.cols) if (c.offsetHeight < best.offsetHeight - 40) best = c
     best.append(card)
