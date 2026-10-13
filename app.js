@@ -2403,7 +2403,38 @@ class Columns {
     this.cols = null
     this.cards = this.cards.filter(c => !c.dataset.removed)
     this.el.replaceChildren()
-    for (const c of this.cards) this.place(c)
+    this.placeMany(this.cards)
+  }
+  placeMany(cards) {
+    // 首屏每天只有 12 张；小批量保留直接追加，避免隐形测量列增加首屏耗时。
+    if (this.n === 1 || cards.length < 16) { for (const card of cards) this.place(card); return }
+    let group = []
+    const flush = () => { if (group.length) this.placeBatch(group); group = [] }
+    for (const card of cards) {
+      if (card.classList.contains('feed-sep') || card.classList.contains('wide')) { flush(); this.place(card) }
+      else group.push(card)
+    }
+    flush()
+  }
+  placeBatch(cards) {
+    if (cards.length < 16) { for (const card of cards) this.place(card); return }
+    // 先挂首张关键图，让浏览器尽早发现图片 URL；剩余卡片在同宽隐形列里一次测高。
+    this.place(cards[0])
+    const width = this.cols[0].getBoundingClientRect().width
+    if (!width) { for (const card of cards.slice(1)) this.place(card); return }
+    const heights = this.cols.map(col => col.offsetHeight)
+    const gap = parseFloat(getComputedStyle(this.cols[0]).rowGap) || 0
+    const probe = h('div', { class: 'col', style: { position: 'absolute', visibility: 'hidden', pointerEvents: 'none', width: width + 'px', top: '0', left: '0' } }, cards.slice(1))
+    this.el.append(probe)
+    const sizes = cards.slice(1).map(card => card.offsetHeight)
+    probe.remove()
+    for (let i = 1; i < cards.length; i++) {
+      let best = 0
+      for (let j = 1; j < heights.length; j++) if (heights[j] < heights[best] - 40) best = j
+      const col = this.cols[best]
+      heights[best] += sizes[i - 1] + (col.childElementCount ? gap : 0)
+      col.append(cards[i])
+    }
   }
   place(card) {
     // 分隔条：后面的卡片另起一行，不再塞回上面较短的那一列
@@ -2428,6 +2459,7 @@ class Columns {
     best.append(card)
   }
   add(card) { this.cards.push(card); this.place(card) }
+  addMany(cards) { this.cards.push(...cards); this.placeMany(cards) }
 }
 // 横向模式：一帖一列，直接排成一行（分隔条不要）；和 Columns 同样的 add / build 接口
 class HzCols {
@@ -2439,6 +2471,7 @@ class HzCols {
     this.el.append(card)
     this.onAdd?.(card)
   }
+  addMany(cards) { for (const card of cards) this.add(card) }
 }
 // 横向浏览开关（帖子左右排、同一帖的图上下排）
 const wallHz = () => localStorage.getItem('wallHz') === '1'
@@ -3066,12 +3099,13 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
     sec.offset = data.offset + data.items.length
     sec.loaded = true
     let firstVisibleCard = first && st.sections[0] === sec && !st.hz && !sec.collapsed && sec.offset === data.items.length
+    const newCards = []
     for (const m of data.items) {
       if (st.ids.has(m.id) || (st.unseen && !S.me && st.seenSnap.has(m.id))) continue
       st.ids.add(m.id)
       const card = wallCard(m, { stack: st.hz, priority: firstVisibleCard && m.kind !== 'text' })
       if (m.kind !== 'text') firstVisibleCard = false
-      sec.cols.add(card)
+      newCards.push(card)
       // 要定位的帖子在折叠起来的那天：临时展开（不写回 DAY_FOLD），不然卡片是隐藏的，定位和高亮都落空
       if (m.id === focus && sec.collapsed) sec.setFold(false)
       if (m.id === focus && st.restore) {
@@ -3086,6 +3120,7 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
         setTimeout(() => card.scrollIntoView({ block: st.hz ? 'nearest' : 'center', inline: 'start', behavior: 'smooth' }), 300)
       }
     }
+    sec.cols.addMany(newCards)
     const left = Math.max(0, sec.n - sec.offset)
     sec.more.replaceChildren(data.more && left > 0
       ? h('button', { class: 'day-more-btn', type: 'button', onclick: () => loadDayChunk(st, sec) },
@@ -3203,12 +3238,14 @@ async function loadMore(st, { retry = false } = {}) {
       st.unseenLeft = data.unseen_total ?? data.total
       st.drawCount()
     }
+    const newCards = []
     for (const m of data.items) {
       // 热门排序翻页时可能重复；游客的「只看未看」在本地过滤
       if (st.ids.has(m.id) || (st.unseen && !S.me && st.seenSnap.has(m.id))) continue
       st.ids.add(m.id)
-      st.cols.add(wallCard(m, { stack: st.hz }))
+      newCards.push(wallCard(m, { stack: st.hz }))
     }
+    st.cols.addMany(newCards)
     if (st.page === 1 && st.qCount) st.qCount.textContent = data.total ? `找到 ${data.total} 张` : st.ids.size ? '搜索结果' : '没有结果'
     if (!st.more && !st.ids.size) {
       st.sentinel.replaceChildren(wallEmpty(st))
