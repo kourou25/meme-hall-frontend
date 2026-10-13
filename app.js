@@ -1,5 +1,5 @@
 // 尽欢前端：无构建、无框架
-import { onRemoval, windowContent } from '/resource-memory.js?v=e187d34d'
+import { onRemoval, windowContent } from '/resource-memory.js?v=af516e27'
 import { renderDmPage } from '/dm.js'
 const S = { me: null, emojis: [], minPostTL: 1, bgKey: null, modal: null, wall: null, meSt: null, folders: null, viewer: null }
 const main = document.getElementById('main')
@@ -7170,7 +7170,7 @@ function chatPane(g, { onHead } = {}) {
   let histEl = null // 历史消息层（historyView）
   let histView = null
   const viewOf = (node) => VIEWS.get(node?.closest?.('.cm-list, .cm-hist-rows'))
-  const mainView = { box: list, get items() { return st.items }, rows, pane: null, unreadAt: () => st.unreadAt, find: (id) => st.items.find((x) => x.id === id) }
+  const mainView = { box: list, scrollRoot: scroller, get items() { return st.items }, rows, pane: null, unreadAt: () => st.unreadAt, find: (id) => st.items.find((x) => x.id === id) }
   VIEWS.set(list, mainView)
   const pendingSlot = () => scroller.append(pending)
   // 新消息提示：有「以下是新消息」分隔线且还没看到就先跳到分隔线，否则到底部
@@ -7400,7 +7400,7 @@ function chatPane(g, { onHead } = {}) {
       const current = view.find(m.id) || m
       if (current.at_read) queueMicrotask(() => paintReads(view, current))
       return renderRowContent(view, current, prev)
-    })
+    }, { scrollRoot: view.scrollRoot })
   }
   const row = (m, prev) => renderRow(mainView, m, prev)
   const redrawIn = (view, i) => {
@@ -7580,7 +7580,7 @@ function chatPane(g, { onHead } = {}) {
     drawDown()
     // 历史层也是一个视图：同一个 renderRow、同一套委托；动作沿用主 pane 的（jumpTo / update 本来就两边都管），看大图在这一段里串
     const rowsBox = h('div', { class: 'cm-hist-rows' })
-    const hv = histView = { box: rowsBox, items: [], rows: new Map(), more: false, after: false, pane: null,
+    const hv = histView = { box: rowsBox, scrollRoot: box, items: [], rows: new Map(), more: false, after: false, pane: null,
       find: (rid) => hv.items.find((x) => x.id === rid),
       apply: (m) => {
         const i = hv.items.findIndex((x) => x.id === m.id)

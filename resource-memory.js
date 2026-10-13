@@ -24,13 +24,23 @@ const viewport = new IntersectionObserver(entries => {
   entries.forEach(entry => windows.get(entry.target)?.visible(entry.isIntersecting))
 }, { rootMargin: '1000px' })
 const sizes = new ResizeObserver(entries => entries.forEach(entry => windows.get(entry.target)?.resize()))
-export function windowContent(shell, render) {
+export function windowContent(shell, render, { scrollRoot } = {}) {
   let mounted = true, height = 0, width = 0, draft = false
   const doc = shell.ownerDocument
+  const initial = shell.getBoundingClientRect()
+  height = initial.height; width = initial.width
+  const preserveScroll = (before, delta) => {
+    if (!scrollRoot?.isConnected || !delta || before.top >= scrollRoot.getBoundingClientRect().top) return
+    scrollRoot.scrollTop += delta
+  }
   const mount = () => {
     if (mounted) return
+    const before = shell.getBoundingClientRect()
     shell.style.height = ''; shell.classList.remove('memory-sleep')
     shell.replaceChildren(...render()); mounted = true
+    const after = shell.getBoundingClientRect()
+    height = after.height; width = after.width
+    preserveScroll(before, after.height - before.height)
   }
   windows.set(shell, {
     visible(isIntersecting) {
@@ -46,10 +56,16 @@ export function windowContent(shell, render) {
       shell.replaceChildren(); mounted = false
     },
     resize() {
-    if (!mounted && width && shell.clientWidth && shell.clientWidth !== width) {
-      height *= shell.clientWidth / width; width = shell.clientWidth
-      shell.style.height = height + 'px'
-    }
+      if (mounted) {
+        const before = shell.getBoundingClientRect()
+        const next = before.height
+        // 初次观察时节点刚从脱离文档状态插入，0 并不是旧内容高度。
+        if (height > 0) preserveScroll(before, next - height)
+        height = next; width = before.width
+      } else if (width && shell.clientWidth && shell.clientWidth !== width) {
+        height *= shell.clientWidth / width; width = shell.clientWidth
+        shell.style.height = height + 'px'
+      }
     }
   })
   viewport.observe(shell); sizes.observe(shell)
