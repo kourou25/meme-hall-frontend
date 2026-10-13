@@ -6737,6 +6737,8 @@ function mediaTray({ forWhat = 'meme', max = MAX_FILES } = {}) {
   const input = h('input', { type: 'file', accept: matchMedia('(pointer: coarse)').matches ? 'image/*,video/*' : ACCEPT, multiple: true, class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true' })
   const el = h('div', { class: 'tray', hidden: true })
   const t = { items: [], input, el, onchange: null }
+  const localVideos = new Set()
+  t.releaseLocal = () => { localVideos.forEach((url) => URL.revokeObjectURL(url)); localVideos.clear() }
   const changed = () => { draw(); t.onchange?.() }
   function start(it) {
     it.state = 'up'
@@ -6843,7 +6845,7 @@ function mediaTray({ forWhat = 'meme', max = MAX_FILES } = {}) {
     ;[t.items[i], t.items[j]] = [t.items[j], t.items[i]]
     changed()
   }
-  t.clear = () => { t.items.forEach((it) => URL.revokeObjectURL(it.url)); t.items = []; input.value = ''; changed() }
+  t.clear = () => { t.releaseLocal(); t.items.forEach((it) => URL.revokeObjectURL(it.url)); t.items = []; input.value = ''; changed() }
   t.busy = () => t.items.some((it) => it.state === 'up')
   // 发送时：失败的再试一次，等全部传完，返回给接口的 [{key, poster, w, h, kind}]
   t.media = async () => {
@@ -6855,8 +6857,13 @@ function mediaTray({ forWhat = 'meme', max = MAX_FILES } = {}) {
     return t.items.map((it) => ({ ...it.out, ...(it.blur ? { blur: 1 } : {}), ...(t.car && t.items.length > 1 ? { car: 1 } : {}) }))
   }
   // 乐观显示用：本地预览地址
-  t.local = () => t.items.map((it) => ({ u: it.video ? (it.still ? it.url : null) : it.url, v: it.video ? URL.createObjectURL(it.file) : undefined, w: it.meta?.w, h: it.meta?.h, k: it.still ? 'l' : it.video ? 'v' : it.file.type === 'image/gif' ? 'g' : undefined,
-    ...(it.blur ? { b: 1 } : {}), ...(t.car && t.items.length > 1 ? { c: 1 } : {}) }))
+  t.local = () => t.items.map((it) => {
+    // 普通视频复用托盘 URL；实况照片的托盘 URL 是静图，另建的视频 URL 随乐观消息释放。
+    const video = it.video ? (it.still ? URL.createObjectURL(it.file) : it.url) : undefined
+    if (it.still && video) localVideos.add(video)
+    return { u: it.video ? (it.still ? it.url : null) : it.url, v: video, w: it.meta?.w, h: it.meta?.h, k: it.still ? 'l' : it.video ? 'v' : it.file.type === 'image/gif' ? 'g' : undefined,
+      ...(it.blur ? { b: 1 } : {}), ...(t.car && t.items.length > 1 ? { c: 1 } : {}) }
+  })
   t.pick = () => input.click()
   input.addEventListener('change', () => { t.add(input.files); input.value = '' })
   // 格式 · 大小 · 尺寸 / 时长，鼠标停上去或读屏都能看到
@@ -8069,6 +8076,7 @@ function chatPane(g, { onHead } = {}) {
         text: stripQuotes(job.reply.body || '').slice(0, 200), fancy: job.reply.user.fancy, file: job.reply.media?.[0]?.k === 'f' ? job.reply.media[0].n : null,
         image: !!(job.reply.media?.[0]?.u && job.reply.media[0].k !== 'f') || !!job.reply.image, thumb: job.reply.media?.[0]?.k === 'f' ? null : job.reply.media?.[0]?.u || job.reply.image || null } : null }
     const el = chatMsg(fake, { pending: true })
+    onRemoval(el, () => job.tray?.releaseLocal())
     el.classList.add('pending')
     const state = h('div', { class: 'cm-state' }, '发送中…')
     el.querySelector('.cm-main').append(state)
