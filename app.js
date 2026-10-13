@@ -1,4 +1,5 @@
 // 尽欢前端：无构建、无框架
+import { onRemoval, windowContent } from '/resource-memory.js?v=e187d34d'
 const S = { me: null, emojis: [], minPostTL: 1, bgKey: null, modal: null, wall: null, meSt: null, folders: null, viewer: null }
 const main = document.getElementById('main')
 
@@ -727,7 +728,7 @@ function syncItem(next) {
 function watchItem(id, fn) {
   if (!WATCH.has(id)) WATCH.set(id, new Set())
   WATCH.get(id).add(fn)
-  return () => WATCH.get(id)?.delete(fn)
+  return () => { const list = WATCH.get(id); list?.delete(fn); if (!list?.size) WATCH.delete(id) }
 }
 const PAGE_CLEAN = []
 const onPageLeave = (fn) => PAGE_CLEAN.push(fn)
@@ -797,7 +798,7 @@ function memeCard(m, { stack = false } = {}) {
   const rpN = h('span', null, m.reply_count || '')
   const rpBtn = h('button', { class: 'rp-toggle', type: 'button', 'aria-expanded': 'false', title: '一句回应',
     onclick: () => { const on = card.classList.toggle('rp-open'); rpBtn.setAttribute('aria-expanded', on ? 'true' : 'false') } },
-  icon('rocket', 'i tiny'), rpN)
+  icon('rocket'), rpN)
   const card = h('article', { class: 'card' + (isText ? ' text-card wide' : '') + (ANCHORS.has(m.id) ? ' anchored' : ''), 'data-id': m.id, 'aria-label': m.title || m.text || '梗图' },
     h('div', { class: 'card-head' },
       avatar(m.author_avatar, m.author_name, 34),
@@ -814,7 +815,7 @@ function memeCard(m, { stack = false } = {}) {
       h('button', { class: 'btn-icon ghost sm card-share', 'aria-label': '分享帖子', type: 'button', onclick: () => copyText(location.origin + memeHref(m)) }, icon('send'))),
     replies,
     comments)
-  onPageLeave(watchItem(m.id, (x) => {
+  onRemoval(card, watchItem(m.id, (x) => {
     status.replaceChildren(seenTag(x))
     rpN.textContent = x.reply_count || ''
     actions.replaceChildren(bar(x))
@@ -834,7 +835,20 @@ function memeCard(m, { stack = false } = {}) {
     navigate(memeHref(m))
   })
   if (!isSeen(m)) seenIO.observe(card)
+  onRemoval(card, () => seenIO.unobserve(card))
   return card
+}
+
+function wallCard(m, options) {
+  if (options?.stack) return memeCard(m, options)
+  const render = () => [memeCard(ITEMS.get(m.id) || m, options)]
+  const shell = h('div', { class: 'card-slot' + (m.kind === 'text' ? ' wide' : ''), 'data-id': m.id }, render())
+  return windowContent(shell, render)
+}
+function removeRenderedMeme(id) {
+  document.querySelectorAll(`.card-slot[data-id="${id}"], .card[data-id="${id}"], .im-msg[data-id="${id}"], .ld-post[data-id="${id}"]`).forEach(el => {
+    el.dataset.removed = '1'; el.remove()
+  })
 }
 
 // 标题 + 摘要；被截断或有折叠内容时可就地展开全文，不用进详情
@@ -1138,7 +1152,7 @@ async function toggleNsfw(m, btn) {
     refreshBlur()
     // 标记会改变筛选结果；列表重新加载，已打开的详情保留。
     if ((S.content === 'hide' && isRisky(item)) || (S.content === 'only' && !isRisky(item))) {
-      document.querySelectorAll(`.card[data-id="${m.id}"], .im-msg[data-id="${m.id}"], .ld-post[data-id="${m.id}"]`).forEach(el => el.remove())
+      removeRenderedMeme(m.id)
       S.bgKey = null
       if (!S.modal) route()
     }
@@ -1272,7 +1286,7 @@ function replyChip(m, r, manage) {
         if (confirm('撤回这句回应？')) act(m, null, () => api(`/memes/${m.id}/reply`, { method: 'DELETE' }))
       } else act(m, null, () => api(`/memes/${m.id}/reply`, { method: 'PUT', body: { text: r.text } }))
     } }, BOOST_PRESETS.includes(r.text) ? boostText(r.text) : linkify(r.text))
-  const chip = h('span', { class: 'rp' + (r.mine ? ' mine' : '') }, face, text)
+  const chip = h('span', { class: 'rp boost-sent' + officialFrame(r, 'post') + (r.mine ? ' mine' : '') }, face, text)
   // 管理删除按「这句话」删（同样的话一起删）
   if (manage && m.can_manage) {
     chip.append(h('button', { class: 'rp-del', type: 'button', title: `删除所有人的这句（${r.n || 1} 条）`, 'aria-label': '删除这句',
@@ -1312,6 +1326,7 @@ function autoScroll(el) {
     if (on && !raf) { pos = el.scrollTop; last = performance.now(); pause(1500); raf = requestAnimationFrame(step) }
     if (!on && raf) { cancelAnimationFrame(raf); raf = 0 }
   }
+  onRemoval(el, () => { el._auto(false); stripIO.unobserve(el) })
 }
 
 // 用户名片：点回应里的头像弹出
@@ -1688,7 +1703,7 @@ function replyForm(m) {
       input.value = text; input.dispatchEvent(new Event('input')); closePop(); form.requestSubmit()
     }, m.my_reply)), { key: key + 'boost', cls: 'pop-boost', focusScope: form })
   } }, icon('rocket'))
-  const form = h('form', { class: 'rp-form boost-entry' + officialFrame(S.me, 'post') }, stk, quick, input, cnt, send)
+  const form = h('form', { class: 'rp-form' }, stk, quick, input, cnt, send)
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
     const text = input.value.trim()
@@ -1713,7 +1728,7 @@ async function deleteMeme(m) {
     S.bgKey = null
     navigate('/', { replace: true })
   } else {
-    document.querySelectorAll(`.card[data-id="${m.id}"], .im-msg[data-id="${m.id}"], .ld-post[data-id="${m.id}"]`).forEach((el) => el.remove())
+    removeRenderedMeme(m.id)
   }
   return true
 }
@@ -1769,6 +1784,7 @@ function mediaVideo(im, { auto = false, onOpen = null } = {}) {
     v.addEventListener('click', (e) => { e.stopPropagation(); if (onOpen) return onOpen(); v.currentTime = 0; v.play().catch(() => {}) })
   }
   vidIO.observe(v)
+  onRemoval(v, () => { vidIO.unobserve(v); v.pause(); v.removeAttribute('src'); v.load() })
   return h('div', { class: 'vid' + (live ? ' live' : '') }, v, live && h('span', { class: 'kind-badge' }, '实况'))
 }
 // doc：弹出的聊天小窗里看图时传小窗的 document
@@ -2262,6 +2278,7 @@ class Columns {
   build(n) {
     this.n = n
     this.cols = null
+    this.cards = this.cards.filter(c => !c.dataset.removed)
     this.el.replaceChildren()
     for (const c of this.cards) this.place(c)
   }
@@ -2290,7 +2307,7 @@ class Columns {
 // 横向模式：一帖一列，直接排成一行（分隔条不要）；和 Columns 同样的 add / build 接口
 class HzCols {
   constructor(el, onAdd) { this.el = el; this.cards = []; this.n = 1; this.onAdd = onAdd }
-  build() { this.el.replaceChildren(...this.cards.filter((c) => !c.classList.contains('feed-sep'))) }
+  build() { this.cards = this.cards.filter(c => !c.dataset.removed); this.el.replaceChildren(...this.cards.filter((c) => !c.classList.contains('feed-sep'))) }
   add(card) {
     this.cards.push(card)
     if (card.classList.contains('feed-sep')) return
@@ -2916,7 +2933,7 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
     for (const m of data.items) {
       if (st.ids.has(m.id) || (st.unseen && !S.me && st.seenSnap.has(m.id))) continue
       st.ids.add(m.id)
-      const card = memeCard(m, { stack: st.hz })
+      const card = wallCard(m, { stack: st.hz })
       sec.cols.add(card)
       // 要定位的帖子在折叠起来的那天：临时展开（不写回 DAY_FOLD），不然卡片是隐藏的，定位和高亮都落空
       if (m.id === focus && sec.collapsed) sec.setFold(false)
@@ -3052,7 +3069,7 @@ async function loadMore(st) {
       // 热门排序翻页时可能重复；游客的「只看未看」在本地过滤
       if (st.ids.has(m.id) || (st.unseen && !S.me && st.seenSnap.has(m.id))) continue
       st.ids.add(m.id)
-      st.cols.add(memeCard(m, { stack: st.hz }))
+      st.cols.add(wallCard(m, { stack: st.hz }))
     }
     if (st.page === 1 && st.qCount) st.qCount.textContent = data.total ? `找到 ${data.total} 张` : st.ids.size ? '搜索结果' : '没有结果'
     if (!st.more && !st.ids.size) {
@@ -3419,6 +3436,7 @@ async function renderMe() {
       h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: meSettings }, icon('gear', 'i tiny'), '设置'),
       h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { location.href = '/me/invites' } }, icon('users', 'i tiny'), '邀请好友'),
       h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { location.href = '/me/account' } }, icon('gear', 'i tiny'), '账号安全'),
+      S.me?.owner && h('a', { class: 'btn btn-ghost sm', href: '/admin/ai' }, icon('gear', 'i tiny'), 'AI 接入与设置'),
       S.me?.is_admin ? h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: noticeAdmin }, icon('bell', 'i tiny'), '公告设置') : null,
       S.me?.is_admin ? h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => memberAdmin() }, icon('users', 'i tiny'), '成员管理') : null,
       h('button', { class: 'btn btn-ghost sm', onclick: async () => { await api('/auth/logout', { method: 'POST' }); location.href = '/' } }, icon('logout', 'i tiny'), '退出')),
@@ -7347,7 +7365,7 @@ function chatPane(g, { onHead } = {}) {
   }
 
   // 每条消息一行：日期分隔、「以下是新消息」和消息本体包在一起，换的时候整行换。主列表、历史层都用这一个
-  const renderRow = (view, m, prev) => {
+  const renderRowContent = (view, m, prev) => {
     // 回复别人的消息总是带头像和名字，免得看着像接在上一条后面
     const cont = prev && !prev.deleted && !m.deleted && !prev.system_kind && !m.system_kind && !m.reply_to && prev.user.id === m.user.id && m.created_at - prev.created_at < 300 && dayOf(prev.created_at) === dayOf(m.created_at)
     const kids = []
@@ -7357,10 +7375,18 @@ function chatPane(g, { onHead } = {}) {
     }
     if (view.unreadAt?.() === m.id) kids.push(h('div', { class: 'cm-unread' }, h('span', null, '以下是新消息')))
     kids.push(chatMsg(m, { cont, pane: view.pane }))
+    return kids
+  }
+  const renderRow = (view, m, prev) => {
+    const kids = renderRowContent(view, m, prev)
     const el = h('div', { class: 'cm-row', 'data-row': m.id }, kids)
     view.rows.set(m.id, el)
     if (m.at_read) queueMicrotask(() => paintReads(view, m))
-    return el
+    return windowContent(el, () => {
+      const current = view.find(m.id) || m
+      if (current.at_read) queueMicrotask(() => paintReads(view, current))
+      return renderRowContent(view, current, prev)
+    })
   }
   const row = (m, prev) => renderRow(mainView, m, prev)
   const redrawIn = (view, i) => {
@@ -7905,6 +7931,16 @@ function chatPane(g, { onHead } = {}) {
         sendBtn), mention.el)
     : h('a', { class: 'cm-compose ghost', href: loginHref() }, '登录 Linux.DO 后加入「迷友」聊天')
   if (S.me) acceptImages(compose, ta, { add: (fs) => att.add(fs) })
+  if (S.me) {
+    const bar = compose.querySelector('.cm-bar')
+    const extras = [...bar.querySelectorAll('button')].filter(b => ['发文件（20MB 以内）', '@ 某人', '引用', '引用帖子（插入 No.编号，会带预览卡）', '搜索聊天记录', 'AI 小伙伴'].includes(b.title))
+    extras.forEach(b => b.classList.add('cm-secondary'))
+    bar.querySelector('[data-pop="cmrange"]')?.classList.add('desktop-only')
+    const more = tb('more', '更多聊天操作', e => openPop(e.currentTarget,
+      h('div', { class: 'menu-list' }, extras.map(b => h('button', { class: 'menu-item', type: 'button', onclick: () => { closePop(); b.click() } }, b.title))),
+      { key: 'cm-more' + g.id, up: true }), { class: 'cm-ibtn cm-mobile-more' })
+    bar.insertBefore(more, sendBtn)
+  }
 
   function quoteMsg(m) {
     const doc = scroller.ownerDocument
@@ -8111,7 +8147,7 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=c6053d5b')
+    const { openRedpacket } = await import('/redpacket.js?v=c028d692')
     if (anchor.isConnected) openRedpacket({ anchor, ...options, h, icon, api, uploadCover: async file => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
@@ -8276,7 +8312,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
         h('span', { class: 'cm-file-ic' }, icon('doc')), h('span', { class: 'cm-file-main' }, h('strong', null, f.n || '文件'), h('span', { class: 'muted' }, fmtBytes(f.s || 0))),
         icon('download', 'i tiny')))))
     if (m.boosts?.length) body.push(h('div', { class: 'cm-boosts' }, m.boosts.map((b) =>
-      h('button', { class: 'cm-boost' + (b.mine ? ' mine' : ''), type: 'button', title: `${b.name || b.username} · ${clock(b.at)}${b.mine ? ' · 点一下撤掉' : ''}`,
+      h('button', { class: 'cm-boost boost-sent' + officialFrame(b, 'chat') + (b.mine ? ' mine' : ''), type: 'button', title: `${b.name || b.username} · ${clock(b.at)}${b.mine ? ' · 点一下撤掉' : ''}`,
         onclick: (e) => b.mine && pane ? chatBoost(m, pane, '') : userCard(b.username, e.currentTarget) }, avatar(b.avatar, b.name || b.username, 16), boostText(b.text)))))
     if (m.reactions.length) body.push(h('div', { class: 'cm-rx' }, m.reactions.map((r) => rxChip(m, r, pane))))
     // 反向引用：有人回复过这条，显示「N 条回复」，点开列出回复人 + 摘要，点一条跳过去
@@ -8568,7 +8604,7 @@ function boostPrompt(m, pane, anchor) {
   const go = () => { closePop(); chatBoost(m, pane, input.value.trim()) }
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); go() } })
   openPop(anchor, h('div', { class: 'boost-pop' },
-    h('div', { class: 'boost-row boost-entry' + officialFrame(S.me, 'chat') }, icon('rocket', 'i tiny'), input, h('button', { class: 'btn btn-primary sm', type: 'button', onclick: go }, old ? '改' : '挂上')),
+    h('div', { class: 'boost-row' }, icon('rocket', 'i tiny'), input, h('button', { class: 'btn btn-primary sm', type: 'button', onclick: go }, old ? '改' : '挂上')),
     boostChoices(t => { input.value = t; go() }, old),
     old && h('button', { class: 'chip ghost', type: 'button', onclick: () => { input.value = ''; go() } }, '撤掉我的')), { key, cls: 'pop-boost', focusScope: input })
   if ((input.ownerDocument.defaultView?.innerWidth || innerWidth) > 760) setTimeout(() => { if (input.isConnected) input.focus() })
@@ -9060,10 +9096,11 @@ addEventListener('pagehide', () => PIPS.forEach((w) => w.close()))
 // ---------- 站内悬浮群聊 ----------
 // 右下角一个气泡（带未读数），点开是一个小聊天框；换页面不断开。/chat 页、伪装、老板键时不显示
 const DOCK = { el: null, pane: null, open: false }
+matchMedia('(max-width: 760px)').addEventListener('change', () => dockSync())
 const dockPrefs = () => { try { return { on: true, ...JSON.parse(localStorage.getItem('chatDock')) } } catch { return { on: true } } }
 const saveDock = (x) => localStorage.setItem('chatDock', JSON.stringify({ ...dockPrefs(), ...x }))
 function dockSync() {
-  const want = S.me && dockPrefs().on && !S.skin && !location.pathname.startsWith('/chat')
+  const want = innerWidth > 760 && S.me && dockPrefs().on && !S.skin && !location.pathname.startsWith('/chat')
   if (!want) {
     if (DOCK.el) { DOCK.pane?.destroy(); DOCK.el.remove(); Object.assign(DOCK, { el: null, pane: null, open: false }) }
     dockSplit()
@@ -9071,17 +9108,69 @@ function dockSync() {
   }
   if (!DOCK.el) {
     DOCK.el = h('div', { class: 'chat-dock' })
+    dockDraggable(DOCK.el)
     document.body.append(DOCK.el)
     dockDraw(dockPrefs().open)
   }
 }
 function dockMin() { if (DOCK.open) dockDraw(false) }
+function dockPosition(position = dockPrefs().position) {
+  const el = DOCK.el
+  if (!el) return
+  const floating = DOCK.open && !el.classList.contains('split')
+  const head = el.querySelector('.cd-head')
+  if (head) {
+    head.tabIndex = floating ? 0 : -1
+    head.title = floating ? '拖动移动；方向键微调；双击恢复位置' : ''
+    head.setAttribute('aria-label', floating ? '移动群聊窗口' : '群聊窗口')
+  }
+  if (!floating || !Number.isFinite(position?.x) || !Number.isFinite(position?.y)) {
+    for (const key of ['left','top','right','bottom']) el.style[key] = ''
+    return
+  }
+  const rect = el.getBoundingClientRect()
+  const x = Math.max(8, Math.min(position.x, innerWidth - rect.width - 8))
+  const y = Math.max(8, Math.min(position.y, innerHeight - rect.height - 8))
+  Object.assign(el.style, { left: x + 'px', top: y + 'px', right: 'auto', bottom: 'auto' })
+}
+function dockDraggable(el) {
+  let drag = null
+  const handle = target => DOCK.open && !el.classList.contains('split') && target.closest('.cd-head') && !target.closest('button,a,input,select,textarea')
+  el.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || !handle(e.target)) return
+    const rect = el.getBoundingClientRect()
+    drag = { id:e.pointerId, x:e.clientX, y:e.clientY, left:rect.left, top:rect.top }
+    el.setPointerCapture(e.pointerId); el.classList.add('cd-dragging'); e.preventDefault()
+  })
+  el.addEventListener('pointermove', e => {
+    if (drag?.id !== e.pointerId) return
+    dockPosition({ x:drag.left + e.clientX - drag.x, y:drag.top + e.clientY - drag.y })
+  })
+  el.addEventListener('pointerup', e => {
+    if (drag?.id !== e.pointerId) return
+    const rect = el.getBoundingClientRect()
+    saveDock({ position:{x:rect.left,y:rect.top} }); drag = null; el.classList.remove('cd-dragging')
+    if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId)
+  })
+  const cancel = () => { if (drag) { drag = null; el.classList.remove('cd-dragging'); dockPosition() } }
+  el.addEventListener('pointercancel', cancel); el.addEventListener('lostpointercapture', cancel)
+  el.addEventListener('dblclick', e => { if (handle(e.target)) { saveDock({position:null}); dockPosition() } })
+  el.addEventListener('keydown', e => {
+    if (!e.target.matches('.cd-head') || !handle(e.target)) return
+    const delta = {ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key]
+    if (!delta) return
+    e.preventDefault(); const rect = el.getBoundingClientRect(), step = e.shiftKey ? 40 : 10
+    const position = {x:rect.left + delta[0]*step,y:rect.top + delta[1]*step}
+    dockPosition(position); const clamped = el.getBoundingClientRect(); saveDock({position:{x:clamped.left,y:clamped.top}})
+  })
+}
 // 分屏：群聊钉在右边一整列，网页（图廊、详情、看大图）都让到左边
 function dockSplit() {
   const on = !!(DOCK.el && DOCK.open && dockPrefs().split && innerWidth > 900)
   document.body.classList.toggle('chat-split', on)
   DOCK.el?.classList.toggle('split', on)
   splitHandle(on)
+  dockPosition()
 }
 addEventListener('resize', () => dockSplit())
 // 分屏宽度：左右分界处的拖动条。范围 280px ~ 60vw，存在 dockPrefs().splitW（px）；双击 / Enter 恢复默认（CSS 里的 clamp(340px, 30vw, 460px)）
@@ -9176,6 +9265,7 @@ function dockDraw(open) {
     DOCK.el.replaceChildren(h('div', { class: 'cd-panel' },
       h('header', { class: 'cd-head' }, h('strong', null, '群聊'), h('span', { class: 'grow' }), ib('minus', '收起', () => dockDraw(false))),
       gx ? goneView(gx) : h('div', { class: 'chat-empty' }, icon('chat'), h('p', null, '你还不在任何群里'))))
+    dockPosition()
     return
   }
   DOCK.pane?.destroy()
@@ -9196,6 +9286,7 @@ function dockDraw(open) {
       ib('chat', '去群聊页', () => navigate('/chat/' + g.id)),
       ib('minus', '收起', () => dockDraw(false))),
     pane.el))
+  dockPosition()
   pane.focus()
 }
 onChat(() => {
@@ -9976,6 +10067,7 @@ function renderPage(path, search) {
   SEEN.timers.forEach((t) => clearTimeout(t))
   SEEN.timers.clear()
   seenIO.disconnect()
+  ITEMS.clear()
   S.wall = null
   S.meSt = null
   const hit = ROUTES.find(([re]) => re.test(path))

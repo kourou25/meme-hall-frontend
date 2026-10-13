@@ -1935,3 +1935,12 @@ html[data-skin] .site-notice { display: none; }
   .stage.detail-carousel { height:min(62dvh,calc(100vw / var(--ratio,1))); min-height:200px; }
 }
 .ai-image-control{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}.ai-image-control .switch{margin:0}.comment-ai-label{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.04em}.ai-pref-status{min-height:1.5em}
+
+/* 离屏卡片仅保留占位，避免长浏览持续保留图片与互动节点。 */
+.card-slot { display: flow-root; min-width: 0; }
+.memory-sleep { contain: strict; }
+@media (max-width: 760px) {
+  .card-bottom .rp-toggle { background: transparent; border-radius: 8px; padding: 6px; color: var(--text-2); }
+  .card-bottom .rp-toggle .i { width: 20px; height: 20px; }
+  .card.rp-open .card-bottom .rp-toggle { background: transparent; color: var(--primary); }
+}

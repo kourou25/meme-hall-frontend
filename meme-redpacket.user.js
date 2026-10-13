@@ -1,7 +1,9 @@
 // ==UserScript==
 // @name         尽欢红包连接器
 // @namespace    https://52dmeme.com/
-// @version      1.0.0
+// @version      1.0.1
+// @downloadURL  https://52dmeme.com/meme-redpacket.user.js
+// @updateURL    https://52dmeme.com/meme-redpacket.user.js
 // @description  使用自己的HB/Credit/fish登录态查询和领取；不托管积分，不上传登录凭据。
 // @match        https://52dmeme.com/*
 // @connect      hb.unsnow.org
@@ -123,7 +125,7 @@ window.addEventListener('message', async event => {
   const data=event.data
   if(data?.type!=='meme-redpacket-request' || !/^[a-f0-9-]{36}$/i.test(data.id))return
   const reply=(result,error)=>window.postMessage({type:'meme-redpacket-result',id:data.id,result,error},location.origin)
-  if(data.action==='ping'){reply({version:'1.0.0'});return}
+  if(data.action==='ping'){reply({version:'1.0.1'});return}
   if(!['query','claim'].includes(data.action))return
   try {
     const ext=data.external,provider=ext?.provider,ref=String(ext?.ref || '')

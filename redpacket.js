@@ -277,8 +277,15 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
     const fishPasswordField=p.provider==='fish'&&p.external.ref_kind==='id'&&snapshot?.requires_password?field('原站口令',fishPassword):null
     const link=h('a',{class:'rpk-secondary rpk-source',href:p.external.url,target:'_blank',rel:'noopener noreferrer'},'去原站领取')
     const helper=h('details',{class:'rpk-options'},h('summary',null,'辅助脚本'),
-      h('p',{class:'rpk-help'},'安装到自己的脚本管理器后，刷新本站。连接 HB、Credit 与 fish，使用各自的登录账号。'),
-      h('a',{class:'rpk-secondary rpk-source',href:'/meme-redpacket.user.js',target:'_blank',rel:'noopener'},'安装 / 更新连接脚本'))
+      h('p',{class:'rpk-help'},'首次使用：先装脚本管理器，再安装连接脚本，最后刷新本站。仅看到代码表示尚未进入安装界面。'),
+      h('a',{class:'rpk-secondary',href:'https://www.tampermonkey.net/index.php?browser=chrome',target:'_blank',rel:'noopener noreferrer'},'1. 获取 Tampermonkey'),
+      h('p',{class:'rpk-help'},'Chrome：扩展程序 → Tampermonkey → 详情，检查“允许用户脚本”以及本站的访问权限。脚本管理器中启用“尽欢红包连接器”，刷新本站后点“检查连接”。'),
+      h('a',{href:'https://www.tampermonkey.net/faq.php?locale=zh&q=Q209',target:'_blank',rel:'noopener noreferrer'},'Chrome 官方脚本权限说明'),
+      h('a',{class:'rpk-secondary rpk-source',href:'/meme-redpacket.user.js',target:'_blank',rel:'noopener'},'2. 安装 / 更新连接脚本'),
+      h('p',{class:'rpk-help'},'仍只显示代码：点下方“复制脚本”，在 Tampermonkey 中新建脚本，替换全部内容并保存。先在对应红包站登录自己的账号；不支持脚本的手机浏览器使用“去原站领取”。'),
+      h('a',{class:'rpk-secondary',href:'/meme-redpacket.user.js',download:'meme-redpacket.user.js'},'下载脚本文件'),
+      btn('复制脚本',async()=>{try{const r=await win.fetch('/meme-redpacket.user.js',{cache:'no-store'});const source=await r.text();if(!r.ok||!source.startsWith('// ==UserScript=='))throw Error('脚本获取失败，请重试');await win.navigator.clipboard.writeText(source);info.textContent='已复制。在脚本管理器中新建脚本、粘贴保存，然后刷新本站。'}catch(e){info.textContent=e.message||'复制失败，请下载脚本文件'}}),
+      btn('检查连接',async()=>{try{const state=await packetBridge('ping');info.textContent='连接器已运行 · '+state.version+'。若原站返回未登录，请在这个浏览器中登录原站。'}catch(e){info.textContent=e.message+'。请确认脚本已启用、允许在本站运行，并刷新页面。'}}))
     const copy=btn('复制原站口令',async()=>{try{await win.navigator.clipboard.writeText(p.external.ref);info.textContent='已复制'}catch{info.textContent='请手动复制：'+p.external.ref}})
     content.replaceChildren(...[coverImage(p.cover),won&&medal(p),visual,queried,fishPasswordField,claim,h('div',{class:'rpk-actions'},query,link),...(['hb','fish'].includes(p.provider)&&p.external.ref_kind!=='id'?[h('blockquote',{class:'rpk-cipher'},p.external.ref),copy]:[]),info,helper].filter(Boolean))
     let busy=false
@@ -318,7 +325,10 @@ export function openRedpacket({ anchor, group, archiveGroup, message, autoOpen =
           return btn([p?.cover?h('img',{class:'rpk-archive-cover',src:p.cover,alt:'',loading:'lazy'}):h('span',{class:'rpk-archive-icon'},icon('redpack')),h('span',{class:'rpk-archive-copy'},h('strong',null,p?.prompt || `${m.user.name || m.user.username}的红包`),
             h('span',null,`${PROVIDERS[p?.provider] || '红包'} · ${label}`),p?.notify_at && h('time',null,'到点提醒 '+new Date(p.notify_at*1000).toLocaleString('zh-CN',{hour12:false})),
             s?.expires_at && h('time',null,'截止 '+new Date(s.expires_at*1000).toLocaleString('zh-CN',{hour12:false})))],()=>{
-              if(m.deleted)return;dialog.close();openRedpacket({anchor,message:m,onUpdate,h,icon,api})
+              if(m.deleted)return
+              // close 事件异步派发；等旧对话框移除后再打开，避免被单实例守卫拦住。
+              dialog.addEventListener('close',()=>openRedpacket({anchor,message:m,onUpdate,h,icon,api}),{once:true})
+              dialog.close()
             },'rpk-archive-item'+(m.deleted?' is-gone':''))
         }))
         list.querySelectorAll('.is-gone').forEach(b=>b.disabled=true)
