@@ -52,14 +52,17 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
   let autoInspect=autoOpen
   let externalInspected=false
   let defeatScene
+  let detailSeq=0
   const doc = anchor.ownerDocument, win = doc.defaultView
   if (doc.querySelector('.rpk-dialog')) return
   const content = h('div', { class: 'rpk-content' })
   const doodle = (name, cls = '') => h('span', { class: 'rpk-doodle ' + cls, 'aria-hidden': 'true', html: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${DOODLES[name]}</svg>` })
   const title = h('h2', { id: 'rpk-dialog-title' }, archiveGroup ? '群红包袋' : group ? '发红包' : '拆红包')
+  const back = h('button', { type: 'button', class: 'rpk-back', 'aria-label': '返回红包列表', hidden: true,
+    onclick: () => { detailSeq++; message = null; externalInspected = false; archive() } }, '←')
   const close = h('button', { type: 'button', class: 'rpk-close', 'aria-label': '关闭红包', autofocus: true, onclick: () => dialog.close() }, icon('close'))
   const dialog = h('dialog', { class: 'rpk-dialog', 'aria-labelledby': 'rpk-dialog-title' },
-    h('header', { class: 'rpk-head' }, doodle('open', 'rpk-mascot'), h('div', null, title, group && h('p', null, '给「' + group.name + '」')), close), content)
+    h('header', { class: 'rpk-head' }, back, doodle('open', 'rpk-mascot'), h('div', null, title, group && h('p', null, '给「' + group.name + '」')), close), content)
   const resize = () => {
     const vv = win.visualViewport
     dialog.style.setProperty('--rpk-height', Math.max(120, (vv?.height || win.innerHeight) - 16) + 'px')
@@ -255,17 +258,18 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
   }
 
   async function load() {
+    const id=message.id, seq=++detailSeq
     content.replaceChildren(h('p', { class: 'rpk-help' }, '加载中…'))
     try {
-      const d = await api(`/chat/messages/${message.id}/redpack`)
-      if (!dialog.isConnected) return
+      const d = await api(`/chat/messages/${id}/redpack`)
+      if (!dialog.isConnected || seq!==detailSeq) return
       if (autoOpen && d.packet.mode==='phrase' && !d.packet.solved) {
         autoOpen=false
-        const opened=await api(`/chat/messages/${message.id}/redpack/open`,{method:'POST',body:{}})
-        onUpdate?.(opened.message);if(dialog.isConnected)render(opened.packet)
+        const opened=await api(`/chat/messages/${id}/redpack/open`,{method:'POST',body:{}})
+        if(dialog.isConnected && seq===detailSeq){onUpdate?.(opened.message);render(opened.packet)}
       } else render(d.packet)
     }
-    catch (e) { if (dialog.isConnected) content.replaceChildren(h('p', { class: 'rpk-status', role: 'alert' }, e.message), btn('重试', load)) }
+    catch (e) { if (dialog.isConnected && seq===detailSeq) content.replaceChildren(h('p', { class: 'rpk-status', role: 'alert' }, e.message), btn('重试', load)) }
   }
   const raffleAction = p => p.id && openTitleRaffle && btn('抽一枚称号', () => {
     dialog.addEventListener('close', () => openTitleRaffle(anchor, p.id), { once: true })
@@ -273,6 +277,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
   }, 'rpk-secondary')
   function render(p) {
     if (p.solved && p.external) return renderExternal(p)
+    const id=message.id, seq=detailSeq
     title.textContent = p.solved ? '拆到啦！' : MODES[p.mode]
     const tagline = p.prompt ? h('p', { class: 'rpk-tagline' }, p.prompt) : null
     if (p.solved) {
@@ -306,15 +311,16 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
       e.preventDefault(); if (busy) return
       busy = true; submit.disabled = true; info.textContent = '正在开包…'
       try {
-        const d = await api(`/chat/messages/${message.id}/redpack/open`, { method: 'POST', body: { answer: answer.value } })
-        onUpdate?.(d.message); if (dialog.isConnected) render(d.packet)
-      } catch (e) { info.textContent = e.message }
+        const d = await api(`/chat/messages/${id}/redpack/open`, { method: 'POST', body: { answer: answer.value } })
+        onUpdate?.(d.message); if (dialog.isConnected && seq===detailSeq) render(d.packet)
+      } catch (e) { if(seq===detailSeq)info.textContent = e.message }
       finally { busy = false; submit.disabled = false }
     } }, coverImage(p.cover),tagline, extras, !['open', 'phrase'].includes(p.mode) && p.game !== 'tiles' && field('谜底', answer), info, submit)
     content.replaceChildren(form, raffleAction(p) || '')
   }
 
   function renderExternal(p) {
+    const id=message.id, seq=detailSeq
     title.textContent=PROVIDERS[p.provider] || '外站红包'
     const snapshot=p.snapshot, won=snapshot?.claimed, lost=!won && snapshot?.state==='exhausted'
     if(lost && !defeatScene)defeatScene=DEFEATS[Math.floor(Math.random()*DEFEATS.length)]
@@ -336,14 +342,14 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
     const fishPasswordField=p.provider==='fish'&&p.external.ref_kind==='id'&&snapshot?.requires_password?field('原站口令',fishPassword):null
     const link=h('a',{class:'rpk-secondary rpk-source',href:p.external.url,target:'_blank',rel:'noopener noreferrer'},'去原站领取')
     const helper=h('details',{class:'rpk-options'},h('summary',null,'辅助脚本'),
-      h('p',{class:'rpk-help'},'首次使用：先装脚本管理器，再安装连接脚本，最后刷新本站。仅看到代码表示尚未进入安装界面。'),
+      h('p',{class:'rpk-help'},'首次使用：安装 Tampermonkey，在其中新建脚本，粘贴连接器并保存，再刷新本站。'),
       h('a',{class:'rpk-secondary',href:'https://www.tampermonkey.net/index.php?browser=chrome',target:'_blank',rel:'noopener noreferrer'},'1. 获取 Tampermonkey'),
       h('p',{class:'rpk-help'},'Chrome：扩展程序 → Tampermonkey → 详情，检查“允许用户脚本”以及本站的访问权限。脚本管理器中启用“尽欢红包连接器”，刷新本站后点“检查连接”。'),
       h('a',{href:'https://www.tampermonkey.net/faq.php?locale=zh&q=Q209',target:'_blank',rel:'noopener noreferrer'},'Chrome 官方脚本权限说明'),
-      h('a',{class:'rpk-secondary rpk-source',href:'/meme-redpacket.user.js',target:'_blank',rel:'noopener'},'2. 打开脚本安装页'),
-      h('p',{class:'rpk-help'},'若只看到一页代码，说明 Chrome 未接管安装。回到这里点“复制脚本”，在 Tampermonkey 中新建脚本、粘贴保存，再刷新本站。原站仍需登录自己的账号。'),
-      h('a',{class:'rpk-secondary',href:'/meme-redpacket.user.js',download:'meme-redpacket.user.js'},'下载脚本文件'),
+      h('p',{class:'rpk-help'},'若只看到一页代码，说明 Chrome 未接管安装。使用“复制脚本”直接粘贴到 Tampermonkey 的新建脚本页面。原站仍需登录自己的账号。'),
       btn('复制脚本',async()=>{try{const r=await win.fetch('/meme-redpacket.user.js',{cache:'no-store'});const source=await r.text();if(!r.ok||!source.startsWith('// ==UserScript=='))throw Error('脚本获取失败，请重试');await win.navigator.clipboard.writeText(source);info.textContent='已复制。在脚本管理器中新建脚本、粘贴保存，然后刷新本站。'}catch(e){info.textContent=e.message||'复制失败，请下载脚本文件'}},'rpk-primary'),
+      h('a',{class:'rpk-secondary rpk-source',href:'/meme-redpacket.user.js',target:'_blank',rel:'noopener'},'查看脚本源码'),
+      h('a',{class:'rpk-secondary',href:'/meme-redpacket.user.js',download:'meme-redpacket.user.js'},'下载脚本文件'),
       btn('检查连接',async()=>{try{const state=await packetBridge('ping');info.textContent='连接器已运行 · '+state.version+'。若原站返回未登录，请在这个浏览器中登录原站。'}catch(e){info.textContent=e.message+'。请确认脚本已启用、允许在本站运行，并刷新页面。'}}))
     const copy=btn('复制原站口令',async()=>{try{await win.navigator.clipboard.writeText(p.external.ref);info.textContent='已复制'}catch{info.textContent='请手动复制：'+p.external.ref}})
     content.replaceChildren(...[coverImage(p.cover),won&&medal(p),visual,queried,fishPasswordField,claim,unsupported,h('div',{class:'rpk-actions'},query,link),raffleAction(p),...(['hb','fish'].includes(p.provider)&&p.external.ref_kind!=='id'?[h('blockquote',{class:'rpk-cipher'},p.external.ref),copy]:[]),info,helper].filter(Boolean))
@@ -353,10 +359,10 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
       try {
         await packetBridge('ping')
         const result=await packetBridge(action,{...p.external,password:fishPasswordField?fishPassword.value:undefined})
-        const saved=await api(`/chat/messages/${message.id}/redpack/sync`,{method:'POST',body:result})
+        const saved=await api(`/chat/messages/${id}/redpack/sync`,{method:'POST',body:result})
         if(saved.message)onUpdate?.(saved.message)
-        if(dialog.isConnected)renderExternal(saved.packet)
-      } catch(e) {if(dialog.isConnected){info.textContent=e.message;helper.open=true}}
+        if(dialog.isConnected && seq===detailSeq)renderExternal(saved.packet)
+      } catch(e) {if(dialog.isConnected && seq===detailSeq){info.textContent=e.message;helper.open=true}}
       finally {busy=false;query.disabled=claim.disabled=false}
     }
     if(autoInspect || !snapshot && !externalInspected){autoInspect=false;externalInspected=true;connect('query')}
@@ -365,6 +371,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
   function archive() {
     title.textContent='群红包袋'
     dialog.classList.add('rpk-archive')
+    back.hidden=true
     let view='all',scope='today',before=null,loading=false,ticket=0,scanBefore=null
     const list=h('div',{class:'rpk-archive-list'}),info=status()
     const pending=btn('今天',()=>change('today')),history=btn('历史',()=>change('all')),refresh=btn('刷新',()=>change(scope)),more=btn('再翻一页',()=>draw(false))
@@ -396,9 +403,11 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
             h('span',null,`${PROVIDERS[p?.provider] || '红包'} · ${label}`),p?.notify_at && h('time',null,'到点提醒 '+new Date(p.notify_at*1000).toLocaleString('zh-CN',{hour12:false})),
             s?.expires_at && h('time',null,'截止 '+new Date(s.expires_at*1000).toLocaleString('zh-CN',{hour12:false})))],()=>{
               if(m.deleted)return
-              // close 事件异步派发；等旧对话框移除后再打开，避免被单实例守卫拦住。
-              dialog.addEventListener('close',()=>openRedpacket({anchor,message:m,onUpdate,h,icon,api,openTitleRaffle}),{once:true})
-              dialog.close()
+              message=m
+              externalInspected=false
+              back.hidden=false
+              dialog.classList.remove('rpk-archive')
+              load()
             },'rpk-archive-item'+(m.deleted?' is-gone':''))
         }))
         list.querySelectorAll('.is-gone').forEach(b=>b.disabled=true)
