@@ -3068,7 +3068,7 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
       if (st.ids.has(m.id) || (st.unseen && !S.me && st.seenSnap.has(m.id))) continue
       st.ids.add(m.id)
       const card = wallCard(m, { stack: st.hz, priority: firstVisibleCard && m.kind !== 'text' })
-      firstVisibleCard = false
+      if (m.kind !== 'text') firstVisibleCard = false
       sec.cols.add(card)
       // 要定位的帖子在折叠起来的那天：临时展开（不写回 DAY_FOLD），不然卡片是隐藏的，定位和高亮都落空
       if (m.id === focus && sec.collapsed) sec.setFold(false)
