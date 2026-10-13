@@ -651,8 +651,9 @@ visualViewport?.addEventListener('resize', () => document.body.classList.toggle(
 
 // ---------- 看过 ----------
 // 卡片在视口里停留约 0.8 秒记为看过；登录用户上报服务器，游客只记在本地
+const LOCAL_SEEN_LIMIT = 20000
 const SEEN = {
-  local: new Set(JSON.parse(localStorage.getItem('seen') || '[]')),
+  local: new Set(JSON.parse(localStorage.getItem('seen') || '[]').slice(-LOCAL_SEEN_LIMIT)),
   queue: new Set(),
   timers: new Map(),
   flushT: 0,
@@ -691,6 +692,7 @@ function markSeen(m) {
     syncItem({ ...m, seen_at: Math.floor(Date.now() / 1000) })
   } else {
     SEEN.local.add(m.id)
+    if (SEEN.local.size > LOCAL_SEEN_LIMIT) SEEN.local.delete(SEEN.local.values().next().value)
     clearTimeout(SEEN.flushT)
     SEEN.flushT = setTimeout(flushSeen, 1500)
     syncItem(m)
@@ -709,7 +711,7 @@ function flushSeen() {
   clearTimeout(SEEN.flushT)
   if (!S.me) {
     const arr = [...SEEN.local]
-    localStorage.setItem('seen', JSON.stringify(arr.slice(-20000)))
+    localStorage.setItem('seen', JSON.stringify(arr))
     return Promise.resolve()
   }
   restorePendingSeen()
@@ -767,6 +769,14 @@ const seenIO = new IntersectionObserver((entries) => {
 // ---------- 同一张图的多处展示保持同步 ----------
 const ITEMS = new Map()   // id -> 最新数据
 const WATCH = new Map()   // id -> Set<fn>
+const ITEM_CACHE_LIMIT = 512
+function trimItems(preserveId = 0) {
+  if (ITEMS.size <= ITEM_CACHE_LIMIT) return
+  for (const id of ITEMS.keys()) {
+    if (ITEMS.size <= ITEM_CACHE_LIMIT) break
+    if (id !== preserveId && !WATCH.has(id)) ITEMS.delete(id)
+  }
+}
 function syncItem(next) {
   const cur = ITEMS.get(next.id)
   // 卡片版只带前几十条回应；已有完整版且回应数没变时保留完整列表
@@ -774,14 +784,16 @@ function syncItem(next) {
     next = { ...next, full: true, replies: cur.replies, reply_list: cur.reply_list }
   }
   const merged = cur ? Object.assign(cur, next) : next
+  if (cur) ITEMS.delete(next.id)
   ITEMS.set(next.id, merged)
   WATCH.get(next.id)?.forEach((fn) => fn(merged))
+  trimItems(next.id)
   return merged
 }
 function watchItem(id, fn) {
   if (!WATCH.has(id)) WATCH.set(id, new Set())
   WATCH.get(id).add(fn)
-  return () => { const list = WATCH.get(id); list?.delete(fn); if (!list?.size) WATCH.delete(id) }
+  return () => { const list = WATCH.get(id); list?.delete(fn); if (!list?.size) { WATCH.delete(id); trimItems() } }
 }
 const PAGE_CLEAN = []
 const onPageLeave = (fn) => PAGE_CLEAN.push(fn)
@@ -6645,8 +6657,15 @@ function flashMsg(el, m) {
 // 站内图片链接的预览卡（像论坛的 onebox）
 const MEMO = new Map()
 function memeById(id) {
-  if (!MEMO.has(id)) MEMO.set(id, api(`/memes/${id}`).then((d) => syncItem(d.meme)).catch((e) => { MEMO.delete(id); throw e }))
-  return MEMO.get(id)
+  if (MEMO.has(id)) {
+    const cached = MEMO.get(id)
+    MEMO.delete(id); MEMO.set(id, cached)
+    return cached
+  }
+  const pending = api(`/memes/${id}`).then((d) => syncItem(d.meme)).catch((e) => { if (MEMO.get(id) === pending) MEMO.delete(id); throw e })
+  MEMO.set(id, pending)
+  if (MEMO.size > 128) MEMO.delete(MEMO.keys().next().value)
+  return pending
 }
 function onebox(id) {
   const box = h('a', { class: 'onebox', href: `/m/${id}`, 'data-link': '' }, h('span', { class: 'muted' }, '加载预览…'))
@@ -8431,7 +8450,7 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=bf6a5959')
+    const { openRedpacket } = await import('/redpacket.js?v=2160f7b7')
     if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, openTitleRaffle: titleRaffleDialog, uploadCover: async file => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')

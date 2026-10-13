@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         尽欢红包连接器
 // @namespace    https://52dmeme.com/
-// @version      1.1.0
+// @version      1.1.1
 // @downloadURL  https://52dmeme.com/meme-redpacket.user.js
 // @updateURL    https://52dmeme.com/meme-redpacket.user.js
 // @description  用本人登录态查询领取 HB/Credit/fish；Credit 发包仅在其来源页本人确认，不托管积分或登录凭据。
@@ -112,7 +112,7 @@ function mountCreditCreatePage(){
   *{box-sizing:border-box}.panel{width:min(440px,100%);max-height:calc(100vh - 24px);overflow:auto;background:#fff7e9;border:3px solid #e7a088;border-radius:23px;box-shadow:0 18px 50px #1d1a1680;padding:22px}
   h1{font-size:22px;margin:0 0 8px}.cat{font-size:34px;float:right}p{margin:10px 0}dl{display:grid;grid-template-columns:auto 1fr;gap:4px 18px;padding:12px;background:#fff;border-radius:14px}dd{margin:0;text-align:right;font-weight:700}
   label{display:block;margin:14px 0 7px;font-weight:700}input{width:100%;font:inherit;padding:12px;border:1px solid #c8b6a7;border-radius:11px}button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:11px 16px;cursor:pointer}button:disabled{opacity:.55;cursor:wait}.pay{background:#eb9c87;color:#3c2a23}.cancel{background:#eee8dd;color:#513d32}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.state{min-height:24px;color:#8c493b}.recovery{padding:12px;background:#fff;border-radius:12px}.recovery a{color:#a64d37}.recovery input{margin-top:8px}.recovery label{font-weight:400}
-  </style><section class="panel" role="dialog" aria-modal="true" aria-labelledby="title"><span class="cat" aria-hidden="true">✉️</span><h1 id="title">在 Credit 确认红包</h1><p class="intro">正在读取发包信息…</p><dl hidden></dl><form hidden><label for="pay-key">Credit 支付口令</label><input id="pay-key" type="password" maxlength="10" required autocomplete="off"><div class="actions"><button class="pay" type="submit">确认扣款并创建</button><button class="cancel" type="button">取消</button></div></form><p class="state" role="status"></p><div class="recovery" hidden><p>先到 <a href="https://credit.linux.do/home" target="_blank" rel="noopener">Credit 已发送和交易记录</a>核对，再选择：</p><label for="known-id">已经创建：填写该红包编号</label><input id="known-id" inputmode="numeric" placeholder="红包编号"><button class="known" type="button">保存已创建编号</button><label><input class="no-charge" type="checkbox" style="width:auto"> 我已确认没有创建，也没有扣款</label><button class="unlock" type="button">解除锁定后重新尝试</button></div></section>`
+  </style><section class="panel" role="dialog" aria-modal="true" aria-labelledby="title"><span class="cat" aria-hidden="true">✉️</span><h1 id="title">在 Credit 确认红包</h1><p class="intro">正在读取发包信息…</p><dl hidden></dl><form hidden><label for="pay-key">Credit 支付口令（6～10 位）</label><input id="pay-key" type="password" minlength="6" maxlength="10" required autocomplete="off"><div class="actions"><button class="pay" type="submit">确认扣款并创建</button><button class="cancel" type="button">取消</button></div></form><p class="state" role="status"></p><div class="recovery" hidden><p>先到 <a href="https://credit.linux.do/home" target="_blank" rel="noopener">Credit 已发送和交易记录</a>核对，再选择：</p><label for="known-id">已经创建：填写该红包编号</label><input id="known-id" inputmode="numeric" placeholder="红包编号"><button class="known" type="button">保存已创建编号</button><label><input class="no-charge" type="checkbox" style="width:auto"> 我已确认没有创建，也没有扣款</label><button class="unlock" type="button">解除锁定后重新尝试</button></div></section>`
  document.body.append(host)
  const intro=root.querySelector('.intro'),detail=root.querySelector('dl'),form=root.querySelector('form'),input=root.querySelector('#pay-key'),pay=root.querySelector('.pay'),cancel=root.querySelector('.cancel'),state=root.querySelector('.state'),recovery=root.querySelector('.recovery'),knownInput=root.querySelector('#known-id'),known=root.querySelector('.known'),noCharge=root.querySelector('.no-charge'),unlock=root.querySelector('.unlock')
  let record=null,configReady=false,waiting=0
@@ -163,7 +163,7 @@ function mountCreditCreatePage(){
   event.preventDefault()
   if(!event.isTrusted || !configReady || record?.status!=='pending')return
   const payKey=input.value;input.value=''
-  if(!payKey || payKey.length>10){display('填写 Credit 支付口令');return}
+  if(payKey.length<6 || payKey.length>10){display('Credit 支付口令需为 6～10 位');return}
   if(!navigator.locks?.request){display('浏览器缺少跨窗口领取锁，无法安全创建。请到 Credit 原站发包。');return}
   pay.disabled=true;cancel.disabled=true;display('正在 Credit 创建，请不要重复点击…')
   try{await navigator.locks.request('jh-credit-create',{mode:'exclusive'},async()=>{
@@ -262,7 +262,7 @@ window.addEventListener('message', async event => {
   const data=event.data
   if(data?.type!=='meme-redpacket-request' || !/^[a-f0-9-]{36}$/i.test(data.id))return
   const reply=(result,error)=>window.postMessage({type:'meme-redpacket-result',id:data.id,result,error},location.origin)
-  if(data.action==='ping'){reply({version:'1.1.0',creditCreate:true});return}
+  if(data.action==='ping'){reply({version:'1.1.1',creditCreate:true});return}
   if(['prepareCreate','awaitCreate'].includes(data.action)){
     try{
       if(typeof GM_getValue!=='function'||typeof GM_setValue!=='function')throw Error('请更新红包连接器并允许脚本存储')

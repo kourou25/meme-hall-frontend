@@ -176,14 +176,26 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
         if([...hint.value.trim()].length>100){msg.textContent='祝福语最多 100 字';return}
         try{win.localStorage.setItem(draftKey,JSON.stringify({nonce,status:'pending',params:createParams}))}catch{msg.textContent='此浏览器无法保存待发红包，请启用站点存储后再试';return}
       }
-      const popup=direct && !createdId ? win.open('https://credit.linux.do/home?jh-credit='+encodeURIComponent(nonce),'jh-credit-'+nonce,'popup,width=500,height=720') : null
+      // 保留用户手势打开窗口；先确认连接器收到了参数，再进入 Credit 扣款页。
+      const popup=direct && !createdId ? win.open('about:blank','jh-credit-'+nonce,'popup,width=500,height=720') : null
       if(direct && !createdId && !popup){msg.textContent='Chrome 拦截了 Credit 确认窗口；允许本站弹窗后再试';return}
+      if(popup)try{
+        popup.opener=null
+        popup.document.title='正在连接 Credit 红包'
+        popup.document.body.textContent='正在连接红包脚本，请回群聊窗口查看进度…'
+      }catch{}
       busy = true; submit.disabled = true; msg.textContent = '正在封装…'
+      let creditNavigated=false
       try {
         if(direct && !createdId){
           const bridge=await packetBridge('ping')
           if(!bridge.creditCreate)throw Error('请更新到 1.1.0 红包连接器，刷新本站后重试')
           const prepared=await packetBridge('prepareCreate',createParams)
+          if(!prepared.id){
+            if(popup.closed)throw Error('Credit 确认窗口已关闭，请重新点击发红包')
+            popup.location.replace('https://credit.linux.do/home?jh-credit='+encodeURIComponent(nonce))
+            creditNavigated=true
+          }else popup.close()
           const result=prepared.id?prepared:await packetBridge('awaitCreate',{provider:'credit',operation:nonce})
           if(!/^[1-9]\d{0,19}$/.test(result?.id||''))throw Error('Credit 创建结果未确认，请到已发送记录核对')
           createdId=result.id
@@ -200,7 +212,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
         } })
         if(createdId)try{win.localStorage.removeItem(draftKey)}catch{}
         onSent?.(d.message); dialog.close()
-      } catch (e) { msg.textContent = (createdId?'LDC 已创建，编号 '+createdId+'；重试只发布群消息，不再扣款。':'')+e.message }
+      } catch (e) { if(popup && !creditNavigated && !popup.closed)popup.close();msg.textContent = (createdId?'LDC 已创建，编号 '+createdId+'；重试只发布群消息，不再扣款。':'')+e.message }
       finally { busy = false; submit.disabled = false }
     } }, field('红包平台',provider),creditChoice,creditFields,externalField,coverInput,coverButton,coverPreview,modes,secretField,count,field('提示', hint), phraseField, gameField, sourceField,reminder,msg,submit)
     provider.addEventListener('change',sync)
@@ -336,6 +348,10 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
     const query=btn('刷新状态',()=>connect('query')), claim=btn('连接并拆红包',()=>connect('claim'),'rpk-primary')
     const canClaim=canClaimExternalPacket(p.provider,p.external,snapshot)
     claim.hidden=!canClaim
+    if(p.provider==='fish'&&p.external.ref_kind==='text'&&snapshot?.state==='unmatched'){
+      query.hidden=true
+      claim.textContent='核对口令并拆包'
+    }
     if(snapshot?.kind==='timed_draw')claim.textContent='参加开奖'
     const unsupported=snapshot?.state==='active'&&!won&&!canClaim ? h('p',{class:'rpk-help'},'这个玩法需要到原站领取。') : null
     const fishPassword=input('fish 领取口令',{placeholder:'填写原站活动口令',maxlength:18})
