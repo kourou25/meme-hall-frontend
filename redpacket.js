@@ -4,9 +4,17 @@ const GAMES = { reverse: ['倒放咒语', '从右往左读。'], pairs: ['错位
 const PROVIDERS = { native: '谜底红包', hb: 'HB 红包', credit: 'Credit 红包', fish:'fish 红包' }
 const STATES = { active: '可领取', exhausted: '被抢光啦', expired: '已过期', cancelled: '已取消', drawn: '已开奖', unmatched:'口令待匹配',registered:'已报名，等待开奖',drawing:'正在开奖',not_won:'这次未中奖',payment_pending:'奖励已锁定，等待发放',simulation:'模拟奖励，不产生真实转账',draft:'还没开放' }
 const KINDS = { fixed: '普通', equal: '普通', random: '拼手气', exclusive: '专属', lottery: '抽奖', custom:'自定义金额',timed_draw:'限时开奖',password:'口令兑奖',text:'文本 / CDK' }
+export function canClaimExternalPacket(provider, external, snapshot) {
+  if (!snapshot) return true
+  if (snapshot.claimed) return false
+  if (provider === 'fish' && external?.ref_kind === 'text' && snapshot.state === 'unmatched' && snapshot.kind === 'password') return true
+  if (snapshot.state !== 'active') return false
+  const supported = provider === 'fish' ? ['fixed', 'random', 'custom', 'timed_draw'] : ['fixed', 'equal', 'random', 'exclusive']
+  return ['hb', 'credit', 'fish'].includes(provider) && supported.includes(snapshot.kind)
+}
 function packetBridge(action, external) {
   return new Promise((resolve,reject) => {
-    const timeout=action==='ping'?3000:action==='awaitCreate'?190000:external?.provider==='fish'?90000:45000
+    const timeout=action==='ping'?3000:action==='awaitCreate'?190000:action==='claim'&&external?.provider==='fish'&&external.ref_kind==='text'?120000:external?.provider==='fish'?90000:45000
     const id=crypto.randomUUID(), timer=setTimeout(()=>finish(Error(action==='ping' ? '尚未连接辅助脚本' : '结果尚未确认，请重新查询或到原站核对')),timeout)
     const receive=e=>{if(e.source===window && e.origin===location.origin && e.data?.type==='meme-redpacket-result' && e.data.id===id)finish(e.data.error?Error(e.data.error):null,e.data.result)}
     const finish=(error,value)=>{clearTimeout(timer);window.removeEventListener('message',receive);error?reject(error):resolve(value)}
@@ -320,8 +328,10 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
       snapshot?.expires_at && h('p',null,'截止 '+new Date(snapshot.expires_at*1000).toLocaleString('zh-CN',{hour12:false})),
       p.notify_at && h('p',null,'到点提醒 '+new Date(p.notify_at*1000).toLocaleString('zh-CN',{hour12:false})))
     const query=btn('刷新状态',()=>connect('query')), claim=btn('连接并拆红包',()=>connect('claim'),'rpk-primary')
-    claim.hidden=!!won || !!snapshot && (!['active','unmatched'].includes(snapshot.state) || !['fixed','equal','random','exclusive','custom','timed_draw','password'].includes(snapshot.kind))
+    const canClaim=canClaimExternalPacket(p.provider,p.external,snapshot)
+    claim.hidden=!canClaim
     if(snapshot?.kind==='timed_draw')claim.textContent='参加开奖'
+    const unsupported=snapshot?.state==='active'&&!won&&!canClaim ? h('p',{class:'rpk-help'},'这个玩法需要到原站领取。') : null
     const fishPassword=input('fish 领取口令',{placeholder:'填写原站活动口令',maxlength:18})
     const fishPasswordField=p.provider==='fish'&&p.external.ref_kind==='id'&&snapshot?.requires_password?field('原站口令',fishPassword):null
     const link=h('a',{class:'rpk-secondary rpk-source',href:p.external.url,target:'_blank',rel:'noopener noreferrer'},'去原站领取')
@@ -336,10 +346,10 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
       btn('复制脚本',async()=>{try{const r=await win.fetch('/meme-redpacket.user.js',{cache:'no-store'});const source=await r.text();if(!r.ok||!source.startsWith('// ==UserScript=='))throw Error('脚本获取失败，请重试');await win.navigator.clipboard.writeText(source);info.textContent='已复制。在脚本管理器中新建脚本、粘贴保存，然后刷新本站。'}catch(e){info.textContent=e.message||'复制失败，请下载脚本文件'}},'rpk-primary'),
       btn('检查连接',async()=>{try{const state=await packetBridge('ping');info.textContent='连接器已运行 · '+state.version+'。若原站返回未登录，请在这个浏览器中登录原站。'}catch(e){info.textContent=e.message+'。请确认脚本已启用、允许在本站运行，并刷新页面。'}}))
     const copy=btn('复制原站口令',async()=>{try{await win.navigator.clipboard.writeText(p.external.ref);info.textContent='已复制'}catch{info.textContent='请手动复制：'+p.external.ref}})
-    content.replaceChildren(...[coverImage(p.cover),won&&medal(p),visual,queried,fishPasswordField,claim,h('div',{class:'rpk-actions'},query,link),raffleAction(p),...(['hb','fish'].includes(p.provider)&&p.external.ref_kind!=='id'?[h('blockquote',{class:'rpk-cipher'},p.external.ref),copy]:[]),info,helper].filter(Boolean))
+    content.replaceChildren(...[coverImage(p.cover),won&&medal(p),visual,queried,fishPasswordField,claim,unsupported,h('div',{class:'rpk-actions'},query,link),raffleAction(p),...(['hb','fish'].includes(p.provider)&&p.external.ref_kind!=='id'?[h('blockquote',{class:'rpk-cipher'},p.external.ref),copy]:[]),info,helper].filter(Boolean))
     let busy=false
     async function connect(action) {
-      if(busy)return;busy=true;query.disabled=claim.disabled=true;info.textContent=action==='claim'?'正在核对并领取…':'正在查询…'
+      if(busy)return;busy=true;query.disabled=claim.disabled=true;info.textContent=action==='claim'?(p.provider==='fish'&&p.external.ref_kind==='text'?'正在向 fish 核对口令与领取结果…':'正在核对并领取…'):'正在查询…'
       try {
         await packetBridge('ping')
         const result=await packetBridge(action,{...p.external,password:fishPasswordField?fishPassword.value:undefined})
