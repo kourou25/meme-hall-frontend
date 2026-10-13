@@ -41,7 +41,7 @@ export async function readAiStream(response, { onText = () => {}, onMeta = () =>
 export function createAiChat({ pane, gid, h, icon, api }) {
   let box, opener, controller, generation = 0, destroyed = false, mode = 'summary'
   let history = [], summary = '', config = null
-  const close = () => { generation++; controller?.abort(); controller = null; box?.remove(); box = null; if (opener?.isConnected) opener.focus() }
+  const close = () => { generation++; controller?.abort(); controller = null; box?.remove(); box = null; if (opener?.isConnected) opener.focus({ preventScroll: true }) }
   const destroy = () => { destroyed = true; close(); history = []; summary = '' }
   const open = async (anchor, initialMode = 'summary', initialRange = '200') => {
     close(); if (destroyed) return
@@ -55,7 +55,7 @@ export function createAiChat({ pane, gid, h, icon, api }) {
     const input = h('textarea', { class: 'cm-ai-input', rows: '2', maxlength: '1000', placeholder: '想聊点什么？', 'aria-label': '给 AI 的消息' })
     const start = h('button', { class: 'btn btn-primary sm', type: 'button', disabled: true, onclick: () => run() }, '生成摘要')
     const stop = h('button', { class: 'btn btn-ghost sm', type: 'button', hidden: true, onclick: () => controller?.abort() }, '停止')
-    const fresh = h('button', { class: 'btn-text sm', type: 'button', onclick: () => { history = []; output.replaceChildren(); status.textContent = '新话题，开始吧'; input.focus() } }, '新话题')
+    const fresh = h('button', { class: 'btn-text sm', type: 'button', onclick: () => { history = []; output.replaceChildren(); status.textContent = '新话题，开始吧'; if (pane.ownerDocument.defaultView.innerWidth > 760) input.focus({ preventScroll: true }) } }, '新话题')
     const copy = h('button', { class: 'btn-text sm', type: 'button', disabled: true, onclick: async () => {
       try { await pane.ownerDocument.defaultView.navigator.clipboard.writeText(output.innerText); status.textContent = '已复制' } catch { status.textContent = '复制失败，可选中文字复制' }
     } }, '复制')
@@ -87,7 +87,7 @@ export function createAiChat({ pane, gid, h, icon, api }) {
     function switchMode(next) {
       if (controller) return
       mode = next; render(); sync(); status.textContent = available() ? '仅你可见' : '此功能暂未开放'
-      if (next === 'assistant') input.focus()
+      if (next === 'assistant' && pane.ownerDocument.defaultView.innerWidth > 760) input.focus({ preventScroll: true })
     }
     async function run() {
       if (controller || !available()) return
@@ -114,11 +114,11 @@ export function createAiChat({ pane, gid, h, icon, api }) {
         if (!valid()) return
         status.textContent = activeController.signal.aborted ? '已停止，未完成的回复不加入对话' : error.message
         status.setAttribute('role', activeController.signal.aborted ? 'status' : 'alert')
-      } finally { if (valid()) { controller = null; sync(); copy.disabled = !text; if (mode === 'assistant') input.focus() } }
+      } finally { if (valid()) { controller = null; sync(); copy.disabled = !text } }
     }
     input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); run() } })
     view.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); close() } })
-    pane.append(view); render(); sync(); view.querySelector('.cm-x').focus()
+    pane.append(view); render(); sync(); view.querySelector('.cm-x').focus({ preventScroll: true })
     try { config = await api('/ai/config'); if (valid()) { sync(); status.textContent = available() ? '仅你可见' : '此功能暂未开放' } }
     catch (error) { if (valid()) { status.textContent = error.message; status.setAttribute('role','alert') } }
   }

@@ -4570,7 +4570,7 @@ async function openEdit(m0) {
       h('button', { class: 'btn btn-ghost', onclick: () => requestClose() }, '取消'),
       save))
   S.modal.guard = () => (snap() === init ? null : { text: '改动还没保存，确定放弃吗？' })
-  title.focus()
+  focusEditorOnOpen(title, panel)
 }
 
 // 挂解密只在「解密」页里发图时出现：openCompose({ puzzle: true })；别处直接当 onclick 用，参数是事件
@@ -4718,11 +4718,11 @@ function openCompose(opts) {
     const what = [n && `${n} 个文件`, words && '填好的文字'].filter(Boolean).join('和')
     return {
       text: `这里有${what}，要保留草稿吗？`,
-      keep: () => { S.composeDraft = { el: panel, guard, puzzle: withPuzzle, focus: () => title.focus() } },
+      keep: () => { S.composeDraft = { el: panel, guard, puzzle: withPuzzle, focus: () => focusEditorOnOpen(title, panel) } },
     }
   }
   S.modal.guard = guard
-  title.focus()
+  focusEditorOnOpen(title, panel)
 }
 
 // 发帖弹窗顶上的「发图 / 发文字」切换；有没发的内容先问一句
@@ -4796,7 +4796,7 @@ function openTextCompose() {
     if (!n && !words) return null
     return {
       text: '这里有没发出去的内容，要保留草稿吗？',
-      keep: () => { S.textDraft = { el: panel, guard, focus: () => content.focus() } },
+      keep: () => { S.textDraft = { el: panel, guard, focus: () => focusEditorOnOpen(content, panel) } },
     }
   }
   panel.replaceChildren(
@@ -4813,7 +4813,7 @@ function openTextCompose() {
       h('button', { class: 'btn btn-ghost', onclick: () => requestClose() }, '取消'),
       submit))
   S.modal.guard = guard
-  content.focus()
+  focusEditorOnOpen(content, panel)
 }
 
 const TAG_PRESETS = ['梗图', 'meme', '段子', 'NSFW', '打码', '番号', '短文', '吃瓜', '鸡汤']
@@ -4871,7 +4871,7 @@ function tagPicker(initial = []) {
 // 参考 GitHub 的 markdown-toolbar、EasyMDE、Discourse 编辑器：常用格式一键加，选中文字再点就包起来；
 // Ctrl+B 粗体 / Ctrl+I 斜体 / Ctrl+K 链接；列表里回车自动续下一项，空项回车结束列表；「预览」看最终效果
 function fmtBar(ta, { preview = true } = {}) {
-  const changed = () => { ta.focus(); ta.dispatchEvent(new Event('input')) }
+  const changed = () => { ta.focus({ preventScroll: true }); ta.dispatchEvent(new Event('input')) }
   const wrap = (a, b, ph) => {
     const s0 = ta.selectionStart, e0 = ta.selectionEnd
     const sel = ta.value.slice(s0, e0)
@@ -4949,6 +4949,13 @@ function fmtBar(ta, { preview = true } = {}) {
     b('chevD', '折叠（车牌、长文放这里）', () => block('[details="展开"]\n', '\n[/details]', '折叠的内容')),
     b('smile', '表情', (e) => openPop(e.currentTarget, stickerPicker((k) => { closePop(); insertAtCursor(ta, k) }), { key, cls: 'pop-stk', up: true }), { 'data-pop': key }),
   ]
+  const secondary = tools.filter(t => t.tagName === 'BUTTON' && !['粗体（Ctrl+B）', '表情'].includes(t.title))
+  secondary.forEach(t => t.classList.add('fmt-secondary'))
+  const more = b('more', '更多格式', e => openPop(e.currentTarget,
+    h('div', { class: 'menu-list' }, secondary.map(t => h('button', { class: 'menu-item', type: 'button', disabled: t.disabled,
+      onclick: () => { closePop(); t.click() } }, t.title.replace(/（Ctrl\+[BIK]）/, '')))),
+    { key: key + '-more', up: true }), { class: 'fmt-btn fmt-mobile-more' })
+  tools.push(more)
   // 写 / 预览
   let pv = null
   const pvBtn = preview && h('button', { class: 'fmt-tab', type: 'button', 'aria-pressed': 'false', onclick: () => {
@@ -4961,7 +4968,7 @@ function fmtBar(ta, { preview = true } = {}) {
     pvBtn.setAttribute('aria-pressed', on ? 'true' : 'false')
     pvBtn.replaceChildren(icon(on ? 'pen' : 'eye', 'i tiny'), on ? '继续写' : '预览')
     for (const t of tools) if (t.tagName === 'BUTTON') t.disabled = on
-    if (!on) ta.focus()
+    if (!on && innerWidth > 760) ta.focus({ preventScroll: true })
   } }, icon('eye', 'i tiny'), '预览')
   ta.addEventListener('keydown', (e) => {
     if (e.isComposing) return
@@ -4989,6 +4996,11 @@ function fmtBar(ta, { preview = true } = {}) {
 }
 
 // ---------- 弹窗 ----------
+
+function focusEditorOnOpen(input, panel) {
+  if (innerWidth > 760) input.focus({ preventScroll: true })
+  else panel.querySelector('[aria-label="关闭"]')?.focus({ preventScroll: true })
+}
 
 function openModalShell(cls) {
   closePop()
@@ -7137,7 +7149,7 @@ function chatPane(g, { onHead } = {}) {
   let aiPanel, aiLoading
   async function openAi(anchor, mode = 'summary', range = '200') {
     try {
-      aiLoading ||= import('/ai-chat.js?v=99d7d2c1').then(({ createAiChat }) => {
+      aiLoading ||= import('/ai-chat.js?v=3fa586bb').then(({ createAiChat }) => {
         if (!st.destroyed) aiPanel = createAiChat({ pane: el, gid: g.id, h, icon, api })
       }).catch(error => { aiLoading = null; throw error })
       await aiLoading
@@ -7916,8 +7928,8 @@ function chatPane(g, { onHead } = {}) {
           insertAtCursor(ta, k.includes(':') ? `[${k}]` : k)
         }), { key, cls: 'pop-stk', up: true }), { 'data-pop': key }),
         tb('image', '发图片 / 视频', () => att.pick()),
-        tb('redpack', '发红包', (e) => redpackDialog(e.currentTarget, { group: g, onSent: (message) => { closeHist(); add([message], 'live'); toBottom(false) } }), { class: 'cm-ibtn cm-redpack-btn' }),
-        tb('packetBag', '群红包袋', (e) => redpackDialog(e.currentTarget, { archiveGroup:g, onUpdate:update })),
+        tb('redpack', '发红包', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { group: g, onSent: (message) => { closeHist(); add([message], 'live'); toBottom(false) } }), { class: 'cm-ibtn cm-redpack-btn' }),
+        tb('packetBag', '群红包袋', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { archiveGroup:g, onUpdate:update })),
         tb('doc', '发文件（20MB 以内）', () => fileIn.click()),
         tb('at', '@ 某人', () => { insertAtCursor(ta, (/\S$/.test(ta.value.slice(0, ta.selectionStart)) ? ' ' : '') + '@') }),
         tb('quote', '引用', () => { const m = st.reply || st.items[st.items.length - 1]; if (m) quoteMsg(m) }),
@@ -7925,7 +7937,7 @@ function chatPane(g, { onHead } = {}) {
           insertAtCursor(ta, (/\S$/.test(ta.value.slice(0, ta.selectionStart)) ? ' ' : '') + `No.${m.id} `)
         }, 'cmpost' + g.id), { 'data-pop': 'cmpost' + g.id }),
         tb('search', '搜索聊天记录', () => search()),
-        tb('smile', 'AI 小伙伴', (e) => openAi(e.currentTarget), { class: 'cm-ibtn cm-ai-open' }),
+        tb('smile', 'AI 小伙伴', (e) => openAi(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more')), { class: 'cm-ibtn cm-ai-open' }),
         tb('download', '导出 / 让 AI 总结', (e) => pickRange(e.currentTarget), { 'data-pop': 'cmrange' }),
         h('span', { class: 'grow' }),
         sendBtn), mention.el)
@@ -7933,7 +7945,7 @@ function chatPane(g, { onHead } = {}) {
   if (S.me) acceptImages(compose, ta, { add: (fs) => att.add(fs) })
   if (S.me) {
     const bar = compose.querySelector('.cm-bar')
-    const extras = [...bar.querySelectorAll('button')].filter(b => ['发文件（20MB 以内）', '@ 某人', '引用', '引用帖子（插入 No.编号，会带预览卡）', '搜索聊天记录', 'AI 小伙伴'].includes(b.title))
+    const extras = [...bar.querySelectorAll('button')].filter(b => ['发红包', '群红包袋', '发文件（20MB 以内）', '@ 某人', '引用', '引用帖子（插入 No.编号，会带预览卡）', '搜索聊天记录', 'AI 小伙伴'].includes(b.title))
     extras.forEach(b => b.classList.add('cm-secondary'))
     bar.querySelector('[data-pop="cmrange"]')?.classList.add('desktop-only')
     const more = tb('more', '更多聊天操作', e => openPop(e.currentTarget,
@@ -7961,7 +7973,7 @@ function chatPane(g, { onHead } = {}) {
     const input = h('input', { class: 'input', type: 'search', placeholder: '搜索消息内容，@用户名 只看某人', 'aria-label': '搜索聊天记录' })
     const onlyImg = h('input', { type: 'checkbox' })
     const out = h('div', { class: 'cms-list' }, h('p', { class: 'muted cms-empty' }, '输入关键词搜索这个群的聊天记录'))
-    const close = () => { searchEl?.remove(); searchEl = null; ta.focus() }
+    const close = () => { searchEl?.remove(); searchEl = null; (win.innerWidth <= 760 ? compose.querySelector('.cm-mobile-more') : ta)?.focus({ preventScroll: true }) }
     let t = 0
     let seq = 0
     const run = async (before = 0) => {
@@ -10482,7 +10494,7 @@ async function memberAdmin(q0 = '') {
       h('p', { class: 'muted ma-note' }, '禁言只管群聊发消息；禁回应包括表情、喜欢和一句回应。到期自动解除，管理员不受限制。站长可以给人设「管理员」（全站管理）或「群管」（只管群聊）。'),
       list))
   load()
-  q.focus()
+  focusEditorOnOpen(q, panel)
 }
 
 // ---------- 我的设置 ----------
