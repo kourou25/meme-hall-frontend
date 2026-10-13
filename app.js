@@ -4810,8 +4810,8 @@ function openCompose(opts) {
   const tags = tagPicker()
   const spoiler = h('input', { type: 'checkbox' })
   const ai = imageAiControl()
-  const pf = puzzleForm()
-  const puzzleWrap = h('div', { class: 'puzzle-editor', hidden: true }, pf.el)
+  const pf = withPuzzle ? puzzleForm() : null
+  const puzzleWrap = h('div', { class: 'puzzle-editor', hidden: true }, pf?.el)
   const toggle = h('input', { type: 'checkbox', checked: withPuzzle })
   puzzleWrap.hidden = !withPuzzle
   toggle.addEventListener('change', () => { puzzleWrap.hidden = !toggle.checked })
