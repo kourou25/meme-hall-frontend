@@ -2843,12 +2843,15 @@ const loadingBox = () => h('div', { class: 'loading-box', role: 'status' }, h('d
 
 async function initDays(st) {
   st.sentinel.replaceChildren(loadingBox())
-  let list
+  let list, firstPage
   try {
     const query = listParams(st).toString()
     const warm = START_DAYS?.query === query ? START_DAYS.promise : null
     START_DAYS = null
-    list = ((warm && await warm) || await browseApi('/days?' + query, st)).days
+    const first = st.plain && st.sort === 'new' && !st.unseen && !st.from && !st.focus && !st.seenSnap?.size
+    const data = (warm && await warm) || await browseApi('/days?' + query + (first ? '&first=1' : ''), st)
+    list = data.days
+    firstPage = first && data.firstPage?.day === list[0]?.day ? data.firstPage : null
   } catch (e) {
     if (st.qCount) st.qCount.textContent = '搜索出错了'
     return st.sentinel.replaceChildren(h('div', { class: 'empty' }, h('div', { class: 'empty-title' }, '加载失败'),
@@ -2857,6 +2860,7 @@ async function initDays(st) {
   }
   if (S.wall !== st) return
   st.dayList = list
+  st.firstPage = firstPage
   const total = list.reduce((a, d) => a + d.n, 0)
   st.unseenLeft = st.unseen ? total : list.reduce((a, d) => a + (d.unseen || 0), 0)
   st.drawCount()
@@ -3040,7 +3044,9 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
   const p = listParams(st, { day: sec.day, limit: String(first ? DAY_FIRST : DAY_STEP), offset: String(sec.offset) })
   if (focus) p.set('focus', focus)
   try {
-    const data = await browseApi('/memes?' + p, st)
+    const bundled = first && !focus && sec.offset === 0 && st.firstPage?.day === sec.day ? st.firstPage : null
+    if (bundled) st.firstPage = null
+    const data = bundled || await browseApi('/memes?' + p, st)
     if (S.wall !== st) return
     if (!st.anchor && data.anchor) st.anchor = data.anchor
     if (focus && data.offset > 0) {
@@ -11198,7 +11204,8 @@ if (location.pathname === '/' && !S.skin && !SEEN.local.size) {
       author: (p.get('author') || '').split(/[,，\s]+/).filter(Boolean).slice(0, 20).join(','),
       text: ['only', '0'].includes(p.get('text')) ? p.get('text') : '' }
     const query = listParams(st).toString()
-    START_DAYS = { query, promise: api('/days?' + query).catch(() => null) }
+    const first = st.sort === 'new' && !p.get('from') && !p.get('focus') && !st.q && !st.tag && !st.author && !st.text
+    START_DAYS = { query, promise: api('/days?' + query + (first ? '&first=1' : '')).catch(() => null) }
   }
 }
 ;(async () => {
