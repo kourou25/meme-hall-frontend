@@ -29,7 +29,8 @@ export function openTitleRaffle({ anchor, api, h, icon, packetId = null, raffleI
       const list = data.raffles
       const rows = list.map(r => {
         const name = titles.get(r.title)?.name || '神秘称号'
-        const active = r.status === 'open' && r.closes_at > Date.now() / 1000
+        const enabled = titles.get(r.title)?.enabled !== false
+        const active = enabled && r.status === 'open' && r.closes_at > Date.now() / 1000
         const mutate = async (path, method, bodyData) => {
           if (busy) return; busy = true
           try { await api(path, { method, ...(bodyData ? { body: bodyData } : {}) }); changed(); await load() }
@@ -37,7 +38,7 @@ export function openTitleRaffle({ anchor, api, h, icon, packetId = null, raffleI
           finally { busy = false }
         }
         const row = h('article', { class: 'tr-card tr-' + r.title },
-          h('div', { class: 'tr-row' }, h('strong', { class: 'tr-name' }, name), h('span', { class: 'tr-status' }, STATE[r.status] || r.status)),
+          h('div', { class: 'tr-row' }, h('strong', { class: 'tr-name' }, name), h('span', { class: 'tr-status' }, !enabled && r.status === 'open' ? '已暂停' : STATE[r.status] || r.status)),
           h('div', { class: 'tr-meta' },
             r.packet_id ? '红包限定 · 报名开奖' : r.entry_mode === 'all' ? '最近 24 小时活跃群友参与' : `${r.entries} 人已报名`,
             ' · ', new Date(r.closes_at * 1000).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })),
@@ -59,7 +60,7 @@ export function openTitleRaffle({ anchor, api, h, icon, packetId = null, raffleI
     } catch (e) { body.replaceChildren(h('p', { class: 'tr-error', role: 'alert' }, e.message || '加载失败'), h('button', { class: 'tr-action', onclick: load }, '重试')) }
   }
   function createForm(titles) {
-    const titleSelect = h('select', { class: 'tr-input', 'aria-label': '抽取称号' }, titles.map(t => h('option', { value: t.id }, t.name)))
+    const titleSelect = h('select', { class: 'tr-input', 'aria-label': '抽取称号' }, titles.filter(t => t.enabled !== false).map(t => h('option', { value: t.id }, t.name)))
     const mode = h('select', { class: 'tr-input', 'aria-label': '参与方式' },
       h('option', { value: 'optin' }, '报名参与'), !packetId && h('option', { value: 'all' }, '全员参与（24 小时活跃）'))
     const duration = h('select', { class: 'tr-input', 'aria-label': '开奖时间' }, Object.entries(WHEN).map(([n, label]) => h('option', { value: n }, label)))

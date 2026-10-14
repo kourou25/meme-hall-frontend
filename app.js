@@ -1607,12 +1607,12 @@ const OFFICIAL_ART = {
 const RAFFLE_TITLES = {
   deepseek: { name:'鲸鱼娘', mood:'深海里的蓝色心动', art:OFFICIAL_ART.whale },
   mona: { name: '莫奈之王', mood: '睡莲色的画中主角', art: '<path d="M4 21q6-8 12 0 6-8 12 0M6 25q10 5 20 0M16 4v7m-5-3 5-4 5 4M9 15q7-5 14 0"/>' },
-  lace: { name: '摸蕾丝紫奈', mood: '紫色蕾丝与小恶魔的心动', art: '<path d="M5 9q4-6 11 0 7-6 11 0v15H5Z M5 12l4 3 4-3 3 3 3-3 4 3 4-3M12 21q4-5 8 0m-4-3v8m-3-3 3 3 3-3"/>' },
-  giant: { name: '一根巨物', mood: '气泡也装不下的大场面', art: '<path d="M8 10a4 4 0 1 1 5 4l6 6a4 4 0 1 1 4 5 4 4 0 1 1-5-4l-6-6a4 4 0 1 1-4-5Z"/>' },
+  lace: { enabled:false, name: '摸蕾丝紫奈', mood: '紫色蕾丝与小恶魔的心动', art: '<path d="M5 9q4-6 11 0 7-6 11 0v15H5Z M5 12l4 3 4-3 3 3 3-3 4 3 4-3M12 21q4-5 8 0m-4-3v8m-3-3 3 3 3-3"/>' },
+  giant: { enabled:false, name: '一根巨物', mood: '气泡也装不下的大场面', art: '<path d="M8 10a4 4 0 1 1 5 4l6 6a4 4 0 1 1 4 5 4 4 0 1 1-5-4l-6-6a4 4 0 1 1-4-5Z"/>' },
   worship: { name: '寄吧几拜', mood: '一边吐槽，一边认真参拜', art: '<path d="M16 4l10 7-3 16H9L6 11ZM7 11h18M11 16l5 4 5-4M12 25h8m-10-5-3 3m15-3 3 3"/>' },
   muscle: { name: '筋肉欢欢', mood: '一拳打出今日份快乐', art: '<path d="M8 13q-5-4-5 4 0 8 9 10h9q8-2 8-10 0-8-5-4l-4 3-4-5-4 5ZM9 20h2m10 0h2m-12 3q5 4 10 0M8 7l-3-3m20 3 3-3"/>' },
 }
-const raffleOf = u => RAFFLE_TITLES[u?.deco?.ft] ? { ...RAFFLE_TITLES[u.deco.ft], id: u.deco.ft, n: Math.max(1, Number(u.deco.fn) || 1) } : null
+const raffleOf = u => RAFFLE_TITLES[u?.deco?.ft] && RAFFLE_TITLES[u.deco.ft].enabled !== false ? { ...RAFFLE_TITLES[u.deco.ft], id: u.deco.ft, n: Math.max(1, Number(u.deco.fn) || 1) } : null
 const raffleArt = id => h('span', { class: 'rt-art', 'aria-hidden': 'true' },
   ['mona','giant','lace','worship','muscle','deepseek'].includes(id)
     ? h('img', { src: ['giant','lace','deepseek'].includes(id) ? `/assets/raffle/v2/${id}-badge.webp` : id === 'muscle' ? '/assets/raffle/muscle-tail-still.webp' : `/assets/raffle/${id}-badge.webp`, alt: '', width: 32, height: 32, loading: 'lazy' })
@@ -1747,7 +1747,7 @@ function openBubbleSettings(anchor) {
   const close = () => dialog.close()
   const body = h('div', { class:'bubble-options' })
   const groups = [
-    ['抽奖气泡', Object.entries(RAFFLE_TITLES).map(([id,t]) => ['raffle:' + id,t.name])],
+    ['抽奖气泡', Object.entries(RAFFLE_TITLES).filter(([,t]) => t.enabled !== false).map(([id,t]) => ['raffle:' + id,t.name])],
     ['官方气泡', (S.officialTitles || []).map(t => ['official:' + t.id,t.name])],
     ['日常气泡', DECO_BUBBLE.filter(([id]) => id).map(([id,name]) => ['preset:' + id,name]).concat([['preset:yinlu','引路人'],['custom','自定义气泡样式']])],
   ]
@@ -8644,7 +8644,7 @@ async function redpackDialog(anchor, options) {
 async function titleRaffleDialog(anchor, packetId = null, raffleId = null) {
   try {
     closePop()
-    const { openTitleRaffle } = await import('/title-raffle.js?v=20261014')
+    const { openTitleRaffle } = await import('/title-raffle.js?v=812f7c03')
     openTitleRaffle({ anchor, packetId, raffleId, api, h, icon })
   } catch (e) { toast(e.message, 'err') }
 }
@@ -8743,7 +8743,8 @@ function chatMsg(m, { cont, pane, pending } = {}) {
       h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || '给你一个红包'),
         h('span', null, `${({hb:'HB · ',credit:'Credit · ',fish:'fish · '})[m.redpack.provider] || ''}${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`)),
       h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放'})[m.redpack.snapshot?.state] || (m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, `${m.redpack.opened} 人拆过${m.redpack.provider && m.redpack.provider!=='native'?'包装':''}`))))
-    if ((!m.redpack || m.redpack.shared) && m.body && !lnk?.only) body.push(h('div', stkOnly(m.body) ? { class:'cm-text stk-only' } : bubbleView(m.user, 'cm-text'), richBody(m.body, { md: 'lite' }), edited))
+    if ((!m.redpack || m.redpack.shared) && m.body && !lnk?.only) body.push(h('div', stkOnly(m.body) ? { class:'cm-text stk-only' } : bubbleView(m.user, 'cm-text'),
+      m.user?.deco?.ft === 'deepseek' ? h('span', { class:'ds-copy' }, richBody(m.body, { md:'lite' }), edited) : [richBody(m.body, { md: 'lite' }), edited]))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited))
     const all = m.redpack && !m.redpack.shared ? [] : m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
     const files = all.filter((x) => x.k === 'f')
@@ -10928,7 +10929,7 @@ async function officialTitleManager(username) {
         } catch (e) { status.textContent = e.message }
         finally { busy = false; if (grid.isConnected) draw() }
       } }, has ? '已授予 · 收回' : '授予'))
-  }), ...Object.entries(RAFFLE_TITLES).map(([id,t]) => {
+  }), ...Object.entries(RAFFLE_TITLES).filter(([,t]) => t.enabled !== false).map(([id,t]) => {
     const has = raffleGranted === id
     return h('article', { class:'ot-card rt-' + id },
       h('div', { class:'ot-card-heading' }, raffleArt(id), h('div', null, h('strong', null, t.name), h('p', null, t.mood))),
