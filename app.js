@@ -1597,7 +1597,7 @@ const officialFrame = (u, where) => { const forced=raffleOf(u); if(forced)return
 const officialChip = (t, mini = false) => h('span', { class: 'ot-badge ot-' + t.id, title: `站长授予 · ${t.name}`, 'aria-label': '官方徽章：' + t.name }, officialArt(t.id), !mini && h('span', null, t.name))
 function titleEl(u, where) {
   const forced = raffleOf(u)
-  if (forced) return h('span', { class: 'u-title rt-title rt-' + forced.id, title: `群聊抽奖 · ${forced.mood}` }, forced.name, forced.n > 1 && h('small', { class: 'rt-level' }, `Lv${forced.n}`))
+  if (forced) return h('span', { class: 'u-title rt-title rt-' + forced.id, title: `群聊抽奖 · ${forced.mood}` }, h('span', { class: 'rt-title-name' }, forced.name), forced.n > 1 && h('small', { class: 'rt-level' }, `Lv${forced.n}`))
   const d = decoAt(u, where)
   const official = officialOf(u, where)
   if (official && !decoHidden(u, 'title')) return h('span', { class: 'u-title ot-title ot-' + official.id, title: '站长授予 · ' + official.mood }, official.name)
