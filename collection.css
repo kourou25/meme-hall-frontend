@@ -1,9 +1,9 @@
 /* 参考图完整轮廓：九宫格只拉伸留白；称号文字和消息文字均为实时 DOM。 */
-.rt-maid,.tr-maid { --ot-ink:#29466c; --ot-soft:#e9f4ff; --ot-edge:#688bb6; --ot-accent:#b9d2ed; --cf-frame:url('/assets/raffle/collection/maid-frame.webp'); --cf-title:url('/assets/raffle/collection/maid-title.webp'); --cf-slice:65 160 90 160 fill; --cf-top:25px; --cf-bottom:34px; --cf-left:43px; --cf-right:43px; }
+.rt-maid,.tr-maid { --ot-ink:#29466c; --ot-soft:#e9f4ff; --ot-edge:#688bb6; --ot-accent:#b9d2ed; --cf-frame:url('/assets/raffle/collection/maid-frame.webp'); --cf-title:url('/assets/raffle/collection/maid-title.webp'); --cf-slice:65 160 120 160 fill; --cf-top:25px; --cf-bottom:34px; --cf-left:43px; --cf-right:43px; }
 .rt-whalepunch,.tr-whalepunch { --ot-ink:#203d72; --ot-soft:#e6f0ff; --ot-edge:#5579b3; --ot-accent:#abcdf2; --cf-frame:url('/assets/raffle/collection/whalepunch-frame.webp'); --cf-title:url('/assets/raffle/collection/whalepunch-title.webp'); --cf-slice:88 180 100 180 fill; --cf-top:30px; --cf-bottom:34px; --cf-left:48px; --cf-right:48px; }
-.rt-nightdevil,.tr-nightdevil { --ot-ink:#513d66; --ot-soft:#f5edff; --ot-edge:#a482aa; --ot-accent:#e3b5d6; --cf-frame:url('/assets/raffle/collection/nightdevil-frame.webp'); --cf-title:url('/assets/raffle/collection/nightdevil-title.webp'); --cf-slice:100 210 85 210 fill; --cf-top:34px; --cf-bottom:29px; --cf-left:51px; --cf-right:51px; }
+.rt-nightdevil,.tr-nightdevil { --ot-ink:#513d66; --ot-soft:#f5edff; --ot-edge:#a482aa; --ot-accent:#e3b5d6; --cf-frame:url('/assets/raffle/collection/nightdevil-frame.webp'); --cf-title:url('/assets/raffle/collection/nightdevil-title.webp'); --cf-slice:150 210 85 210 fill; --cf-top:34px; --cf-bottom:29px; --cf-left:51px; --cf-right:51px; }
 .rt-whalebuddy,.tr-whalebuddy { --ot-ink:#305a89; --ot-soft:#e5f5ff; --ot-edge:#6ca4d1; --ot-accent:#c8e8f9; --cf-frame:url('/assets/raffle/collection/whalebuddy-frame.webp'); --cf-title:url('/assets/raffle/collection/whalebuddy-title.webp'); --cf-slice:145 170 35 305 fill; --cf-top:48px; --cf-bottom:12px; --cf-left:100px; --cf-right:56px; }
-.rt-gpt,.tr-gpt { --ot-ink:#67528a; --ot-soft:#f7f2ff; --ot-edge:#b29bd3; --ot-accent:#dac9ef; --cf-frame:url('/assets/raffle/collection/gpt-frame.webp'); --cf-title:url('/assets/raffle/collection/gpt-title.webp'); --cf-slice:220 200 45 355 fill; --cf-top:66px; --cf-bottom:14px; --cf-left:107px; --cf-right:60px; }
+.rt-gpt,.tr-gpt { --ot-ink:#67528a; --ot-soft:#f7f2ff; --ot-edge:#b29bd3; --ot-accent:#dac9ef; --cf-frame:url('/assets/raffle/collection/gpt-frame.webp'); --cf-title:url('/assets/raffle/collection/gpt-title.webp'); --cf-slice:220 200 70 355 fill; --cf-top:66px; --cf-bottom:14px; --cf-left:107px; --cf-right:60px; }
 .rt-claude,.tr-claude { --ot-ink:#915332; --ot-soft:#fff5e9; --ot-edge:#e7a76f; --ot-accent:#f8d6aa; --cf-frame:url('/assets/raffle/collection/claude-frame.webp'); --cf-title:url('/assets/raffle/collection/claude-title.webp'); --cf-slice:207 170 35 368 fill; --cf-top:64px; --cf-bottom:12px; --cf-left:114px; --cf-right:53px; }
 .rt-gemini,.tr-gemini { --ot-ink:#624785; --ot-soft:#f8f1ff; --ot-edge:#b29aef; --ot-accent:#d9c2ed; --cf-frame:url('/assets/raffle/collection/gemini-frame.webp'); --cf-title:url('/assets/raffle/collection/gemini-title.webp'); --cf-slice:265 175 40 505 fill; --cf-top:67px; --cf-bottom:12px; --cf-left:128px; --cf-right:44px; }
 .rt-whitedragon,.tr-whitedragon { --ot-ink:#705443; --ot-soft:#fbf5ed; --ot-edge:#bc9c7d; --ot-accent:#e2d2bf; --cf-frame:url('/assets/raffle/collection/whitedragon-frame.webp'); --cf-title:url('/assets/raffle/collection/whitedragon-title.webp'); --cf-slice:45 160 85 160 fill; --cf-top:18px; --cf-bottom:34px; --cf-left:51px; --cf-right:51px; }
@@ -34,28 +34,30 @@ html[data-theme=dark] .rt-bubble.rt-collection { color:var(--ot-ink); background
 @media(prefers-reduced-motion:reduce) { .rt-whalepunch { --cf-character:url('/assets/raffle/collection/whalepunch-tail-still.webp'); } }
 
 /* 聊天密度统一：绘制边框与文字留白分开，角色不再挤占半行正文。 */
-.rt-maid { --cf-top:12px; --cf-bottom:14px; --cf-left:22px; --cf-right:22px; }
-.rt-whalepunch { --cf-top:14px; --cf-bottom:14px; --cf-left:26px; --cf-right:26px; }
-.rt-nightdevil { --cf-top:15px; --cf-bottom:13px; --cf-left:26px; --cf-right:26px; }
-.rt-whalebuddy { --cf-top:26px; --cf-bottom:8px; --cf-left:50px; --cf-right:28px; --cf-inset-top:16px; }
-.rt-gpt { --cf-top:30px; --cf-bottom:8px; --cf-left:48px; --cf-right:27px; --cf-inset-top:20px; }
-.rt-claude { --cf-top:30px; --cf-bottom:8px; --cf-left:53px; --cf-right:24px; --cf-inset-top:20px; }
-.rt-gemini { --cf-top:32px; --cf-bottom:8px; --cf-left:60px; --cf-right:21px; --cf-inset-top:20px; }
-.rt-whitedragon { --cf-top:10px; --cf-bottom:18px; --cf-left:26px; --cf-right:26px; --cf-inset-top:14px; --cf-inset-bottom:14px; }
+.rt-maid { --cf-top:12px; --cf-bottom:14px; --cf-left:22px; --cf-right:22px; --cf-inset-left:16px; --cf-inset-right:16px; }
+.rt-whalepunch { --cf-top:14px; --cf-bottom:14px; --cf-left:26px; --cf-right:26px; --cf-inset-left:20px; --cf-inset-right:20px; --ct-y:1px; }
+.rt-nightdevil { --cf-top:15px; --cf-bottom:13px; --cf-left:26px; --cf-right:26px; --cf-inset-top:17px; --cf-inset-bottom:11px; --cf-inset-left:20px; --cf-inset-right:20px; --ct-y:-1px; }
+.rt-whalebuddy { --cf-top:24px; --cf-bottom:8px; --cf-left:50px; --cf-right:28px; --cf-inset-top:22px; --cf-inset-bottom:8px; --cf-inset-left:14px; --cf-inset-right:20px; --ct-x:-4px; --ct-y:2px; }
+.rt-gpt { --cf-top:27px; --cf-bottom:8px; --cf-left:48px; --cf-right:27px; --cf-inset-top:22px; --cf-inset-bottom:10px; --cf-inset-left:18px; --cf-inset-right:18px; }
+.rt-claude { --cf-top:27px; --cf-bottom:8px; --cf-left:53px; --cf-right:24px; --cf-inset-top:22px; --cf-inset-bottom:12px; --cf-inset-left:20px; --cf-inset-right:16px; --ct-y:-2px; }
+.rt-gemini { --cf-top:27px; --cf-bottom:8px; --cf-left:60px; --cf-right:21px; --cf-inset-top:26px; --cf-inset-bottom:8px; --cf-inset-left:18px; --cf-inset-right:18px; --ct-x:-2px; --ct-y:2px; }
+.rt-whitedragon { --cf-top:10px; --cf-bottom:18px; --cf-left:26px; --cf-right:26px; --cf-inset-left:20px; --cf-inset-right:20px; --ct-y:-1px; }
 html .rt-bubble.rt-collection {
  min-height:0; max-width:min(640px,100%); padding:3px 5px; margin:2px 0; line-height:1.5;
  border-top-width:var(--cf-inset-top,var(--cf-top)); border-bottom-width:var(--cf-inset-bottom,var(--cf-bottom));
- border-left-width:var(--cf-left); border-right-width:var(--cf-right);
+ border-left-width:var(--cf-inset-left,var(--cf-left)); border-right-width:var(--cf-inset-right,var(--cf-right));
  border-image-width:var(--cf-top) var(--cf-right) var(--cf-bottom) var(--cf-left);
 }
 html .rt-bubble.rt-collection:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whitedragon) { margin:2px 36px 2px 0; max-width:min(640px,calc(100% - 36px)); }
-html .rt-bubble.rt-collection:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whitedragon)::after { width:30px; height:36px; right:calc(-1 * var(--cf-right) - 35px); }
+html .rt-bubble.rt-collection:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whitedragon)::after { width:30px; height:36px; right:calc(-1 * var(--cf-inset-right,var(--cf-right)) - 35px); }
 html .rt-bubble.rt-whalepunch::after { border-radius:6px; }
 /* 名称在文档流中决定宽度，等级置于框外；没有固定最小宽度。 */
 html .rt-title.u-title[class], html .cm-head .rt-title.u-title[class] {
  min-width:0; width:max-content; height:28px; padding:0 16px; font-size:11px; line-height:1.2; margin-left:0; overflow:visible;
 }
 html .rt-title .rt-title-name { position:static; transform:none; }
+/* 位移按铭牌的可见内框校准，鲸尾与花结不参与文字区域的居中。 */
+html .rt-title:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whalebuddy,.rt-gpt,.rt-claude,.rt-gemini,.rt-whitedragon) .rt-title-name { transform:translate(var(--ct-x,0px),var(--ct-y,0px)); }
 html .rt-title:has(.rt-level) { margin-right:var(--rt-level-space,32px); }
 html .rt-title .rt-level { left:calc(100% + 2px); right:auto; padding:1px 3px; font-size:9px; }
 html .rt-badge .rt-art { width:24px; height:24px; }
@@ -77,9 +79,9 @@ html .ot-bubble.cm-text:not(.rt-bubble) { padding:7px 11px; line-height:1.5; }
 .tr-rarity { color:var(--text-2); font-size:12px; }
 .deco-preview .dp-row { min-width:0; }
 @media(max-width:600px) {
- html .rt-bubble.rt-collection { border-left-width:calc(var(--cf-left) * .85); border-right-width:calc(var(--cf-right) * .85); border-image-width:var(--cf-top) calc(var(--cf-right) * .85) var(--cf-bottom) calc(var(--cf-left) * .85); }
+ html .rt-bubble.rt-collection { border-left-width:calc(var(--cf-inset-left,var(--cf-left)) * .85); border-right-width:calc(var(--cf-inset-right,var(--cf-right)) * .85); border-image-width:var(--cf-top) calc(var(--cf-right) * .85) var(--cf-bottom) calc(var(--cf-left) * .85); }
  html .rt-bubble.rt-collection:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whitedragon) { margin-right:30px; max-width:calc(100% - 30px); }
- html .rt-bubble.rt-collection:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whitedragon)::after { width:25px; height:32px; right:calc(-1 * var(--cf-right) * .85 - 30px); }
+ html .rt-bubble.rt-collection:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whitedragon)::after { width:25px; height:32px; right:calc(-1 * var(--cf-inset-right,var(--cf-right)) * .85 - 30px); }
  html .cm-head .rt-title.u-title[class] { height:26px; font-size:10.5px; padding:0 14px; }
  html .rt-bubble.rt-deepseek,html .cm-text.rt-bubble.rt-muscle { margin-right:30px; max-width:calc(100% - 30px); }
  html .rt-bubble.rt-deepseek::after { width:25px; height:30px; right:-54px; }

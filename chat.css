@@ -1204,6 +1204,8 @@ button.notif-row { width: 100%; border: 0; background: none; font: inherit; text
 .cm-hist-head { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--surface-2); flex: none; }
 .cm-hist-t { font-weight: 700; font-size: 13px; }
 .cm-hist-list { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; overscroll-behavior: contain; padding-bottom: 8px; }
+.cm-hist-list:has(> .cm-hist-loading) { padding: 0; }
+.cm-hist-loading { display: grid; place-items: center; height: 100%; min-height: 80px; }
 .cm-hist-more { display: block; margin: 8px auto; }
 @media (prefers-reduced-motion: reduce) { .cm-msg.flash { animation-duration: .01s; } .cm-jump-date { animation: none; } }
 
@@ -1237,6 +1239,8 @@ button.notif-row { width: 100%; border: 0; background: none; font: inherit; text
 .gp-mhead .gp-h .muted { font-weight: 400; font-size: 12px; }
 .gp-msearch { flex: 1; min-width: 0; max-width: 240px; margin-left: auto; height: 32px; }
 .gp-members { max-height: min(56vh, 520px); max-height: min(56dvh, 520px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+/* 滚动容器中的行按完整身份内容定高，不挤压长昵称/换行称号。 */
+.gp-members > * { flex-shrink: 0; }
 .gp-group { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 6px; margin: 0; padding: 6px 14px; font-size: 12px; font-weight: 600; color: var(--text-2); background: var(--surface-2); border-top: 1px solid var(--line); }
 .gp-group:first-child { border-top: 0; }
 .gp-group span { font-weight: 400; color: var(--text-3); font-variant-numeric: tabular-nums; }
@@ -1244,7 +1248,7 @@ button.notif-row { width: 100%; border: 0; background: none; font: inherit; text
 .gp-mem { min-height: 60px; padding: 10px 14px; gap: 12px; }
 .gp-mem:hover { background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
 .gp-mem .gp-who { gap: 2px; }
-.gp-mem .gp-name { font-size: 14px; }
+.gp-mem .gp-name { font-size: 14px; column-gap: 5px; }
 .gp-sub { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gp-tags { display: flex; gap: 4px; flex: none; }
 .gp-tags .role-tag { margin-left: 0; }

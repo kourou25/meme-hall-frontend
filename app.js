@@ -8065,7 +8065,7 @@ function chatPane(g, { onHead } = {}) {
   function closeHist() { if (!histEl) return; histEl.remove(); histEl = null; histView = null; drawDown() }
   async function historyView(id) {
     closeHist()
-    const box = h('div', { class: 'cm-hist-list' }, h('div', { class: 'spinner' }))
+    const box = h('div', { class: 'cm-hist-list' }, h('div', { class: 'cm-hist-loading', role: 'status', 'aria-label': '正在加载历史消息' }, h('div', { class: 'spinner', 'aria-hidden': 'true' })))
     const title = h('span', { class: 'cm-hist-t' }, '历史消息')
     const close = closeHist
     histEl = h('div', { class: 'cm-hist', role: 'region', 'aria-label': '历史消息' },
