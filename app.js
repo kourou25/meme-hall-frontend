@@ -1641,7 +1641,7 @@ function titleEl(u, where) {
   if(personal)return h('span',{class:'u-title pt-title pt-'+personal.id,title:'专属 · '+personal.mood},personal.name)
   const forced = raffleOf(u)
   if (forced) return h('span', { class: 'u-title rt-title rt-' + forced.id, title: `${forced.rarity==='SSR'?'SSR':'普通'} · ${forced.mood}`,
-    style:forced.n>1?{'--rt-level-space':(String(forced.n).length*6+20)+'px'}:null }, h('span', { class: 'rt-title-name' }, forced.name), forced.n > 1 && h('small', { class: 'rt-level' }, `Lv${forced.n}`))
+    style:forced.n>1?{'--rt-level-space':(String(forced.n).length*6+20)+'px'}:null }, h('span', { class: 'rt-title-size', 'aria-hidden': 'true' }, forced.name), h('span', { class: 'rt-title-name' }, forced.name), forced.n > 1 && h('small', { class: 'rt-level' }, `Lv${forced.n}`))
   const d = decoAt(u, where)
   const official = officialOf(u, where)
   if (official && !decoHidden(u, 'title')) return h('span', { class: 'u-title ot-title ot-' + official.id, title: '站长授予 · ' + official.mood }, official.name)

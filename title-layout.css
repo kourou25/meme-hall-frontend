@@ -1,0 +1,32 @@
+/* Nameplate geometry is relative to the visible writing field, not ornaments.
+   An aria-hidden in-flow copy preserves natural width; the readable name is
+   centered independently. No measurements, observers or animation per message. */
+.rt-title.rt-maid { --title-x:50%; --title-y:49%; --title-image:url('/assets/raffle/collection/maid-title.webp'); --title-ink:#29466c; }
+.rt-title.rt-whalepunch { --title-x:50%; --title-y:55%; --title-image:url('/assets/raffle/title-layout-v2/whalepunch-title.webp'); --title-ink:#203d72; }
+.rt-title.rt-nightdevil { --title-x:50%; --title-y:47%; --title-image:url('/assets/raffle/collection/nightdevil-title.webp'); --title-ink:#513d66; }
+.rt-title.rt-whalebuddy { --title-x:43%; --title-y:58%; --title-image:url('/assets/raffle/collection/whalebuddy-title.webp'); --title-ink:#305a89; }
+.rt-title.rt-gpt { --title-x:50%; --title-y:50%; --title-image:url('/assets/raffle/collection/gpt-title.webp'); --title-ink:#67528a; }
+.rt-title.rt-claude { --title-x:50%; --title-y:40%; --title-image:url('/assets/raffle/collection/claude-title.webp'); --title-ink:#915332; }
+.rt-title.rt-gemini { --title-x:48%; --title-y:58%; --title-image:url('/assets/raffle/collection/gemini-title.webp'); --title-ink:#624785; }
+.rt-title.rt-whitedragon { --title-x:50%; --title-y:46%; --title-image:url('/assets/raffle/collection/whitedragon-title.webp'); --title-ink:#705443; }
+.rt-title.rt-deepseek { --title-x:49%; --title-y:58%; --title-image:url('/assets/raffle/v2/deepseek-title.webp'); --title-ink:#254f86; }
+.rt-title.rt-mona { --title-x:50%; --title-y:55%; --title-image:url('/assets/raffle/mona-title.webp'); --title-ink:#4c4384; }
+.rt-title.rt-worship { --title-x:59%; --title-y:53%; --title-image:url('/assets/raffle/worship-title.webp'); --title-ink:#463778; }
+.rt-title.rt-muscle { --title-x:50%; --title-y:57%; --title-image:url('/assets/raffle/muscle-frame.webp'); --title-ink:#674326; }
+html .rt-title.u-title[class],html .cm-head .rt-title.u-title[class] {
+ display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box;
+ width:max-content; min-width:0; max-width:none; height:28px; min-height:0;
+ padding:0 16px; border:0; border-radius:0; box-shadow:none; flex:none; overflow:visible;
+ background:transparent var(--title-image) center/100% 100% no-repeat;
+ color:var(--title-ink); font-size:11px; line-height:1; white-space:nowrap;
+}
+html .rt-title .rt-title-size { visibility:hidden; pointer-events:none; line-height:1; }
+html .rt-title.u-title[class] .rt-title-name {
+ position:absolute; top:var(--title-y,50%); left:var(--title-x,50%);
+ transform:translate(-50%,-50%); line-height:1; white-space:nowrap; padding:0; margin:0;
+}
+html .rt-title.u-title.rt-worship { padding-left:26px; padding-right:12px; }
+@media(max-width:600px) {
+ html .rt-title.u-title[class],html .cm-head .rt-title.u-title[class] { height:26px; padding:0 14px; font-size:10.5px; }
+ html .rt-title.u-title.rt-worship { padding-left:26px; padding-right:12px; }
+}
