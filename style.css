@@ -1689,7 +1689,14 @@ html[data-skin] .site-notice { display: none; }
 /* ---------- 摸鱼助手 ---------- */
 .moyu-btn { position: relative; width: auto; min-width: 36px; gap: 4px; padding: 0 8px; }
 .moyu-earn { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ok); }
-.pop-moyu { width: min(330px, calc(100vw - 16px)); padding: 0; }
+.pop-moyu { width: min(330px, calc(100vw - 16px)); padding: 0; overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 640px) {
+  .pop.pop-moyu {
+    position: fixed; left: 0 !important; right: 0; top: auto !important; bottom: 0;
+    width: auto; max-width: none; max-height: 82dvh !important;
+    border-radius: 18px 18px 0 0; padding-bottom: env(safe-area-inset-bottom);
+  }
+}
 .moyu { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; }
 .my-big { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; margin-bottom: 6px; border-radius: var(--r-sm); background: var(--primary-soft); }
 .my-big > span { font-size: 12px; color: var(--text-2); }

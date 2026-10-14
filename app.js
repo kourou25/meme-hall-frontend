@@ -653,52 +653,95 @@ visualViewport?.addEventListener('resize', () => document.body.classList.toggle(
 // 卡片在视口里停留约 0.8 秒记为看过；登录用户上报服务器，游客只记在本地
 const LOCAL_SEEN_LIMIT = 20000
 const SEEN = {
-  local: new Set(JSON.parse(localStorage.getItem('seen') || '[]').slice(-LOCAL_SEEN_LIMIT)),
-  queue: new Set(),
+  local: new Set(),
+  queue: new Map(),
   timers: new Map(),
   flushT: 0,
   retryT: 0,
   inflight: null,
   owner: 0,
+  day: '',
+  daily: new Set(),
+  known: new Set(),
 }
+try {
+  const saved = JSON.parse(localStorage.getItem('seen') || '[]')
+  if (Array.isArray(saved)) for (const id of saved.slice(-LOCAL_SEEN_LIMIT)) if (Number.isSafeInteger(id) && id > 0) SEEN.local.add(id)
+} catch {}
 const seenPendingKey = (uid) => `seen-pending:${uid}`
+const seenDailyKey = (uid) => `seen-day:${uid}`
 function savePendingSeen() {
   if (!SEEN.owner) return
   try {
-    if (SEEN.queue.size) localStorage.setItem(seenPendingKey(SEEN.owner), JSON.stringify([...SEEN.queue]))
+    if (SEEN.queue.size) localStorage.setItem(seenPendingKey(SEEN.owner), JSON.stringify([...SEEN.queue.values()]))
     else localStorage.removeItem(seenPendingKey(SEEN.owner))
   } catch {}
 }
+function saveDailySeen() {
+  if (!SEEN.owner) return
+  try { localStorage.setItem(seenDailyKey(SEEN.owner), JSON.stringify({ day: SEEN.day, ids: [...SEEN.daily].slice(-LOCAL_SEEN_LIMIT) })) } catch {}
+}
 function restorePendingSeen() {
   const uid = Number(S.me?.id) || 0
-  if (!uid || SEEN.owner === uid) return
+  if (!uid) return
+  const day = dayOf(Math.floor(Date.now() / 1000))
+  if (SEEN.owner === uid) {
+    if (SEEN.day !== day) { SEEN.day = day; SEEN.daily.clear(); saveDailySeen() }
+    return
+  }
   savePendingSeen()
   SEEN.queue.clear()
+  SEEN.known.clear()
+  SEEN.daily.clear()
   SEEN.owner = uid
+  SEEN.day = day
   try {
-    const ids = JSON.parse(localStorage.getItem(seenPendingKey(uid)) || '[]')
-    if (Array.isArray(ids)) for (const id of ids) if (Number.isSafeInteger(id) && id > 0) SEEN.queue.add(id)
+    const saved = JSON.parse(localStorage.getItem(seenDailyKey(uid)) || 'null')
+    if (saved?.day === day && Array.isArray(saved.ids)) for (const id of saved.ids) if (Number.isSafeInteger(id) && id > 0) SEEN.daily.add(id)
+  } catch {}
+  try {
+    const saved = JSON.parse(localStorage.getItem(seenPendingKey(uid)) || '[]')
+    if (Array.isArray(saved)) for (const entry of saved) {
+      const visit = typeof entry === 'number' ? { id: entry, at: Math.floor(Date.now() / 1000) } : entry
+      if (!Number.isSafeInteger(visit?.id) || visit.id <= 0 || !Number.isSafeInteger(visit.at)) continue
+      SEEN.queue.set(dayOf(visit.at) + ':' + visit.id, visit)
+      SEEN.known.add(visit.id)
+      if (dayOf(visit.at) === day) SEEN.daily.add(visit.id)
+    }
   } catch {}
 }
-const isSeen = (m) => (S.me ? !!m.seen_at || (SEEN.owner === S.me.id && SEEN.queue.has(m.id)) : SEEN.local.has(m.id))
+const seenAccount = restorePendingSeen
+const isSeen = (m) => {
+  if (!S.me) return SEEN.local.has(m.id)
+  restorePendingSeen()
+  return !!m.seen_at || SEEN.known.has(m.id)
+}
+const shouldObserveSeen = (m) => !isSeen(m) || (S.me && !SEEN.daily.has(m.id))
 function markSeen(m) {
-  if (!(m.id > 0) || isSeen(m)) return
+  if (!(m.id > 0)) return
+  const wasSeen = isSeen(m)
   if (S.me) {
     restorePendingSeen()
-    SEEN.queue.add(m.id)
+    if (wasSeen && SEEN.daily.has(m.id)) return
+    const at = Math.floor(Date.now() / 1000)
+    SEEN.queue.set(dayOf(at) + ':' + m.id, { id: m.id, at })
+    SEEN.daily.add(m.id)
+    SEEN.known.add(m.id)
+    if (SEEN.known.size > LOCAL_SEEN_LIMIT) SEEN.known.delete(SEEN.known.values().next().value)
     savePendingSeen()
+    saveDailySeen()
     clearTimeout(SEEN.flushT)
     SEEN.flushT = setTimeout(() => flushSeen().catch(() => {}), SEEN.queue.size >= 100 ? 0 : 1500)
-    syncItem({ ...m, seen_at: Math.floor(Date.now() / 1000) })
+    syncItem({ ...m, seen_at: m.seen_at || at })
   } else {
+    if (wasSeen) return
     SEEN.local.add(m.id)
     if (SEEN.local.size > LOCAL_SEEN_LIMIT) SEEN.local.delete(SEEN.local.values().next().value)
     clearTimeout(SEEN.flushT)
     SEEN.flushT = setTimeout(flushSeen, 1500)
     syncItem(m)
   }
-  S.wall?.onSeen?.(m)
-  imSeen(m)
+  if (!wasSeen) { S.wall?.onSeen?.(m); imSeen(m) }
 }
 function retrySeenLater() {
   if (SEEN.retryT) return
@@ -720,32 +763,49 @@ function flushSeen() {
   const uid = SEEN.owner
   SEEN.inflight = (async () => {
     while (SEEN.owner === uid && SEEN.queue.size) {
-      const ids = [...SEEN.queue].slice(0, 100)
-      const res = await fetch('/api/views', { method: 'POST', body: JSON.stringify({ ids }), credentials: 'same-origin', keepalive: true,
+      const entries = [...SEEN.queue.entries()].slice(0, 100)
+      const res = await fetch('/api/views', { method: 'POST', body: JSON.stringify({ visits: entries.map(([, visit]) => visit) }), credentials: 'same-origin', keepalive: true,
         headers: { 'content-type': 'text/plain' } })
-      if (!res.ok || !(await res.json().catch(() => null))?.ok) throw new Error('已看记录尚未同步，请重试')
+      const ack = res.ok ? await res.json().catch(() => null) : null
+      if (ack?.ok !== true || ack.recorded !== true || ack.user_id !== uid) throw new Error('已看记录尚未同步，请重试')
       if (SEEN.owner !== uid) break
-      ids.forEach((id) => SEEN.queue.delete(id))
+      entries.forEach(([key, visit]) => { if (SEEN.queue.get(key) === visit) SEEN.queue.delete(key) })
       savePendingSeen()
+      TODAY.at = 0
+      TODAY.revision++
+      if (MOYU_TICK) loadToday(true).then(() => MOYU_TICK?.())
     }
   })().catch((error) => { retrySeenLater(); throw error }).finally(() => { SEEN.inflight = null })
   return SEEN.inflight
 }
 // 离页时 Beacon 只表示浏览器接收，不能当作 D1 已确认；保留队列供下次登录重发。
-function flushSeenOnExit() {
+function leaveSeen() {
   if (!S.me) return flushSeen()
   restorePendingSeen()
   savePendingSeen()
-  const ids = [...SEEN.queue]
-  for (let i = 0; i < ids.length; i += 100) {
-    navigator.sendBeacon?.('/api/views', new Blob([JSON.stringify({ ids: ids.slice(i, i + 100) })], { type: 'text/plain' }))
+  const visits = [...SEEN.queue.values()]
+  for (let i = 0; i < visits.length; i += 100) {
+    navigator.sendBeacon?.('/api/views', new Blob([JSON.stringify({ visits: visits.slice(i, i + 100) })], { type: 'text/plain' }))
   }
 }
-addEventListener('pagehide', flushSeenOnExit)
+addEventListener('pagehide', leaveSeen)
+addEventListener('online', () => flushSeen().catch(() => {}))
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) flushSeenOnExit()
-  else if (SEEN.queue.size) flushSeen().catch(() => {})
+  if (document.hidden) { SEEN.timers.forEach(clearTimeout); SEEN.timers.clear(); leaveSeen() }
+  else { refreshSeenObservers(); if (SEEN.queue.size) flushSeen().catch(() => {}) }
 })
+function refreshSeenObservers() {
+  restorePendingSeen()
+  document.querySelectorAll('.card[data-id],.im-msg[data-id],.ld-post[data-id]').forEach(el => {
+    const m = ITEMS.get(Number(el.dataset.id))
+    if (m && shouldObserveSeen(m)) { seenIO.unobserve(el); seenIO.observe(el) }
+  })
+}
+function scheduleSeenDay() {
+  const t = Date.now(), next = Math.floor((t + 8 * 3600000) / 86400000) * 86400000 + 86400000 - 8 * 3600000
+  setTimeout(() => { refreshSeenObservers(); scheduleSeenDay() }, next - t + 50)
+}
+scheduleSeenDay()
 
 const seenIO = new IntersectionObserver((entries) => {
   for (const en of entries) {
@@ -755,16 +815,18 @@ const seenIO = new IntersectionObserver((entries) => {
     if (full) {
       if (!SEEN.timers.has(el)) SEEN.timers.set(el, setTimeout(() => {
         SEEN.timers.delete(el)
-        seenIO.unobserve(el)
         const m = ITEMS.get(Number(el.dataset.id))
-        if (m && !(wantBlur(m) && el.querySelector('[data-blur].blur'))) markSeen(m)
+        if (el.isConnected && !document.hidden && m && !(wantBlur(m) && el.querySelector('[data-blur].blur'))) {
+          markSeen(m)
+          seenIO.unobserve(el)
+        }
       }, 800))
     } else {
       clearTimeout(SEEN.timers.get(el))
       SEEN.timers.delete(el)
     }
   }
-}, { threshold: [0, 0.25, 0.5, 0.7, 0.85, 0.97, 1] })
+}, { threshold: [0, 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.7, 0.85, 0.97, 1] })
 
 // ---------- 同一张图的多处展示保持同步 ----------
 const ITEMS = new Map()   // id -> 最新数据
@@ -778,12 +840,14 @@ function trimItems(preserveId = 0) {
   }
 }
 function syncItem(next) {
+  restorePendingSeen()
   const cur = ITEMS.get(next.id)
   // 卡片版只带前几十条回应；已有完整版且回应数没变时保留完整列表
   if (cur?.full && !next.full && cur.reply_count === next.reply_count) {
     next = { ...next, full: true, replies: cur.replies, reply_list: cur.reply_list }
   }
   const merged = cur ? Object.assign(cur, next) : next
+  if (S.me && SEEN.known.has(next.id) && !merged.seen_at) merged.seen_at = Math.floor(Date.now() / 1000)
   if (cur) ITEMS.delete(next.id)
   ITEMS.set(next.id, merged)
   WATCH.get(next.id)?.forEach((fn) => fn(merged))
@@ -899,8 +963,8 @@ function memeCard(m, { stack = false, priority = false } = {}) {
     if (String(getSelection()).trim()) return
     navigate(memeHref(m))
   })
-  if (!isSeen(m)) seenIO.observe(card)
-  onRemoval(card, () => seenIO.unobserve(card))
+  if (shouldObserveSeen(m)) seenIO.observe(card)
+  onRemoval(card, () => { seenIO.unobserve(card); clearTimeout(SEEN.timers.get(card)); SEEN.timers.delete(card) })
   return card
 }
 
@@ -2701,7 +2765,16 @@ async function renderWall(base) {
     countEl.title = n ? `还有 ${n} 张没看` : ''
   }
   st.onSeen = (m) => {
-    if (st.unseenLeft > 0) { st.unseenLeft--; st.drawCount() }
+    if (st.ids.has(m.id)) {
+      if (st.unseenLeft > 0) { st.unseenLeft--; st.drawCount() }
+      const day = dayOf(m.created_at), d = st.dayList?.find(x => x.day === day), sec = st.sections?.find(x => x.day === day)
+      if (d) d.unseen = Math.max(0, (d.unseen ?? (st.unseen ? d.n : 0)) - 1)
+      if (sec) {
+        sec.unseenLeft = Math.max(0, sec.unseenLeft - 1)
+        const label = sec.head.querySelector('.day-unseen')
+        if (label) label.textContent = sec.unseenLeft ? `${sec.unseenLeft} 未看` : '已看完'
+      }
+    }
     // 「上次看到这里」：最新排序下，记住这次看到的最早一张
     if (m && st.byDay && st.sort === 'new' && st.plain && !st.unseen && (!st.minSeen || m.created_at < st.minSeen)) {
       st.minSeen = m.created_at
@@ -3048,7 +3121,7 @@ async function loadNextDay(st) {
 function daySection(st, d) {
   const lb = dayLabel(d.day)
   // 折叠状态记在 localStorage（DAY_FOLD），刷新、换横向 / 纵向都保持
-  const sec = { day: d.day, n: d.n, offset: 0, collapsed: DAY_FOLD.has(d.day) }
+  const sec = { day: d.day, n: d.n, unseenLeft: d.unseen ?? (st.unseen ? d.n : 0), offset: 0, collapsed: DAY_FOLD.has(d.day) }
   const grid = h('div', { class: 'feed' })
   if (st.hz) sec.cols = new HzCols(grid, st.hzSeen)
   else {
@@ -3076,7 +3149,7 @@ function daySection(st, d) {
     h('strong', { class: 'day-date' }, lb.main),
     h('span', { class: 'day-week' }, lb.sub),
     h('span', { class: 'day-n' }, st.unseen ? `${d.n} 张没看` : `${d.n} 张`),
-    !st.unseen && S.me && d.unseen > 0 && h('span', { class: 'day-unseen' }, h('i', { class: 'dot' }), `${d.unseen} 未看`),
+    (S.me || st.unseen) && sec.unseenLeft > 0 && h('span', { class: 'day-unseen' }, h('i', { class: 'dot' }), `${sec.unseenLeft} 未看`),
     h('span', { class: 'grow' }),
     toggle)
   sec.el = h('section', { class: 'day' }, sec.head, h('div', { class: 'day-body' }, sec.top, grid, sec.more))
@@ -5782,7 +5855,7 @@ function imMessage(st, raw) {
       rx, thread),
     imTools(m, slot))
   IM.clean.push(watchItem(m.id, draw))
-  if (!isSeen(m)) seenIO.observe(el)
+  if (shouldObserveSeen(m)) seenIO.observe(el)
   out.push(el)
   return out
 }
@@ -9880,7 +9953,7 @@ function ldPost(raw, floor) {
       boosts, nav, replies))
   const off = watchItem(m.id, draw)
   p.destroy = off
-  if (!isSeen(m)) seenIO.observe(p.el)
+  if (shouldObserveSeen(m)) seenIO.observe(p.el)
   return p
 }
 
@@ -11127,20 +11200,27 @@ function moyuBtn() {
     icon('calendar'), h('span', { class: 'moyu-earn', 'data-moyu-earn': '', hidden: !(p.bar && p.salary > 0) }))
 }
 // 今天在站里干了啥：服务器算，一分钟拉一次
-const TODAY = { at: 0, d: null, busy: false, error: false }
+const TODAY = { at: 0, d: null, busy: false, error: false, revision: 0, uid: null, day: '' }
 async function loadToday(force) {
-  if (!S.me || TODAY.busy || (!force && Date.now() - TODAY.at < 60000)) return
+  if (!S.me) return
+  const uid = S.me.id, day = dayOf(Math.floor(Date.now() / 1000))
+  if (TODAY.uid !== uid || TODAY.day !== day) { Object.assign(TODAY, { uid, day, at: 0, d: null, error: false }); TODAY.revision++ }
+  if (TODAY.busy || (!force && Date.now() - TODAY.at < 60000)) return
   TODAY.busy = true
-  try { TODAY.d = await api('/me/today'); TODAY.at = Date.now(); TODAY.error = false } catch { TODAY.error = true } finally { TODAY.busy = false }
+  const revision = TODAY.revision
+  const current = () => revision === TODAY.revision && S.me?.id === uid && dayOf(Math.floor(Date.now() / 1000)) === day
+  try { const d = await api('/me/today'); if (current()) { TODAY.d = d; TODAY.at = Date.now(); TODAY.error = false } }
+  catch { if (current()) TODAY.error = true }
+  finally { TODAY.busy = false; if (!current() && MOYU_TICK) loadToday(true).then(() => MOYU_TICK?.()) }
 }
 function todayBlock(variant = 0, retry) {
-  const t = TODAY.d
+  const t = TODAY.uid === S.me?.id && TODAY.day === dayOf(Math.floor(Date.now() / 1000)) ? TODAY.d : null
   if (!S.me) return null
   if (!t) return h('div', { class: 'my-today muted sm' }, TODAY.error ? '日报暂时没取到' : '正在统计今天的战绩…',
     TODAY.error && h('button', { class: 'btn-text sm', type: 'button', onclick: retry }, '重试'))
   const titles = ['今日摸鱼小报', '本日摸鱼结算', '尽欢营业记录']
   const lines = ['把快乐攒成一页。', '今天的梗，也算精神食粮。', '人间很忙，这里歇一会儿。']
-  const stats = [['seen', '看过的图'], ['posts', '发出的图'], ['msgs', '群聊发言'], ['browsed', '浏览消息'], ['post_reacts', '帖子回应'], ['reacts', '群聊互动'], ['seen_nsfw', '慎点图']]
+  const stats = [['seen', '浏览帖子'], ['posts', '发布帖子'], ['msgs', '群聊发言'], ['browsed', '浏览消息'], ['post_reacts', '帖子回应'], ['reacts', '群聊互动'], ['seen_nsfw', '慎点帖子']]
   return h('section', { class: 'my-today my-report', 'data-variant': variant, 'aria-label': '今日统计' },
     h('h3', null, titles[variant]), h('p', { class: 'my-report-intro' }, lines[variant]),
     h('div', { class: 'my-report-stats' }, stats.map(([k, label]) => h('div', { class: 'my-report-stat' }, h('b', { 'data-stat': k }, fmtN(t[k] || 0)), h('span', null, label)))),
@@ -11148,7 +11228,8 @@ function todayBlock(variant = 0, retry) {
 }
 // 离今天能拿的徽章还差多少（只提示门槛型的，冠军型要看别人）
 function todayHint(t) {
-  if (t.seen < 200) return `再看 ${200 - t.seen} 张图，明天就能拿到「摸鱼高手」徽章`
+  const n = t.new_seen ?? t.seen
+  if (n < 200) return `今天首次看过 ${n} 帖，再看 ${200 - n} 个未看帖子，明天可拿「摸鱼高手」徽章`
   if (t.posts < 5) return `已经达到「摸鱼高手」；再发 ${5 - t.posts} 张图，还能拿「发图达人」`
   return '今天的门槛徽章都拿稳了，冠军徽章要看谁最多，明天揭晓'
 }
