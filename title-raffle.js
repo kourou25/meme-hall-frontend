@@ -38,11 +38,11 @@ export function openTitleRaffle({ anchor, api, h, icon, packetId = null, raffleI
           finally { busy = false }
         }
         const row = h('article', { class: 'tr-card tr-' + r.title },
-          h('div', { class: 'tr-row' }, h('strong', { class: 'tr-name' }, name), h('span', { class: 'tr-status' }, !enabled && r.status === 'open' ? '已暂停' : STATE[r.status] || r.status)),
+          h('div', { class: 'tr-row' }, h('strong', { class: 'tr-name' }, name), h('span', { class:'tr-rarity' },titles.get(r.title)?.rarity==='SSR'?'SSR':'普通'),h('span', { class: 'tr-status' }, !enabled && r.status === 'open' ? '已暂停' : STATE[r.status] || r.status)),
           h('div', { class: 'tr-meta' },
             r.packet_id ? '红包限定 · 报名开奖' : r.entry_mode === 'all' ? '最近 24 小时活跃群友参与' : `${r.entries} 人已报名`,
             ' · ', new Date(r.closes_at * 1000).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })),
-          r.status === 'drawn' && h('div', { class: 'tr-winner' }, '✦ ', r.winner_name || r.winner_username || '群友', ' 获得称号', r.level > 1 && ` · Lv${r.level}`),
+          r.status === 'drawn' && h('div', { class: 'tr-winner' }, '✦ ', r.winner_name || r.winner_username || '群友', ' 获得称号', r.level > 1 && ` · Lv${r.level}`,h('small',null,' · 可在「我的 → 装扮」自行佩戴')),
           h('div', { class: 'tr-actions' },
             active && r.entry_mode === 'optin' && h('button', { type: 'button', class: 'tr-action primary', onclick: () => mutate(BASE + '/' + r.id + '/join', r.joined ? 'DELETE' : 'POST') }, r.joined ? '已报名 · 退出' : '报名抽取'),
             active && data.can_create && h('button', { type: 'button', class: 'tr-action primary', onclick: () => mutate(BASE + '/' + r.id + '/draw', 'POST') }, '立即开奖'),
@@ -60,7 +60,7 @@ export function openTitleRaffle({ anchor, api, h, icon, packetId = null, raffleI
     } catch (e) { body.replaceChildren(h('p', { class: 'tr-error', role: 'alert' }, e.message || '加载失败'), h('button', { class: 'tr-action', onclick: load }, '重试')) }
   }
   function createForm(titles) {
-    const titleSelect = h('select', { class: 'tr-input', 'aria-label': '抽取称号' }, titles.filter(t => t.enabled !== false).map(t => h('option', { value: t.id }, t.name)))
+    const titleSelect = h('select', { class: 'tr-input', 'aria-label': '抽取称号' }, ['normal','SSR'].map(rarity=>h('optgroup',{label:rarity==='SSR'?'SSR · 角色套装':'普通 · 轻量套装'},titles.filter(t=>t.enabled!==false&&t.rarity===rarity).map(t=>h('option',{value:t.id},t.name)))))
     const mode = h('select', { class: 'tr-input', 'aria-label': '参与方式' },
       h('option', { value: 'optin' }, '报名参与'), !packetId && h('option', { value: 'all' }, '全员参与（24 小时活跃）'))
     const duration = h('select', { class: 'tr-input', 'aria-label': '开奖时间' }, Object.entries(WHEN).map(([n, label]) => h('option', { value: n }, label)))

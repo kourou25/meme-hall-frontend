@@ -1,5 +1,6 @@
 // 尽欢前端：无构建、无框架
 import { onRemoval, windowContent } from '/resource-memory.js?v=9ea25050'
+import { PERSONAL_TITLES } from '/personal-catalog.js?v=762c7219'
 const S = { me: null, emojis: [], minPostTL: 1, bgKey: null, modal: null, wall: null, meSt: null, folders: null, viewer: null }
 const main = document.getElementById('main')
 
@@ -1620,6 +1621,8 @@ const RAFFLE_TITLES = {
   worship: { bubbleEnabled:false, name: '寄吧几拜', mood: '一边吐槽，一边认真参拜', art: '<path d="M16 4l10 7-3 16H9L6 11ZM7 11h18M11 16l5 4 5-4M12 25h8m-10-5-3 3m15-3 3 3"/>' },
   muscle: { name: '筋肉欢欢', mood: '一拳打出今日份快乐', art: '<path d="M8 13q-5-4-5 4 0 8 9 10h9q8-2 8-10 0-8-5-4l-4 3-4-5-4 5ZM9 20h2m10 0h2m-12 3q5 4 10 0M8 7l-3-3m20 3 3-3"/>' },
 }
+const SSR_RAFFLES = new Set(['maid','whalepunch','nightdevil','gpt','claude','gemini','whitedragon'])
+for (const [id,t] of Object.entries(RAFFLE_TITLES)) t.rarity = SSR_RAFFLES.has(id) ? 'SSR' : 'normal'
 const raffleOf = u => RAFFLE_TITLES[u?.deco?.ft] && RAFFLE_TITLES[u.deco.ft].enabled !== false ? { ...RAFFLE_TITLES[u.deco.ft], id: u.deco.ft, n: Math.max(1, Number(u.deco.fn) || 1) } : null
 const raffleArt = id => h('span', { class: 'rt-art', 'aria-hidden': 'true' },
   RAFFLE_TITLES[id]
@@ -1631,9 +1634,14 @@ const officialOf = (u, where) => officialById(decoAt(u, where)?.ot)
 const officialArt = id => h('span', { class: 'ot-art', 'aria-hidden': 'true', html: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${OFFICIAL_ART[id] || ''}</svg>` })
 const officialFrame = (u, where) => bubbleParts(u, where, true).filter(p => !bubblePartHidden(p)).map(p => p.classes).join('')
 const officialChip = (t, mini = false) => h('span', { class: 'ot-badge ot-' + t.id, title: `站长授予 · ${t.name}`, 'aria-label': '官方徽章：' + t.name }, officialArt(t.id), !mini && h('span', null, t.name))
+const personalOf=(u,where)=>{const id=decoAt(u,where)?.pt;return PERSONAL_TITLES[id]?{id,...PERSONAL_TITLES[id]}:null}
+const personalBadge=t=>h('span',{class:'pt-badge pt-'+t.id,title:'专属徽章 · '+t.name,'aria-label':t.name+'专属徽章'},h('img',{src:'/assets/personal/'+t.id+'.svg',alt:'',width:24,height:24,loading:'lazy'}))
 function titleEl(u, where) {
+  const personal=personalOf(u,where)
+  if(personal)return h('span',{class:'u-title pt-title pt-'+personal.id,title:'专属 · '+personal.mood},personal.name)
   const forced = raffleOf(u)
-  if (forced) return h('span', { class: 'u-title rt-title rt-' + forced.id, title: `群聊抽奖 · ${forced.mood}` }, h('span', { class: 'rt-title-name' }, forced.name), forced.n > 1 && h('small', { class: 'rt-level' }, `Lv${forced.n}`))
+  if (forced) return h('span', { class: 'u-title rt-title rt-' + forced.id, title: `${forced.rarity==='SSR'?'SSR':'普通'} · ${forced.mood}`,
+    style:forced.n>1?{'--rt-level-space':(String(forced.n).length*6+20)+'px'}:null }, h('span', { class: 'rt-title-name' }, forced.name), forced.n > 1 && h('small', { class: 'rt-level' }, `Lv${forced.n}`))
   const d = decoAt(u, where)
   const official = officialOf(u, where)
   if (official && !decoHidden(u, 'title')) return h('span', { class: 'u-title ot-title ot-' + official.id, title: '站长授予 · ' + official.mood }, official.name)
@@ -1666,6 +1674,8 @@ const badgeLv = (id, n) => id === 'elder' ? 5 : n > 0 ? (id==='guide'?[1,3,10,30
 const badgeLvText = (id, lv) => id === 'elder' ? '唯一' : lv ? `Lv${lv} ${BADGE_LV_NAME[lv]}` : '未获得'
 // 佩戴的徽章：群聊里只显示小图标（不挤消息），别处图标 + 名字；鼠标悬停 / 长按看说明。等级用 deco.bn（服务端同步的次数）
 function badgeEl(u, where, full) {
+  const personal=personalOf(u,where)
+  if(personal&&!decoHidden(u,'badge'))return personalBadge(personal)
   const forced = raffleOf(u)
   if (forced) return raffleChip(forced, where !== 'card')
   const official = officialOf(u, where)
@@ -1734,6 +1744,8 @@ function compactIdentity(u, where, name, ...meta) {
 // 气泡类名：预设气泡 + 自己写的气泡样式（只作用在这个人自己的 .cm-text 上）
 function bubbleParts(u, where = 'chat', frame = false) {
   const own = !!S.me && u?.username === S.me.username
+  const personal=personalOf(u,where)
+  if(personal)return [{key:'personal:'+personal.id,own,classes:' pt-'+(frame?'frame':'bubble')+' pt-'+personal.id}]
   const forced = raffleOf(u)
   if (forced) return forced.bubbleEnabled === false ? [] : [{ key:'raffle:' + forced.id, own, classes: (frame ? ' ot-frame rt-frame rt-' : ' ot-bubble rt-bubble rt-') + forced.id + (forced.collection && !frame ? ' rt-collection' : '') }]
   const official = officialOf(u, where)
@@ -1755,9 +1767,10 @@ function openBubbleSettings(anchor) {
   const close = () => dialog.close()
   const body = h('div', { class:'bubble-options' })
   const groups = [
-    ['抽奖气泡', Object.entries(RAFFLE_TITLES).filter(([,t]) => t.enabled !== false && t.bubbleEnabled !== false).map(([id,t]) => ['raffle:' + id,t.name])],
-    ['官方气泡', (S.officialTitles || []).map(t => ['official:' + t.id,t.name])],
-    ['日常气泡', DECO_BUBBLE.filter(([id]) => id).map(([id,name]) => ['preset:' + id,name]).concat([['preset:yinlu','引路人'],['custom','自定义气泡样式']])],
+    ['普通 · 群友专属',Object.entries(PERSONAL_TITLES).map(([id,t])=>['personal:'+id,t.name])],
+    ...['normal','SSR'].map(rarity=>[rarity==='SSR'?'SSR · 角色套装':'普通 · 抽奖套装', Object.entries(RAFFLE_TITLES).filter(([,t]) => t.rarity===rarity && t.enabled !== false && t.bubbleEnabled !== false).map(([id,t]) => ['raffle:' + id,t.name])]),
+    ['普通 · 官方气泡', (S.officialTitles || []).map(t => ['official:' + t.id,t.name])],
+    ['普通 · 日常气泡', DECO_BUBBLE.filter(([id]) => id).map(([id,name]) => ['preset:' + id,name]).concat([['preset:yinlu','引路人'],['custom','自定义气泡样式']])],
   ]
   const syncChoices = () => { for (const input of body.querySelectorAll('[data-bubble-choice]')) input.checked = bubbleBlocked(input.dataset.bubbleChoice) || !!decoHide().bubble }
   const paint = () => body.replaceChildren(...groups.map(([name,items]) => h('fieldset', null,
@@ -1775,7 +1788,7 @@ function openBubbleSettings(anchor) {
     h('header', null, h('h2', { id:'bubble-settings-title' }, '屏蔽哪些气泡'), h('button', { class:'btn-icon', type:'button', 'aria-label':'关闭气泡设置', onclick:close }, icon('close'))),
     h('p', { class:'muted' }, '勾选后显示普通气泡，称号和内容保留。设置保存在本浏览器。'),
     h('div', { class:'bubble-options-actions' }, h('button', { class:'btn btn-ghost sm', type:'button', onclick:() => all(true) }, '全部屏蔽'), h('button', { class:'btn btn-ghost sm', type:'button', onclick:() => all(false) }, '全部显示')),
-    h('label', { class:'set-check' }, h('input', { type:'checkbox', checked:!!decoHide().bubbleLegacy, onchange:e => { if(!saveDecoView({ ...decoHide(), bubbleLegacy:e.target.checked }))e.target.checked=!e.target.checked } }), '使用巨物 / 蕾丝旧版气泡'), body)
+    body)
   paint(); doc.body.append(dialog)
   dialog.addEventListener('close', () => { dialog.remove(); anchor.isConnected && anchor.focus({ preventScroll:true }) }, { once:true })
   dialog.showModal()
@@ -1799,7 +1812,7 @@ function decoEditor() {
     preview.replaceChildren(
       h('div', { class: 'dp-row' }, avatar(S.me.avatar, S.me.name || S.me.username, 28), uName('strong', u, {}, S.me.name || S.me.username, 'card')),
       h('div', { class: 'dp-row dp-chat cm-head' }, h('span', { class: 'cm-name' }, S.me.name || S.me.username), titleEl(u, 'chat'), badgeEl(u, 'chat')),
-      h('div', { class: 'dp-row' }, h('div', { class: 'cm-text' + bubbleCls(u) }, '来看看我的气泡 No.1 #梗图')),
+      h('div', { class: 'dp-row' }, h('div', { class: 'cm-text' + bubbleCls(u) }, h('span',{class:'rt-copy'},'来看看我的气泡 No.1 #梗图'))),
       h('div', { class: 'rp-form' + officialFrame(u, 'post') }, icon('rocket'), h('input', { class: 'rp-input', placeholder: '回应框预览', 'aria-label': '回应框预览' })))
   }
   const seg = (k, opts) => {
@@ -1822,7 +1835,7 @@ function decoEditor() {
   drawFancy()
   const bubbles = h('div', { class: 'deco-bubbles-box' })
   const bbBtn = ([v, l]) => h('button', { class: 'deco-bb' + ((d.bb || '') === v ? ' on' : ''), type: 'button', 'aria-pressed': String((d.bb || '') === v),
-    onclick: () => { d.bb = v || undefined; drawB(); draw() } }, h('span', { class: 'cm-text' + (v ? ' bb bb-' + v : '') }, l))
+    onclick: () => { d.bb = v || undefined; delete d.ft; delete d.fn; delete d.pt; delete d.ot; drawOwned(); drawOfficial(); drawB(); draw() } }, h('span', { class: 'cm-text' + (v ? ' bb bb-' + v : '') }, l))
   const oldOn = DECO_BUBBLE_OLD.some(([v]) => v === d.bb)
   const drawB = () => {
     const open = bubbles.querySelector('details')?.open ?? oldOn
@@ -1851,17 +1864,40 @@ function decoEditor() {
   const officialOptions = h('div', { class: 'ot-options' })
   const drawOfficial = () => officialOptions.replaceChildren(...nodes(
     h('button', { type: 'button', class: 'btn btn-ghost sm', 'aria-pressed': String(!d.ot), onclick: () => { delete d.ot; drawOfficial(); draw() } }, '不佩戴'),
-    (S.me.official_titles || []).map(o => { const t = officialById(o.id); return t && h('button', { type: 'button', class: 'ot-option' + (d.ot === t.id ? ' on' : ''), 'aria-pressed': String(d.ot === t.id), onclick: () => { d.ot = t.id; delete d.rt; drawReward(); drawOfficial(); draw() } }, officialChip(t)) })))
+    (S.me.official_titles || []).map(o => { const t = officialById(o.id); return t && h('button', { type: 'button', class: 'ot-option' + (d.ot === t.id && !d.ft && !d.pt ? ' on' : ''), 'aria-pressed': String(d.ot === t.id && !d.ft && !d.pt), onclick: () => { d.ot = t.id; delete d.rt; delete d.ft; delete d.fn; delete d.pt; drawOwned(); drawReward(); drawOfficial(); draw() } }, officialChip(t)) })))
   const rewardOptions = h('div', { class: 'ot-options' })
   const drawReward = () => rewardOptions.replaceChildren(h('button', {
     type: 'button', class: 'btn btn-ghost sm invite-title-toggle', 'aria-pressed': String(d.rt === 'guangjie'),
-    onclick: () => { if (d.rt) delete d.rt; else { d.rt = 'guangjie'; delete d.ot } drawReward(); drawOfficial(); draw() },
+    onclick: () => { if (d.rt) delete d.rt; else { d.rt = 'guangjie'; delete d.ot; delete d.ft; delete d.fn; delete d.pt } drawOwned(); drawReward(); drawOfficial(); draw() },
   }, '✿ 广结善缘' + (d.rt ? ' · 佩戴中' : '')))
   drawReward()
   drawOfficial()
+  const ownedBox=h('div',{class:'deco-owned',role:'status'})
+  let ownedItems=null, personalItems=[], ownedError=''
+  const drawOwned=()=>{
+    if(!ownedItems){ownedBox.replaceChildren(h('span',{class:'muted'},ownedError||'正在读取已拥有的套装…'),ownedError&&h('button',{class:'btn btn-ghost sm',type:'button',onclick:loadOwned},'重试'));return}
+    ownedBox.replaceChildren(...nodes(h('button',{class:'btn btn-ghost sm',type:'button','data-owned-raffle':'','aria-pressed':String(!d.ft&&!d.pt),onclick:()=>{delete d.ft;delete d.fn;delete d.pt;drawOwned();draw()}},'不佩戴套装'),
+      personalItems.length>0&&h('fieldset',{class:'personal-options'},h('legend',null,'普通 · 我的专属套装'),h('div',{class:'ot-options'},personalItems.map(item=>h('button',{
+        class:'ot-option'+(d.pt===item.id?' on':''),type:'button','data-personal-title':item.id,'aria-pressed':String(d.pt===item.id),onclick:()=>{
+          if(d.pt===item.id)delete d.pt;else{d.pt=item.id;delete d.ft;delete d.fn;delete d.ot;delete d.rt}
+          drawOwned();drawOfficial();drawReward();draw()
+        }},personalBadge(item),h('span',null,item.name)))),h('p',{class:'muted sm'},'为你设计的独立主题，可自行佩戴或摘下，不参加公共抽奖。')),
+      ...['normal','SSR'].map(rarity=>{
+        const items=ownedItems.filter(x=>x.rarity===rarity&&x.enabled)
+        return items.length>0&&h('fieldset',null,h('legend',null,rarity==='SSR'?'SSR · 角色套装':'普通 · 轻量套装'),h('div',{class:'ot-options'},items.map(item=>h('button',{
+          class:'ot-option'+(d.ft===item.id?' on':''),type:'button','data-owned-raffle':item.id,'aria-pressed':String(d.ft===item.id),onclick:()=>{
+            if(d.ft===item.id){delete d.ft;delete d.fn}else{d.ft=item.id;d.fn=item.level;delete d.pt;delete d.ot;delete d.rt}
+            drawOwned();drawOfficial();drawReward();draw()
+          }},raffleChip({...item,n:item.level},true),h('span',null,item.name),item.level>1&&h('small',null,'Lv'+item.level)))))
+      }),!ownedItems.some(x=>x.enabled)&&!personalItems.length&&h('p',{class:'muted'},'获得抽奖或站长授予的套装后，可在这里自由切换。')))
+  }
+  const loadOwned=async()=>{ownedError='';drawOwned();try{const [raffle,personal]=await Promise.all([api('/me/raffle-titles'),api('/me/personal-titles')]);ownedItems=raffle.titles;personalItems=personal.titles}catch(e){ownedError=e.message}if(ownedBox.isConnected)drawOwned()}
+  drawOwned()
+  loadOwned()
   draw()
   return h('section', { class: 'set-sec deco-sec' }, h('h3', null, '装扮'),
     preview,
+    field('已拥有的套装',ownedBox,'中奖只增加收藏，不自动换装。选择后点击保存；重复获得的等级永久保留。'),
     S.me.official_titles?.length > 0 && field('官方称号', officialOptions, '称号、徽章、气泡与回应框一起佩戴'),
     (S.me.unlocks||[]).includes('title:guangjie')&&field('邀请奖励称号',rewardOptions,'固定称号，点击佩戴或摘下'),
     field('称号', t, '显示在昵称后面'),
@@ -1874,7 +1910,7 @@ function decoEditor() {
     field('填充', seg('fill', DECO_FILL)),
     field('动效', seg('fx', DECO_FX)),
     field('炫彩昵称配色', fancyBox, S.me.fancy ? '只换颜色，流动效果不变' : '你现在没有炫彩昵称（TL3 以上或管理员授予后才有），配色先存着，有了就生效'),
-    field('消息气泡', bubbles, '群聊里你发的消息用这个气泡；经典款也还能用'),
+    field('普通 · 日常气泡', bubbles, '选择日常气泡会摘下当前整套装扮；已有套装仍保留在收藏中'),
     field('自定义气泡样式', cssBox('cssb', 'background: linear-gradient(135deg, #e0f2fe, #fce7f3); color: #1e3a8a; border: 2px solid #93c5fd; border-radius: 18px'),
       '只作用在你自己发的群聊消息上，可以叠在预设气泡上面'),
     field('自定义称号样式', cssBox('csst', 'background: linear-gradient(90deg, #f472b6, #a78bfa); color: #fff; box-shadow: 0 0 0 2px #fff'), '只作用在你的称号上'),
@@ -8696,7 +8732,7 @@ async function redpackDialog(anchor, options) {
 async function titleRaffleDialog(anchor, packetId = null, raffleId = null) {
   try {
     closePop()
-    const { openTitleRaffle } = await import('/title-raffle.js?v=812f7c03')
+    const { openTitleRaffle } = await import('/title-raffle.js?v=91deda3f')
     openTitleRaffle({ anchor, packetId, raffleId, api, h, icon })
   } catch (e) { toast(e.message, 'err') }
 }
@@ -8796,7 +8832,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
         h('span', null, `${({hb:'HB · ',credit:'Credit · ',fish:'fish · '})[m.redpack.provider] || ''}${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`)),
       h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放'})[m.redpack.snapshot?.state] || (m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, `${m.redpack.opened} 人拆过${m.redpack.provider && m.redpack.provider!=='native'?'包装':''}`))))
     if ((!m.redpack || m.redpack.shared) && m.body && !lnk?.only) body.push(h('div', stkOnly(m.body) ? { class:'cm-text stk-only' } : bubbleView(m.user, 'cm-text'),
-      m.user?.deco?.ft === 'deepseek' || RAFFLE_TITLES[m.user?.deco?.ft]?.collection ? h('span', { class:'ds-copy rt-copy' }, richBody(m.body, { md:'lite' }), edited) : [richBody(m.body, { md: 'lite' }), edited]))
+      (raffleOf(m.user)||personalOf(m.user,'chat')) ? h('span', { class:'ds-copy rt-copy' }, richBody(m.body, { md:'lite' }), edited) : [richBody(m.body, { md: 'lite' }), edited]))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited))
     const all = m.redpack && !m.redpack.shared ? [] : m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
     const files = all.filter((x) => x.k === 'f')
@@ -10968,7 +11004,7 @@ async function officialTitleManager(username) {
   const grid = h('div', { class: 'ot-grid' })
   panel.replaceChildren(h('div', { class: 'modal-head' }, h('h2', null, '授予称号'), h('button', { class: 'btn-icon ghost modal-close', type: 'button', 'aria-label': '关闭', onclick: () => closeModal(false) }, icon('close'))),
     h('p', { class: 'ot-recipient' }, '@' + username), status, grid)
-  let owned = new Set(), raffleGranted = null, busy = false
+  let owned = new Set(), raffleGranted = new Set(), busy = false
   const draw = () => grid.replaceChildren(...(S.officialTitles || []).map(t => {
     const has = owned.has(t.id)
     return h('article', { class: 'ot-card ot-' + t.id },
@@ -10987,23 +11023,23 @@ async function officialTitleManager(username) {
         finally { busy = false; if (grid.isConnected) draw() }
       } }, has ? '已授予 · 收回' : '授予'))
   }), ...Object.entries(RAFFLE_TITLES).filter(([,t]) => t.enabled !== false).map(([id,t]) => {
-    const has = raffleGranted === id
+    const has = raffleGranted.has(id)
     return h('article', { class:'ot-card rt-' + id },
-      h('div', { class:'ot-card-heading' }, raffleArt(id), h('div', null, h('strong', null, t.name), h('p', null, t.mood))),
-      h('div', { class:'ot-demo' }, h('span', { class:'cm-text rt-bubble rt-' + id }, '今天也要开心呀')),
+      h('div', { class:'ot-card-heading' }, raffleArt(id), h('div', null, h('strong', null, t.name), h('p', null, (t.rarity==='SSR'?'SSR':'普通')+' · '+t.mood))),
+      h('div', { class:'ot-demo' }, h('span', { class:'cm-text'+(t.bubbleEnabled===false?'':' rt-bubble rt-'+id+(t.collection?' rt-collection':'')) },h('span',{class:'rt-copy'},'今天也要开心呀'))),
       h('button', { class:'btn btn-ghost sm ot-grant', type:'button', disabled:busy, onclick:async () => {
         if (busy) return
         busy=true; status.textContent='正在' + (has ? '收回' : '授予') + t.name; draw()
         try {
           await api('/admin/raffle-titles/' + encodeURIComponent(username) + '/' + id, { method: has ? 'DELETE' : 'PUT' })
-          raffleGranted=has ? null : id; USERS.delete(username)
+          has?raffleGranted.delete(id):raffleGranted.add(id); USERS.delete(username)
           if (username.toLowerCase() === S.me.username.toLowerCase()) S.me=(await api('/me')).user
           status.textContent=(has ? '已收回 ' : '已授予 ') + t.name
         } catch(error) { status.textContent=error.message }
         finally { busy=false; if (grid.isConnected) draw() }
       } }, has ? '已授予 · 收回' : '授予'))
   }))
-  try { const u = (await api('/users/' + encodeURIComponent(username))).user; owned = new Set((u.official_titles || []).map(o => o.id)); raffleGranted=u.deco?.fg || null; status.textContent = '仅站长可授予'; if (grid.isConnected) draw() }
+  try { const [profile,raffles] = await Promise.all([api('/users/' + encodeURIComponent(username)),api('/admin/raffle-titles/' + encodeURIComponent(username))]); owned = new Set((profile.user.official_titles || []).map(o => o.id)); raffleGranted=new Set(raffles.titles.filter(t=>t.granted).map(t=>t.id)); status.textContent = '仅站长可授予；获得后由用户自行选择佩戴'; if (grid.isConnected) draw() }
   catch (e) { status.textContent = e.message }
 }
 async function memberAdmin(q0 = '') {

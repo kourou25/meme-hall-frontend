@@ -1,0 +1,10 @@
+/* 专属套装由正文撑高，装饰在右侧独立留出 22px，不覆盖文字。 */
+.pt-title.u-title { display:inline-flex; align-items:center; justify-content:center; flex:none; width:max-content; min-width:0; max-width:none; height:23px; padding:0 7px; border:1px solid var(--pt-ink); border-radius:8px 11px 7px 10px; background:var(--pt-paper); color:#293b4b; font-family:inherit; font-size:11px; font-weight:600; line-height:1.2; white-space:nowrap; overflow:visible; text-shadow:none; }
+.pt-badge { display:inline-flex; align-items:center; flex:none; width:24px; height:24px; }
+.pt-badge img { display:block; width:24px; height:24px; object-fit:contain; }
+html .cm-text.pt-bubble { display:grid; align-items:center; position:relative; box-sizing:border-box; min-height:0; padding:8px 12px; margin:2px 22px 2px 0; max-width:min(640px,calc(100% - 22px)); border:1.5px solid var(--pt-ink); border-radius:12px 15px 11px 4px; background:var(--pt-paper); color:#293b4b; line-height:1.5; box-shadow:2px 2px 0 color-mix(in srgb,var(--pt-accent) 50%,transparent); }
+.pt-bubble::before { content:''; position:absolute; width:7px; height:7px; left:-5px; bottom:7px; background:var(--pt-paper); border-left:1.5px solid var(--pt-ink); border-bottom:1.5px solid var(--pt-ink); transform:skewY(-28deg); border-radius:0 0 0 3px; pointer-events:none; }
+.pt-bubble::after { content:''; position:absolute; right:-24px; bottom:-1px; width:23px; height:25px; background:var(--pt-icon) center/contain no-repeat; pointer-events:none; }
+.pt-frame { border:1px solid var(--pt-ink); background:var(--pt-paper); color:#293b4b; }
+.personal-options .ot-option { gap:6px; }
+@media(max-width:600px) { .pt-title.u-title { font-size:10.5px; height:22px; padding:0 6px; } }

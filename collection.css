@@ -32,3 +32,56 @@ html[data-theme=dark] .rt-bubble.rt-collection { color:var(--ot-ink); background
  html .cm-head .rt-title.u-title:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whalebuddy,.rt-gpt,.rt-claude,.rt-gemini,.rt-whitedragon) { min-width:136px; height:32px; font-size:10.5px; padding:0 19px; }
 }
 @media(prefers-reduced-motion:reduce) { .rt-whalepunch { --cf-character:url('/assets/raffle/collection/whalepunch-tail-still.webp'); } }
+
+/* 聊天密度统一：绘制边框与文字留白分开，角色不再挤占半行正文。 */
+.rt-maid { --cf-top:12px; --cf-bottom:14px; --cf-left:22px; --cf-right:22px; }
+.rt-whalepunch { --cf-top:14px; --cf-bottom:14px; --cf-left:26px; --cf-right:26px; }
+.rt-nightdevil { --cf-top:15px; --cf-bottom:13px; --cf-left:26px; --cf-right:26px; }
+.rt-whalebuddy { --cf-top:26px; --cf-bottom:8px; --cf-left:50px; --cf-right:28px; --cf-inset-top:16px; }
+.rt-gpt { --cf-top:30px; --cf-bottom:8px; --cf-left:48px; --cf-right:27px; --cf-inset-top:20px; }
+.rt-claude { --cf-top:30px; --cf-bottom:8px; --cf-left:53px; --cf-right:24px; --cf-inset-top:20px; }
+.rt-gemini { --cf-top:32px; --cf-bottom:8px; --cf-left:60px; --cf-right:21px; --cf-inset-top:20px; }
+.rt-whitedragon { --cf-top:10px; --cf-bottom:18px; --cf-left:26px; --cf-right:26px; --cf-inset-top:14px; --cf-inset-bottom:14px; }
+html .rt-bubble.rt-collection {
+ min-height:0; max-width:min(640px,100%); padding:3px 5px; margin:2px 0; line-height:1.5;
+ border-top-width:var(--cf-inset-top,var(--cf-top)); border-bottom-width:var(--cf-inset-bottom,var(--cf-bottom));
+ border-left-width:var(--cf-left); border-right-width:var(--cf-right);
+ border-image-width:var(--cf-top) var(--cf-right) var(--cf-bottom) var(--cf-left);
+}
+html .rt-bubble.rt-collection:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whitedragon) { margin:2px 36px 2px 0; max-width:min(640px,calc(100% - 36px)); }
+html .rt-bubble.rt-collection:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whitedragon)::after { width:30px; height:36px; right:calc(-1 * var(--cf-right) - 35px); }
+html .rt-bubble.rt-whalepunch::after { border-radius:6px; }
+/* 名称在文档流中决定宽度，等级置于框外；没有固定最小宽度。 */
+html .rt-title.u-title[class], html .cm-head .rt-title.u-title[class] {
+ min-width:0; width:max-content; height:28px; padding:0 16px; font-size:11px; line-height:1.2; margin-left:0; overflow:visible;
+}
+html .rt-title .rt-title-name { position:static; transform:none; }
+html .rt-title:has(.rt-level) { margin-right:var(--rt-level-space,32px); }
+html .rt-title .rt-level { left:calc(100% + 2px); right:auto; padding:1px 3px; font-size:9px; }
+html .rt-badge .rt-art { width:24px; height:24px; }
+/* 旧抽奖款也使用同一密度，已下线款的显示策略仍由目录控制。 */
+html .cm-text.rt-bubble:is(.rt-mona,.rt-muscle) { display:grid; align-items:center; min-height:0; padding:3px 5px; line-height:1.5; border-width:14px 20px; border-image-width:14px 20px; max-width:min(640px,100%); }
+html .cm-text.rt-bubble.rt-muscle { margin:2px 36px 2px 0; max-width:min(640px,calc(100% - 36px)); }
+html .rt-bubble.rt-muscle::after { right:-55px; width:30px; height:30px; }
+html .rt-bubble.rt-deepseek { min-height:0; padding:3px 5px; line-height:1.5; border-width:15px 24px 9px; border-image-width:21px 24px 9px; margin:2px 36px 2px 0; max-width:min(640px,calc(100% - 36px)); }
+html .rt-bubble.rt-deepseek::after { width:30px; height:36px; right:-59px; }
+html .cm-text.bb { min-height:0; line-height:1.5; }
+html .cm-text.bb:not([class*="ucss-"]) { padding:7px 12px !important; }
+html .cm-text.bb-bunny { margin-top:7px !important; }
+html .cm-text.bb-bunny::before, html .cm-text.bb-bunny::after { top:-8px; height:10px; width:7px; }
+html .ot-bubble.cm-text:not(.rt-bubble) { padding:7px 11px; line-height:1.5; }
+.deco-owned fieldset { min-width:0; margin:12px 0 0; padding:0; border:0; }
+.deco-owned legend { margin-bottom:6px; font-size:13px; font-weight:650; }
+.deco-owned .ot-option { display:inline-flex; align-items:center; gap:5px; min-height:36px; }
+.deco-owned .ot-options { gap:4px 8px; }
+.tr-rarity { color:var(--text-2); font-size:12px; }
+.deco-preview .dp-row { min-width:0; }
+@media(max-width:600px) {
+ html .rt-bubble.rt-collection { border-left-width:calc(var(--cf-left) * .85); border-right-width:calc(var(--cf-right) * .85); border-image-width:var(--cf-top) calc(var(--cf-right) * .85) var(--cf-bottom) calc(var(--cf-left) * .85); }
+ html .rt-bubble.rt-collection:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whitedragon) { margin-right:30px; max-width:calc(100% - 30px); }
+ html .rt-bubble.rt-collection:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whitedragon)::after { width:25px; height:32px; right:calc(-1 * var(--cf-right) * .85 - 30px); }
+ html .cm-head .rt-title.u-title[class] { height:26px; font-size:10.5px; padding:0 14px; }
+ html .rt-bubble.rt-deepseek,html .cm-text.rt-bubble.rt-muscle { margin-right:30px; max-width:calc(100% - 30px); }
+ html .rt-bubble.rt-deepseek::after { width:25px; height:30px; right:-54px; }
+ html .rt-bubble.rt-muscle::after { width:25px; height:25px; right:-50px; }
+}
