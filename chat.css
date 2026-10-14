@@ -468,6 +468,11 @@ body.chat-mode #main { padding-bottom: 0; }
 .cm-media.n2 .cm-img, .cm-media.n3 .cm-img { aspect-ratio: 1; }
 .cm-media.n2 .cm-img img, .cm-media.n3 .cm-img img, .cm-media .cm-img video { width: 100%; height: 100%; max-height: 320px; object-fit: cover; }
 .cm-media.n1 .cm-img video { object-fit: contain; }
+.cm-video-placeholder { display: block; width: 100%; height: 100%; background: var(--surface-2); }
+.cm-video-inline { position: relative; }
+.cm-video-inline .vid { width: 100%; height: 100%; }
+.cm-video-inline video { display: block; width: 100%; height: 100%; object-fit: contain; cursor: auto; -webkit-touch-callout: none; }
+.cm-video-touch { position: absolute; z-index: 1; inset: 0 0 42px; width: 100%; min-height: 30px; padding: 0; background: transparent; cursor: pointer; -webkit-touch-callout: none; }
 .cm-media .play-mark { width: 38px; height: 38px; margin: -19px 0 0 -19px; }
 [data-blur-all] .cm-img video { filter: blur(24px); }
 /* 发送中 / 失败 */

@@ -8686,23 +8686,69 @@ function chatMsg(m, { cont, pane, pending } = {}) {
       // 单张按 w/h 预占位；旧图没有尺寸时保留固定缩略框，完整比例交给看图器。
       const solo = media.length === 1
       const cell = (it, i, cls = 'cm-img') => {
+        const inlineVideo = it.k === 'v' && !!it.v && !it.b && !it.o && !pending
         const sz = solo && cls === 'cm-img' ? cmImgBox(it.w, it.h) || { w: 240, h: 180 } : null
+        if (inlineVideo && sz && sz.w < 180) { sz.h = Math.min(320, Math.round(sz.h * 180 / sz.w)); sz.w = 180 }
+        const enlargeVideo = (e) => { e.preventDefault(); e.stopPropagation(); if (Date.now() < Number(b.dataset.contextUntil || 0)) return; b.dataset.contextUntil = String(Date.now() + 800); open(e, i) }
         const b = h('button', { class: cls + (it.b ? ' cm-blur blur' : '') + (sz ? ' sized' : ''), type: 'button', 'aria-label': it.b ? '已模糊，点一下看' : it.v ? '播放视频' : '查看大图',
           style: sz ? { width: sz.w + 'px', aspectRatio: `${sz.w} / ${sz.h}` } : null,
           onclick: (e) => {
+            if (Date.now() < Number(b.dataset.contextUntil || 0)) return
             // 发的人选了「模糊」：按设置，点一下揭开 / 再点盖回；或者直接看大图
             if (it.b && maskTap() === 'peek') { e.stopPropagation(); b.classList.toggle('blur'); return }
             if (maskTap() === 'peek' && peekOrig(e, it)) return
+            if (inlineVideo) {
+              const player = mediaVideo(it)
+              const shell = h('div', { class: b.className + ' cm-video-inline', style: b.getAttribute('style') || null,
+                'data-mi': i, 'data-video': '', oncontextmenu: (event) => { event.preventDefault(); event.stopPropagation(); if (Date.now() < Number(shell.dataset.contextUntil || 0)) return; shell.dataset.contextUntil = String(Date.now() + 800); player.querySelector('video')?.pause(); open(event, i) } }, player,
+                h('button', { class: 'cm-video-touch', type: 'button', 'aria-label': '暂停或继续视频，长按放大', onclick: () => {
+                  if (Date.now() < Number(shell.dataset.contextUntil || 0)) return
+                  const video = player.querySelector('video')
+                  if (video.paused) video.play().catch(() => {})
+                  else video.pause()
+                } }))
+              bindVideoHold(shell)
+              const video = player.querySelector('video')
+              video.addEventListener('error', () => { shell.replaceWith(b); toast('视频加载失败，请尝试放大播放') }, { once: true })
+              b.replaceWith(shell)
+              video.play().catch(() => {})
+              return
+            }
             open(e, i)
           },
           // 打码 / 模糊的图右键直接看图：列表里的消息由 chatPane 委托处理（data-mask / data-mi），发送中的占位没有 pane，还是自己管
           'data-mi': i, 'data-mask': (it.b || it.o) && pane ? '' : null,
-          oncontextmenu: (it.b || it.o) && !pane ? (e) => { e.preventDefault(); e.stopPropagation(); open(e, i) } : null },
+          oncontextmenu: inlineVideo ? enlargeVideo : (it.b || it.o) && !pane ? (e) => { e.preventDefault(); e.stopPropagation(); open(e, i) } : null,
+          'data-video': inlineVideo ? '' : null },
         it.u ? h('img', { src: it.u, alt: '', loading: 'lazy', width: it.w || null, height: it.h || null })
-          : h('video', { src: it.v, muted: true, playsinline: true, preload: 'metadata' }),
+          : inlineVideo ? h('span', { class: 'cm-video-placeholder', 'aria-hidden': 'true' })
+            : h('video', { src: it.v, muted: true, playsinline: true, preload: 'metadata' }),
         kindBadge(it), it.o && h('span', { class: 'mask-badge' }, maskTap() === 'peek' ? '已打码 · 点一下看原图' : '已打码'),
         it.b && h('span', { class: 'cm-veil' }, icon('eyeOff', 'i tiny'), maskTap() === 'peek' ? '点一下看' : '点开看'),
         it.k === 'v' ? h('span', { class: 'play-mark' }, icon('play')) : h('span', { class: 'cm-zoom', 'aria-hidden': 'true' }, icon('zoom')))
+        const bindVideoHold = (node) => {
+          let timer = null, start = null, opened = false
+          const clear = () => { clearTimeout(timer); timer = null; start = null }
+          node.addEventListener('touchstart', (event) => {
+            clear()
+            opened = false
+            if (event.touches.length !== 1) return
+            start = { x: event.touches[0].clientX, y: event.touches[0].clientY }
+            timer = setTimeout(() => {
+              opened = true
+              node.dataset.contextUntil = String(Date.now() + 800)
+              node.querySelector('video')?.pause()
+              open({ currentTarget: node }, i)
+            }, 600)
+          }, { passive: true, capture: true })
+          node.addEventListener('touchmove', (event) => {
+            if (!start || event.touches.length !== 1) return clear()
+            if (Math.hypot(event.touches[0].clientX - start.x, event.touches[0].clientY - start.y) > 10) clear()
+          }, { passive: true, capture: true })
+          node.addEventListener('touchend', (event) => { if (opened) { event.preventDefault(); event.stopPropagation() } clear() }, { passive: false, capture: true })
+          node.addEventListener('touchcancel', clear, { passive: true, capture: true })
+        }
+        if (inlineVideo) bindVideoHold(b)
         return b
       }
       // 发的人选了「轮播」：多张合成一个左右滑的轮播
