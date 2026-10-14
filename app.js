@@ -1,5 +1,5 @@
 // 尽欢前端：无构建、无框架
-import { onRemoval, windowContent } from '/resource-memory.js?v=af516e27'
+import { onRemoval, windowContent } from '/resource-memory.js?v=9ea25050'
 const S = { me: null, emojis: [], minPostTL: 1, bgKey: null, modal: null, wall: null, meSt: null, folders: null, viewer: null }
 const main = document.getElementById('main')
 
@@ -1605,17 +1605,25 @@ const OFFICIAL_ART = {
   reborn: '<path d="M5 11l5 4 6-10 6 10 5-4-2 15H7ZM8 22h16M12 18h1m6 0h1M3 5l2 2m22-2 2-2"/>',
 }
 const RAFFLE_TITLES = {
+  maid: { name:'鲸眠女仆', mood:'深蓝裙摆里的温柔陪伴', collection:true },
+  whalepunch: { name:'鲸拳出击', mood:'蓝色电光里的元气一拳', collection:true },
+  nightdevil: { name:'夜宴小恶魔', mood:'玫瑰与夜色里的俏皮心动', collection:true },
+  whalebuddy: { name:'鲸伴', mood:'今天也要开心呀', collection:true },
+  gpt: { name:'GPT龙姬', mood:'紫星白龙的灵感相伴', collection:true },
+  claude: { name:'Claude花姬', mood:'橘花盛开的温暖时刻', collection:true },
+  gemini: { name:'Gemini星喵', mood:'星光与双眸里的小宇宙', collection:true },
+  whitedragon: { name:'白龙绮姬', mood:'银发与绮花的优雅相逢', collection:true },
   deepseek: { name:'鲸鱼娘', mood:'深海里的蓝色心动', art:OFFICIAL_ART.whale },
   mona: { name: '莫奈之王', mood: '睡莲色的画中主角', art: '<path d="M4 21q6-8 12 0 6-8 12 0M6 25q10 5 20 0M16 4v7m-5-3 5-4 5 4M9 15q7-5 14 0"/>' },
   lace: { enabled:false, name: '摸蕾丝紫奈', mood: '紫色蕾丝与小恶魔的心动', art: '<path d="M5 9q4-6 11 0 7-6 11 0v15H5Z M5 12l4 3 4-3 3 3 3-3 4 3 4-3M12 21q4-5 8 0m-4-3v8m-3-3 3 3 3-3"/>' },
   giant: { enabled:false, name: '一根巨物', mood: '气泡也装不下的大场面', art: '<path d="M8 10a4 4 0 1 1 5 4l6 6a4 4 0 1 1 4 5 4 4 0 1 1-5-4l-6-6a4 4 0 1 1-4-5Z"/>' },
-  worship: { name: '寄吧几拜', mood: '一边吐槽，一边认真参拜', art: '<path d="M16 4l10 7-3 16H9L6 11ZM7 11h18M11 16l5 4 5-4M12 25h8m-10-5-3 3m15-3 3 3"/>' },
+  worship: { bubbleEnabled:false, name: '寄吧几拜', mood: '一边吐槽，一边认真参拜', art: '<path d="M16 4l10 7-3 16H9L6 11ZM7 11h18M11 16l5 4 5-4M12 25h8m-10-5-3 3m15-3 3 3"/>' },
   muscle: { name: '筋肉欢欢', mood: '一拳打出今日份快乐', art: '<path d="M8 13q-5-4-5 4 0 8 9 10h9q8-2 8-10 0-8-5-4l-4 3-4-5-4 5ZM9 20h2m10 0h2m-12 3q5 4 10 0M8 7l-3-3m20 3 3-3"/>' },
 }
 const raffleOf = u => RAFFLE_TITLES[u?.deco?.ft] && RAFFLE_TITLES[u.deco.ft].enabled !== false ? { ...RAFFLE_TITLES[u.deco.ft], id: u.deco.ft, n: Math.max(1, Number(u.deco.fn) || 1) } : null
 const raffleArt = id => h('span', { class: 'rt-art', 'aria-hidden': 'true' },
-  ['mona','giant','lace','worship','muscle','deepseek'].includes(id)
-    ? h('img', { src: ['giant','lace','deepseek'].includes(id) ? `/assets/raffle/v2/${id}-badge.webp` : id === 'muscle' ? '/assets/raffle/muscle-tail-still.webp' : `/assets/raffle/${id}-badge.webp`, alt: '', width: 32, height: 32, loading: 'lazy' })
+  RAFFLE_TITLES[id]
+    ? h('img', { src: RAFFLE_TITLES[id].collection ? `/assets/raffle/collection/${id}-badge.webp` : ['lace','deepseek'].includes(id) ? `/assets/raffle/v2/${id}-badge.webp` : id === 'muscle' ? '/assets/raffle/muscle-tail-still.webp' : `/assets/raffle/${id}-badge.webp`, alt: '', width: 32, height: 32, loading: 'lazy' })
     : h('span', { html: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${RAFFLE_TITLES[id]?.art || ''}</svg>` }))
 const raffleChip = (t, mini) => h('span', { class: 'rt-badge rt-' + t.id, title: `群聊抽奖 · ${t.name} · Lv${t.n}`, 'aria-label': `${t.name} 徽章，等级 ${t.n}` }, raffleArt(t.id), !mini && h('span', null, t.name), !mini && t.n > 1 && h('small', { class: 'rt-level' }, `×${t.n}`))
 const officialById = id => (S.officialTitles || []).find(t => t.id === id && OFFICIAL_ART[id])
@@ -1727,7 +1735,7 @@ function compactIdentity(u, where, name, ...meta) {
 function bubbleParts(u, where = 'chat', frame = false) {
   const own = !!S.me && u?.username === S.me.username
   const forced = raffleOf(u)
-  if (forced) return [{ key:'raffle:' + forced.id, own, classes: frame ? ' ot-frame rt-frame rt-' + forced.id : ' ot-bubble rt-bubble rt-' + forced.id }]
+  if (forced) return forced.bubbleEnabled === false ? [] : [{ key:'raffle:' + forced.id, own, classes: (frame ? ' ot-frame rt-frame rt-' : ' ot-bubble rt-bubble rt-') + forced.id + (forced.collection && !frame ? ' rt-collection' : '') }]
   const official = officialOf(u, where)
   if (official) return [{ key:'official:' + official.id, own, classes: frame ? ' ot-frame ot-' + official.id : ' ot-bubble ot-' + official.id }]
   if (frame) return []
@@ -1747,7 +1755,7 @@ function openBubbleSettings(anchor) {
   const close = () => dialog.close()
   const body = h('div', { class:'bubble-options' })
   const groups = [
-    ['抽奖气泡', Object.entries(RAFFLE_TITLES).filter(([,t]) => t.enabled !== false).map(([id,t]) => ['raffle:' + id,t.name])],
+    ['抽奖气泡', Object.entries(RAFFLE_TITLES).filter(([,t]) => t.enabled !== false && t.bubbleEnabled !== false).map(([id,t]) => ['raffle:' + id,t.name])],
     ['官方气泡', (S.officialTitles || []).map(t => ['official:' + t.id,t.name])],
     ['日常气泡', DECO_BUBBLE.filter(([id]) => id).map(([id,name]) => ['preset:' + id,name]).concat([['preset:yinlu','引路人'],['custom','自定义气泡样式']])],
   ]
@@ -7565,6 +7573,33 @@ function chatPane(g, { onHead } = {}) {
     } else toBottom(true)
   } })
   const nearBottom = () => scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80
+  const exactBottom = () => scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 3
+  const pauseFollow = () => {
+    if (!st.done || st.followPaused) return
+    st.followPaused = true
+    st.stick = false
+    // 取消前一轮新消息可能还在进行的平滑滚动。
+    scroller.scrollTo({ top: scroller.scrollTop, behavior: 'instant' })
+    drawDown()
+  }
+  scroller.addEventListener('wheel', (event) => { if (event.deltaY < 0) pauseFollow() }, { passive: true })
+  let touchY = null
+  scroller.addEventListener('touchstart', (event) => { touchY = event.touches[0]?.clientY ?? null }, { passive: true })
+  scroller.addEventListener('touchmove', (event) => {
+    const next = event.touches[0]?.clientY
+    if (touchY != null && next != null && next > touchY + 4) pauseFollow()
+  }, { passive: true })
+  scroller.addEventListener('touchend', () => { touchY = null }, { passive: true })
+  scroller.addEventListener('keydown', (event) => {
+    if (['ArrowUp', 'PageUp', 'Home'].includes(event.key)) pauseFollow()
+  })
+  let draggingScrollbar = false
+  scroller.addEventListener('pointerdown', (event) => {
+    const rect = scroller.getBoundingClientRect()
+    draggingScrollbar = event.clientX >= rect.right - 18
+  })
+  scroller.addEventListener('pointerup', () => { draggingScrollbar = false })
+  scroller.addEventListener('pointercancel', () => { draggingScrollbar = false })
   // 「N 条新消息」：记住是哪几条，往下滑看到一条就减一条，全看到了就收起
   st.newIds = []
   const recount = () => {
@@ -7586,7 +7621,7 @@ function chatPane(g, { onHead } = {}) {
   function drawDown() {
     const n = st.newIds.length
     // 跳转窗口（下面还有没加载的）用「回到最新消息」；历史层里有新消息才出（点了回到当前聊天的底部）
-    downBtn.hidden = st.after || (histEl ? !n : nearBottom())
+    downBtn.hidden = st.after || (histEl ? !n : nearBottom() && !st.followPaused)
     downN.hidden = !n
     downN.textContent = n > 99 ? '99+' : n
     downBtn.setAttribute('aria-label', n ? `回到底部，${n} 条新消息` : '回到底部')
@@ -7598,6 +7633,7 @@ function chatPane(g, { onHead } = {}) {
     pill.hidden = true
     st.newN = 0
     st.newIds = []
+    st.followPaused = false
     st.stick = true
     drawDown()
     markRead()
@@ -7917,6 +7953,7 @@ function chatPane(g, { onHead } = {}) {
       if (st.destroyed || !scroller.isConnected) { more = false; return }
       more = !!d.more && d.items.length > 0
       st.since = d.now
+      const wasFollowing = st.stick && !st.followPaused
       d.changed.forEach(update)
       if (st.after) { more = false; return } // 在跳转窗口里，最新的消息等回到底部再拉
       if (d.items.length) {
@@ -7926,7 +7963,7 @@ function chatPane(g, { onHead } = {}) {
         // 来新消息要不要跟着滚：在底部时跟（默认）/ 总是滚到最新 / 不自动滚（只出按钮）
         const ap = chatAuto()
         // 开着历史层：正在看旧消息，主列表也不动，只记数
-        const stick = !gone && !histEl && (ap === 'always' ? true : ap === 'off' ? false : nearBottom())
+        const stick = !gone && !histEl && !st.followPaused && (ap === 'always' ? true : ap === 'off' ? false : wasFollowing)
         // 人不在：从第一条没看的开始画「以下是新消息」（这次离开期间已经画过就不挪）
         if (gone && !st.awayMark) {
           list.querySelectorAll('.cm-unread').forEach((el) => el.remove())
@@ -7939,9 +7976,9 @@ function chatPane(g, { onHead } = {}) {
         d.items.forEach((m) => m.mine && inflight.find((j) => !j.done && j.body === (m.body || '') && !!j.tray === !!(m.media?.length || m.image))?.settle(m))
         add(d.items, 'live')
         trimLive(stick)
-        if (stick) toBottom(true)
+        if (stick && !st.followPaused) toBottom(false)
         else {
-          if (gone || ap === 'off' || histEl) st.stick = false // 图片晚加载也别把人拽到底
+          st.stick = false // 图片晚加载也别把人拽到底
           // 往上翻着看的时候来了新消息：一样出按钮（以前只在离开时才出）
           st.newIds.push(...others.map((m) => m.id))
           trimHistory('older')
@@ -8185,11 +8222,13 @@ function chatPane(g, { onHead } = {}) {
     const delta=scroller.scrollTop-(st.lastHeadScroll ?? scroller.scrollTop)
     const header=scroller.closest('.chat-body')?.querySelector('.chat-head')
     if(header && innerWidth<=640) {
-      if(scroller.scrollTop<80 || delta<-8) header.classList.remove('compact')
-      else if(delta>8) header.classList.add('compact')
+      if(scroller.scrollTop<56) header.classList.remove('compact')
+      else if(scroller.scrollTop>160) header.classList.add('compact')
     }
+    if (draggingScrollbar && delta < -4) pauseFollow()
+    if (st.followPaused && delta > 0 && exactBottom()) st.followPaused = false
     st.lastHeadScroll=scroller.scrollTop
-    st.stick = nearBottom() && !st.after
+    st.stick = !st.followPaused && nearBottom() && !st.after
     if (st.stick) { pill.hidden = true; st.newN = 0; st.newIds = []; if (!awayEl) st.awayMark = false; markRead() }
     else if (st.newIds.length) recount()
     if (st.after && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 300) newer()
@@ -8197,7 +8236,7 @@ function chatPane(g, { onHead } = {}) {
     drawDown()
   }, { passive: true })
   // 图片晚加载会把内容往下顶：原本贴着底部就继续贴着
-  scroller.addEventListener('load', () => { if (st.stick) scroller.scrollTop = scroller.scrollHeight }, true)
+  scroller.addEventListener('load', () => { if (st.stick && !st.followPaused) scroller.scrollTop = scroller.scrollHeight }, true)
   // 输入框
   const reply = h('div', { class: 'cm-reply', hidden: true })
   const setReply = (m) => {
@@ -8276,8 +8315,10 @@ function chatPane(g, { onHead } = {}) {
         const { message } = await api(`/chat/groups/${g.id}/messages`, { method: 'POST', body: { body: '', reply_to: st.reply?.id || 0, media: [{ key: r.key, name: f.name }] } })
         setReply(null)
         closeHist()
+        const follow = st.stick && !st.followPaused && nearBottom()
         add([message], 'live')
-        toBottom(false)
+        if (follow && !st.followPaused) toBottom(false)
+        else drawDown()
       } catch (e) { toast(`「${f.name}」没发出去：${e.message}`, 'err') }
       void tip
     }
@@ -8290,6 +8331,7 @@ function chatPane(g, { onHead } = {}) {
     const body = only || ta.value.trim()
     if (!body && !att.items.length) return
     if (!requireLogin('聊天')) return
+    const followSend = st.stick && !st.followPaused && nearBottom() && !histEl && !st.after
     // 在历史层里发（回车 / +1 复读 / 表情包）：回到当前聊天，看得见自己刚发的
     closeHist()
     const job = { body, reply: st.reply, tray: !only && att.items.length ? att : null, done: false, tries: 0 }
@@ -8318,7 +8360,8 @@ function chatPane(g, { onHead } = {}) {
     if (job.tray) swapTray()
     if (!only) { ta.value = ''; grow() }
     setReply(null)
-    toBottom(false)
+    if (followSend && !st.followPaused) toBottom(false)
+    else drawDown()
     const go = async () => {
       if (job.done || job.busy) return
       job.busy = true
@@ -8329,9 +8372,10 @@ function chatPane(g, { onHead } = {}) {
         // 第二次起带上 retry：服务器在 2 分钟内认出同一条，不会重复入库
         const { message } = await api(`/chat/groups/${g.id}/messages`, { method: 'POST', body: { body, reply_to: job.reply?.id || 0, media, retry: job.tries++ > 0 || undefined } })
         if (!job.done) job.settle(message)
-        const stick = nearBottom()
+        const stick = followSend && st.stick && !st.followPaused && nearBottom()
         add([message], 'live')
-        if (stick) toBottom(false)
+        if (stick && !st.followPaused) toBottom(false)
+        else drawDown()
       } catch (e) {
         if (job.done) return
         state.classList.add('err')
@@ -8369,7 +8413,12 @@ function chatPane(g, { onHead } = {}) {
           insertAtCursor(ta, k.includes(':') ? `[${k}]` : k)
         }), { key, cls: 'pop-stk', up: true }), { 'data-pop': key }),
         tb('image', '发图片 / 视频', () => att.pick()),
-        tb('redpack', '发红包', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { group: g, onSent: (message) => { closeHist(); add([message], 'live'); toBottom(false) } }), { class: 'cm-ibtn cm-redpack-btn' }),
+        tb('redpack', '发红包', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { group: g, onSent: (message) => {
+          const follow = st.stick && !st.followPaused && nearBottom() && !histEl
+          closeHist(); add([message], 'live')
+          if (follow && !st.followPaused) toBottom(false)
+          else drawDown()
+        } }), { class: 'cm-ibtn cm-redpack-btn' }),
         tb('packetBag', '群红包袋', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { archiveGroup:g, onUpdate:update })),
         tb('raffle', '称号抽奖', (e) => titleRaffleDialog(e.currentTarget)),
         tb('doc', '发文件（20MB 以内）', () => fileIn.click()),
@@ -8747,7 +8796,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
         h('span', null, `${({hb:'HB · ',credit:'Credit · ',fish:'fish · '})[m.redpack.provider] || ''}${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`)),
       h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放'})[m.redpack.snapshot?.state] || (m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, `${m.redpack.opened} 人拆过${m.redpack.provider && m.redpack.provider!=='native'?'包装':''}`))))
     if ((!m.redpack || m.redpack.shared) && m.body && !lnk?.only) body.push(h('div', stkOnly(m.body) ? { class:'cm-text stk-only' } : bubbleView(m.user, 'cm-text'),
-      m.user?.deco?.ft === 'deepseek' ? h('span', { class:'ds-copy' }, richBody(m.body, { md:'lite' }), edited) : [richBody(m.body, { md: 'lite' }), edited]))
+      m.user?.deco?.ft === 'deepseek' || RAFFLE_TITLES[m.user?.deco?.ft]?.collection ? h('span', { class:'ds-copy rt-copy' }, richBody(m.body, { md:'lite' }), edited) : [richBody(m.body, { md: 'lite' }), edited]))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited))
     const all = m.redpack && !m.redpack.shared ? [] : m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
     const files = all.filter((x) => x.k === 'f')
