@@ -8529,6 +8529,9 @@ function chatPane(g, { onHead } = {}) {
     const x = msgAt(e.target)
     if (!x) return
     const { msg, v, m } = x
+    // 触屏长按已打开视频查看器时，抑制随后产生的系统 contextmenu。
+    const videoCell = e.target.closest('[data-video]')
+    if (videoCell && Date.now() < Number(videoCell.dataset.contextUntil || 0)) { e.preventDefault(); return }
     // 打码 / 模糊的图：右键直接看大图，不出菜单
     const cell = e.target.closest('.cm-img[data-mask]')
     if (cell) { e.preventDefault(); v.pane.gallery(m, Number(cell.dataset.mi)); return }
@@ -8758,7 +8761,6 @@ function chatMsg(m, { cont, pane, pending } = {}) {
         const inlineVideo = it.k === 'v' && !!it.v && !it.b && !it.o && !pending
         const sz = solo && cls === 'cm-img' ? cmImgBox(it.w, it.h) || { w: 240, h: 180 } : null
         if (inlineVideo && sz && sz.w < 180) { sz.h = Math.min(320, Math.round(sz.h * 180 / sz.w)); sz.w = 180 }
-        const enlargeVideo = (e) => { e.preventDefault(); e.stopPropagation(); if (Date.now() < Number(b.dataset.contextUntil || 0)) return; b.dataset.contextUntil = String(Date.now() + 800); open(e, i) }
         const b = h('button', { class: cls + (it.b ? ' cm-blur blur' : '') + (sz ? ' sized' : ''), type: 'button', 'aria-label': it.b ? '已模糊，点一下看' : it.v ? '播放视频' : '查看大图',
           style: sz ? { width: sz.w + 'px', aspectRatio: `${sz.w} / ${sz.h}` } : null,
           onclick: (e) => {
@@ -8769,7 +8771,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
             if (inlineVideo) {
               const player = mediaVideo(it)
               const shell = h('div', { class: b.className + ' cm-video-inline', style: b.getAttribute('style') || null,
-                'data-mi': i, 'data-video': '', oncontextmenu: (event) => { event.preventDefault(); event.stopPropagation(); if (Date.now() < Number(shell.dataset.contextUntil || 0)) return; shell.dataset.contextUntil = String(Date.now() + 800); player.querySelector('video')?.pause(); open(event, i) } }, player,
+                'data-mi': i, 'data-video': '' }, player,
                 h('button', { class: 'cm-video-touch', type: 'button', 'aria-label': '暂停或继续视频，长按放大', onclick: () => {
                   if (Date.now() < Number(shell.dataset.contextUntil || 0)) return
                   const video = player.querySelector('video')
@@ -8787,7 +8789,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
           },
           // 打码 / 模糊的图右键直接看图：列表里的消息由 chatPane 委托处理（data-mask / data-mi），发送中的占位没有 pane，还是自己管
           'data-mi': i, 'data-mask': (it.b || it.o) && pane ? '' : null,
-          oncontextmenu: inlineVideo ? enlargeVideo : (it.b || it.o) && !pane ? (e) => { e.preventDefault(); e.stopPropagation(); open(e, i) } : null,
+          oncontextmenu: (it.b || it.o) && !pane ? (e) => { e.preventDefault(); e.stopPropagation(); open(e, i) } : null,
           'data-video': inlineVideo ? '' : null },
         it.u ? h('img', { src: it.u, alt: '', loading: 'lazy', width: it.w || null, height: it.h || null })
           : inlineVideo ? h('span', { class: 'cm-video-placeholder', 'aria-hidden': 'true' })
@@ -8993,6 +8995,11 @@ function chatMenu(m, pane, e) {
   const item = (label, ic, fn, cls = '') => h('button', { class: 'menu-item ' + cls, type: 'button', onclick: () => { closePop(); fn() } }, icon(ic), label)
   const mine = new Set(m.reactions.filter((r) => r.mine).map((r) => r.emoji))
   const pic = m.media?.[0]?.u || m.image
+  const media = (m.media || []).filter(it => it.k !== 'f')
+  const clickedVideo = e.target.closest?.('[data-video][data-mi]')
+  const clickedIndex = clickedVideo ? Number(clickedVideo.dataset.mi) : -1
+  const normalVideo = it => it?.k === 'v' && !!it.v && !it.b && !it.o
+  const videoIndex = clickedIndex >= 0 && normalVideo(media[clickedIndex]) ? clickedIndex : media.findIndex(normalVideo)
   const key = 'cmm' + m.id
   openPop(anchor, h('div', { class: 'menu-list cm-menu' },
     h('div', { class: 'cm-menu-rx' }, QUICK_RX().map((k) =>
@@ -9002,6 +9009,7 @@ function chatMenu(m, pane, e) {
     } }, icon('emojiAdd'))),
     item('回复', 'reply', () => pane.setReply(m)),
     item('引用', 'quote', () => { pane.setReply(m); pane.quoteMsg(m) }),
+    videoIndex >= 0 && pane.gallery && item('放大播放', 'zoom', () => { host?.querySelector(`[data-video][data-mi="${videoIndex}"] video`)?.pause(); pane.gallery(m, videoIndex) }),
     m.body && item('+1 复读', 'plus', () => pane.send?.(m.body)),
     item('回应', 'rocket', () => boostPrompt(m, pane, anchor)),
     selIn ? item('复制选中的文字', 'copy', () => copyText(sel)) : item('复制', 'copy', () => chatCopy(m)),
