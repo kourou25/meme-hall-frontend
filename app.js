@@ -1445,7 +1445,7 @@ function replyChip(m, r, manage) {
         if (confirm('撤回这句回应？')) act(m, null, () => api(`/memes/${m.id}/reply`, { method: 'DELETE' }))
       } else act(m, null, () => api(`/memes/${m.id}/reply`, { method: 'PUT', body: { text: r.text } }))
     } }, BOOST_PRESETS.includes(r.text) ? boostText(r.text) : linkify(r.text))
-  const chip = h('span', { class: 'rp boost-sent' + officialFrame(r, 'post') + (r.mine ? ' mine' : '') }, face, text)
+  const chip = h('span', bubbleView(r, 'rp boost-sent' + (r.mine ? ' mine' : ''), 'post', true), face, text)
   // 管理删除按「这句话」删（同样的话一起删）
   if (manage && m.can_manage) {
     chip.append(h('button', { class: 'rp-del', type: 'button', title: `删除所有人的这句（${r.n || 1} 条）`, 'aria-label': '删除这句',
@@ -1506,8 +1506,35 @@ const DECO_BUBBLE = [['', '默认'], ...DECO_BUBBLE_NEW, ...DECO_BUBBLE_OLD]
 const FANCY_PRESETS = [['默认彩虹', []], ['樱粉', ['#ff5fa2', '#ffb3d1', '#c86bff']], ['海盐', ['#00b4d8', '#48cae4', '#90e0ef']], ['日落', ['#ff6b35', '#f7c548', '#ff3864']],
   ['森林', ['#2d6a4f', '#52b788', '#b7e4c7']], ['赛博', ['#f72585', '#7209b7', '#4cc9f0']], ['黑金', ['#111111', '#d4a017', '#fff3b0']]]
 // 别人的装扮我不想看：炫彩名 / 称号 / 徽章 / 气泡 / 自定义样式，几个开关（只影响自己看到的，自己的照常显示）
-const decoHide = () => { try { return JSON.parse(localStorage.getItem('decoHide')) || {} } catch { return {} } }
-const decoHidden = (u, k) => !!u && !!S.me && u.username !== S.me.username && !!decoHide()[k]
+const decoHide = () => {
+  if (decoViewPrefs) return decoViewPrefs
+  try { const p = JSON.parse(localStorage.getItem('decoHide')); decoViewPrefs = p && typeof p === 'object' && !Array.isArray(p) ? p : {} } catch { decoViewPrefs = {} }
+  decoBubbleKeys = new Set(Array.isArray(decoViewPrefs.bubbleKeys) ? decoViewPrefs.bubbleKeys.filter(k => typeof k === 'string') : [])
+  return decoViewPrefs
+}
+let decoViewPrefs = null, decoBubbleKeys = new Set()
+const decoHidden = (u, k) => k !== 'title' && !!u && !!S.me && u.username !== S.me.username && !!decoHide()[k]
+const bubbleBlocked = k => !!decoHide().bubbleAll || decoBubbleKeys.has(k)
+function saveDecoView(p) {
+  try { localStorage.setItem('decoHide', JSON.stringify(p)) } catch { toast('浏览器未允许保存设置', 'err'); return false }
+  decoViewPrefs = p; decoBubbleKeys = new Set(p.bubbleKeys || [])
+  // 只在用户变更设置时处理现存节点；不增加轮询或 DOM 观察器。
+  const docs = [document]
+  for (const win of PIPS) { try { if (!win.closed) docs.push(win.document) } catch { /* 已跳往外站的小窗不再处理。 */ } }
+  for (const doc of docs) {
+    doc.documentElement.dataset.bubbleLegacy = p.bubbleLegacy ? '1' : '0'
+    for (const el of doc.querySelectorAll('[data-bubble-parts]')) {
+      const parts = JSON.parse(el.dataset.bubbleParts)
+      for (const part of parts) {
+        const show = !bubblePartHidden(part)
+        for (const cls of part.classes.trim().split(/\s+/).filter(Boolean)) el.classList.toggle(cls, show)
+      }
+    }
+  }
+  return true
+}
+const bubblePartHidden = p => bubbleBlocked(p.key) || (!p.own && (!!decoHide().bubble || (p.key === 'custom' && !!decoHide().css)))
+document.documentElement.dataset.bubbleLegacy = decoHide().bubbleLegacy ? '1' : '0'
 // 这个人的装扮在这里（chat 群聊 / post 帖子和评论 / card 名片）生不生效
 function decoAt(u, where) {
   const d = u?.deco
@@ -1578,6 +1605,7 @@ const OFFICIAL_ART = {
   reborn: '<path d="M5 11l5 4 6-10 6 10 5-4-2 15H7ZM8 22h16M12 18h1m6 0h1M3 5l2 2m22-2 2-2"/>',
 }
 const RAFFLE_TITLES = {
+  deepseek: { name:'鲸鱼娘', mood:'深海里的蓝色心动', art:OFFICIAL_ART.whale },
   mona: { name: '莫奈之王', mood: '睡莲色的画中主角', art: '<path d="M4 21q6-8 12 0 6-8 12 0M6 25q10 5 20 0M16 4v7m-5-3 5-4 5 4M9 15q7-5 14 0"/>' },
   lace: { name: '摸蕾丝紫奈', mood: '紫色蕾丝与小恶魔的心动', art: '<path d="M5 9q4-6 11 0 7-6 11 0v15H5Z M5 12l4 3 4-3 3 3 3-3 4 3 4-3M12 21q4-5 8 0m-4-3v8m-3-3 3 3 3-3"/>' },
   giant: { name: '一根巨物', mood: '气泡也装不下的大场面', art: '<path d="M8 10a4 4 0 1 1 5 4l6 6a4 4 0 1 1 4 5 4 4 0 1 1-5-4l-6-6a4 4 0 1 1-4-5Z"/>' },
@@ -1586,14 +1614,14 @@ const RAFFLE_TITLES = {
 }
 const raffleOf = u => RAFFLE_TITLES[u?.deco?.ft] ? { ...RAFFLE_TITLES[u.deco.ft], id: u.deco.ft, n: Math.max(1, Number(u.deco.fn) || 1) } : null
 const raffleArt = id => h('span', { class: 'rt-art', 'aria-hidden': 'true' },
-  ['mona','giant','lace','worship','muscle'].includes(id)
-    ? h('img', { src: id === 'muscle' ? '/assets/raffle/muscle-tail-still.webp' : `/assets/raffle/${id}-badge.webp`, alt: '', width: 32, height: 32, loading: 'lazy' })
+  ['mona','giant','lace','worship','muscle','deepseek'].includes(id)
+    ? h('img', { src: ['giant','lace','deepseek'].includes(id) ? `/assets/raffle/v2/${id}-badge.webp` : id === 'muscle' ? '/assets/raffle/muscle-tail-still.webp' : `/assets/raffle/${id}-badge.webp`, alt: '', width: 32, height: 32, loading: 'lazy' })
     : h('span', { html: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${RAFFLE_TITLES[id]?.art || ''}</svg>` }))
 const raffleChip = (t, mini) => h('span', { class: 'rt-badge rt-' + t.id, title: `群聊抽奖 · ${t.name} · Lv${t.n}`, 'aria-label': `${t.name} 徽章，等级 ${t.n}` }, raffleArt(t.id), !mini && h('span', null, t.name), !mini && t.n > 1 && h('small', { class: 'rt-level' }, `×${t.n}`))
 const officialById = id => (S.officialTitles || []).find(t => t.id === id && OFFICIAL_ART[id])
 const officialOf = (u, where) => officialById(decoAt(u, where)?.ot)
 const officialArt = id => h('span', { class: 'ot-art', 'aria-hidden': 'true', html: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${OFFICIAL_ART[id] || ''}</svg>` })
-const officialFrame = (u, where) => { const forced=raffleOf(u); if(forced)return ' ot-frame rt-frame rt-' + forced.id; const t = officialOf(u, where); return t ? ' ot-frame ot-' + t.id : '' }
+const officialFrame = (u, where) => bubbleParts(u, where, true).filter(p => !bubblePartHidden(p)).map(p => p.classes).join('')
 const officialChip = (t, mini = false) => h('span', { class: 'ot-badge ot-' + t.id, title: `站长授予 · ${t.name}`, 'aria-label': '官方徽章：' + t.name }, officialArt(t.id), !mini && h('span', null, t.name))
 function titleEl(u, where) {
   const forced = raffleOf(u)
@@ -1696,22 +1724,62 @@ function compactIdentity(u, where, name, ...meta) {
     h('span', { class: 'identity-main' }, name, title, badgeEl(u, where, true), meta))
 }
 // 气泡类名：预设气泡 + 自己写的气泡样式（只作用在这个人自己的 .cm-text 上）
-const bubbleCls = (u) => {
+function bubbleParts(u, where = 'chat', frame = false) {
+  const own = !!S.me && u?.username === S.me.username
   const forced = raffleOf(u)
-  if (forced) return ' ot-bubble rt-bubble rt-' + forced.id
-  const official = officialOf(u, 'chat')
-  if (official && !decoHidden(u, 'bubble')) return ' ot-bubble ot-' + official.id
-  const b = decoAt(u, 'chat')?.bb
-  return (b && !decoHidden(u, 'bubble') ? ' bb bb-' + b : '') + userCss(u, 'cssb', 'cm-text', 'chat')
+  if (forced) return [{ key:'raffle:' + forced.id, own, classes: frame ? ' ot-frame rt-frame rt-' + forced.id : ' ot-bubble rt-bubble rt-' + forced.id }]
+  const official = officialOf(u, where)
+  if (official) return [{ key:'official:' + official.id, own, classes: frame ? ' ot-frame ot-' + official.id : ' ot-bubble ot-' + official.id }]
+  if (frame) return []
+  const d = decoAt(u, where), parts = []
+  if (d?.bb) parts.push({ key:'preset:' + d.bb, own, classes:' bb bb-' + d.bb })
+  if (d?.cssb) parts.push({ key:'custom', own, classes:ucssCls(d.cssb, 'cm-text') })
+  return parts
+}
+const bubbleCls = u => bubbleParts(u).filter(p => !bubblePartHidden(p)).map(p => p.classes).join('')
+function bubbleView(u, base, where = 'chat', frame = false) {
+  const parts = bubbleParts(u, where, frame)
+  return { class:base + parts.filter(p => !bubblePartHidden(p)).map(p => p.classes).join(''), 'data-bubble-parts':JSON.stringify(parts) }
+}
+function openBubbleSettings(anchor) {
+  const doc = anchor.ownerDocument
+  if (doc.querySelector('.bubble-dialog')) return
+  const close = () => dialog.close()
+  const body = h('div', { class:'bubble-options' })
+  const groups = [
+    ['抽奖气泡', Object.entries(RAFFLE_TITLES).map(([id,t]) => ['raffle:' + id,t.name])],
+    ['官方气泡', (S.officialTitles || []).map(t => ['official:' + t.id,t.name])],
+    ['日常气泡', DECO_BUBBLE.filter(([id]) => id).map(([id,name]) => ['preset:' + id,name]).concat([['preset:yinlu','引路人'],['custom','自定义气泡样式']])],
+  ]
+  const syncChoices = () => { for (const input of body.querySelectorAll('[data-bubble-choice]')) input.checked = bubbleBlocked(input.dataset.bubbleChoice) || !!decoHide().bubble }
+  const paint = () => body.replaceChildren(...groups.map(([name,items]) => h('fieldset', null,
+    h('legend', null, name), h('div', { class:'bubble-options-grid' }, items.map(([key,label]) => h('label', { class:'set-check' },
+      h('input', { type:'checkbox', checked:bubbleBlocked(key) || !!decoHide().bubble, 'data-bubble-choice':key, onchange:e => {
+        const keys = new Set(decoHide().bubbleKeys || [])
+        // 从全部屏蔽切回逐项时，把当前目录展开为明确选择。
+        if (decoHide().bubbleAll || decoHide().bubble) for (const [,list] of groups) for (const [k] of list) keys.add(k)
+        e.target.checked ? keys.add(key) : keys.delete(key)
+        if (saveDecoView({ ...decoHide(), bubble:false, bubbleAll:false, bubbleKeys:[...keys] })) syncChoices()
+        else e.target.checked = !e.target.checked
+      } }), label))))))
+  const all = blocked => { if (saveDecoView({ ...decoHide(), bubble:false, bubbleAll:blocked, bubbleKeys:[] })) syncChoices() }
+  const dialog = h('dialog', { class:'bubble-dialog', 'aria-labelledby':'bubble-settings-title' },
+    h('header', null, h('h2', { id:'bubble-settings-title' }, '屏蔽哪些气泡'), h('button', { class:'btn-icon', type:'button', 'aria-label':'关闭气泡设置', onclick:close }, icon('close'))),
+    h('p', { class:'muted' }, '勾选后显示普通气泡，称号和内容保留。设置保存在本浏览器。'),
+    h('div', { class:'bubble-options-actions' }, h('button', { class:'btn btn-ghost sm', type:'button', onclick:() => all(true) }, '全部屏蔽'), h('button', { class:'btn btn-ghost sm', type:'button', onclick:() => all(false) }, '全部显示')),
+    h('label', { class:'set-check' }, h('input', { type:'checkbox', checked:!!decoHide().bubbleLegacy, onchange:e => { if(!saveDecoView({ ...decoHide(), bubbleLegacy:e.target.checked }))e.target.checked=!e.target.checked } }), '使用巨物 / 蕾丝旧版气泡'), body)
+  paint(); doc.body.append(dialog)
+  dialog.addEventListener('close', () => { dialog.remove(); anchor.isConnected && anchor.focus({ preventScroll:true }) }, { once:true })
+  dialog.showModal()
 }
 function decoHideSettings() {
   const p = decoHide()
   const box = (k, l) => h('label', { class: 'set-check' }, h('input', { type: 'checkbox', checked: !!p[k], onchange: (e) => {
-    localStorage.setItem('decoHide', JSON.stringify({ ...decoHide(), [k]: e.target.checked }))
-    toast('已保存，新加载的消息按这个显示', 'ok')
+    if (saveDecoView({ ...decoHide(), [k]: e.target.checked })) toast('已保存', 'ok')
+    else e.target.checked = !e.target.checked
   } }), l)
-  return h('div', { class: 'deco-hide' }, box('fancy', '不看别人的炫彩昵称'), box('title', '不看别人的称号'), box('badge', '不看别人的徽章'), box('bubble', '不看别人的消息气泡'),
-    box('css', '不看别人的自定义样式'))
+  return h('div', { class: 'deco-hide' }, h('button', { class:'btn btn-ghost sm', type:'button', onclick:e => openBubbleSettings(e.currentTarget) }, icon('chat'), '选择屏蔽气泡'),
+    box('fancy', '不看别人的炫彩昵称'), box('badge', '不看别人的徽章'), box('css', '不看别人的自定义样式'))
 }
 // 装扮编辑：称号文字 + 颜色 / 字体 / 形状 / 填充 / 动效，炫彩名配色，气泡，生效范围；边改边预览
 function decoEditor() {
@@ -8675,7 +8743,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
       h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || '给你一个红包'),
         h('span', null, `${({hb:'HB · ',credit:'Credit · ',fish:'fish · '})[m.redpack.provider] || ''}${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`)),
       h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放'})[m.redpack.snapshot?.state] || (m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, `${m.redpack.opened} 人拆过${m.redpack.provider && m.redpack.provider!=='native'?'包装':''}`))))
-    if ((!m.redpack || m.redpack.shared) && m.body && !lnk?.only) body.push(h('div', { class: 'cm-text' + (stkOnly(m.body) ? ' stk-only' : bubbleCls(m.user)) }, richBody(m.body, { md: 'lite' }), edited))
+    if ((!m.redpack || m.redpack.shared) && m.body && !lnk?.only) body.push(h('div', stkOnly(m.body) ? { class:'cm-text stk-only' } : bubbleView(m.user, 'cm-text'), richBody(m.body, { md: 'lite' }), edited))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited))
     const all = m.redpack && !m.redpack.shared ? [] : m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
     const files = all.filter((x) => x.k === 'f')
@@ -8792,7 +8860,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
         h('span', { class: 'cm-file-ic' }, icon('doc')), h('span', { class: 'cm-file-main' }, h('strong', null, f.n || '文件'), h('span', { class: 'muted' }, fmtBytes(f.s || 0))),
         icon('download', 'i tiny')))))
     if (m.boosts?.length) body.push(h('div', { class: 'cm-boosts' }, m.boosts.map((b) =>
-      h('button', { class: 'cm-boost boost-sent' + officialFrame(b, 'chat') + (b.mine ? ' mine' : ''), type: 'button', title: `${b.name || b.username} · ${clock(b.at)}${b.mine ? ' · 点一下撤掉' : ''}`,
+      h('button', { ...bubbleView(b, 'cm-boost boost-sent' + (b.mine ? ' mine' : ''), 'chat', true), type: 'button', title: `${b.name || b.username} · ${clock(b.at)}${b.mine ? ' · 点一下撤掉' : ''}`,
         onclick: (e) => b.mine && pane ? chatBoost(m, pane, '') : userCard(b.username, e.currentTarget) }, avatar(b.avatar, b.name || b.username, 16), boostText(b.text)))))
     if (m.reactions.length) body.push(h('div', { class: 'cm-rx' }, m.reactions.map((r) => rxChip(m, r, pane))))
     // 反向引用：有人回复过这条，显示「N 条回复」，点开列出回复人 + 摘要，点一条跳过去
@@ -9521,7 +9589,7 @@ async function chatPopout(g0, { pip = false } = {}) {
   const bar = h('div', { class: 'pip-bar' }, h('strong', { class: 'pip-name' }, gname()), h('span', { class: 'grow' }),
     h('label', { class: 'pip-op' }, icon('eye', 'i tiny'), opR, opN), pin,
     h('a', { class: 'pip-btn', href: '/tools/jinhuan-moyu.cmd', download: 'jinhuan-moyu.cmd', title: '下载摸鱼助手（Windows）：透明和置顶靠它', 'aria-label': '下载摸鱼助手' }, icon('download', 'i tiny')))
-  for (const a of ['data-theme', 'data-skin', 'data-blur-all']) {
+  for (const a of ['data-theme', 'data-skin', 'data-blur-all', 'data-bubble-legacy']) {
     const v = document.documentElement.getAttribute(a)
     if (v != null) doc.documentElement.setAttribute(a, v)
   }

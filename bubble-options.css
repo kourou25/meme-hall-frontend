@@ -1,0 +1,11 @@
+.bubble-dialog { box-sizing:border-box; width:min(560px,calc(100vw - 24px)); max-height:min(780px,calc(100dvh - 24px)); padding:18px; border:1px solid var(--line); border-radius:16px; background:var(--surface,var(--bg)); color:var(--text); overflow-y:auto; }
+.bubble-dialog::backdrop { background:#0006; }
+.bubble-dialog header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.bubble-dialog h2 { margin:0; font-size:18px; }
+.bubble-dialog p { font-size:13px; line-height:1.6; margin:8px 0 12px; }
+.bubble-options-actions { display:flex; gap:8px; margin-bottom:12px; }
+.bubble-options fieldset { border:0; border-top:1px solid var(--line); padding:12px 0; margin:0; min-width:0; }
+.bubble-options legend { padding:0 8px 0 0; font-weight:600; }
+.bubble-options-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px 12px; }
+.bubble-options .set-check { margin:0; min-height:32px; font-size:13px; }
+@media(max-width:600px) { .bubble-options-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .bubble-dialog { padding:14px; } }
