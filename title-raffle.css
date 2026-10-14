@@ -22,4 +22,14 @@
 .tr-winner { margin:8px 0; font-weight:700; }
 .tr-empty,.tr-info { margin:20px 0; text-align:center; color:var(--text-2); }
 .tr-error { color:#c83348; font-size:12px; }
+.cm-raffle-pin-wrap:empty { display:none; }
+.cm-raffle-pin { display:flex; align-items:center; gap:9px; margin:5px 8px 2px; padding:7px 10px; border:1px solid #af8bca; border-left:4px solid #8f69b4; border-radius:7px 13px 13px 7px; background:color-mix(in srgb,#bfa4db 16%,var(--surface)); color:var(--text); box-shadow:0 2px 0 #8f69b42b; }
+.cm-raffle-pin > .i { flex:none; color:#8f69b4; }
+.cm-raffle-pin-main { min-width:0; flex:1; display:flex; align-items:baseline; flex-wrap:wrap; column-gap:7px; }
+.cm-raffle-pin-main strong { font-size:13px; }
+.cm-raffle-pin-main small { font-size:11px; color:var(--text-2); }
+.cm-raffle-pin-join,.cm-raffle-pin-link { flex:none; min-height:30px; padding:3px 9px; border:1px solid #9875b6; border-radius:7px; background:#8054a5; color:white; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+.cm-raffle-pin-link { background:var(--surface); color:var(--text); }
+.cm-raffle-pin-join:disabled { opacity:.65; }
 @media(max-width:480px) { .tr-dialog { width:calc(100vw - 12px); max-height:calc(100dvh - 12px); border-radius:12px; } .tr-create-fields > .tr-input { flex:1 1 calc(50% - 5px); } .tr-create-fields > button { flex-basis:100%; } }
+@media(max-width:480px) { .cm-raffle-pin { gap:5px; padding:6px; } .cm-raffle-pin-main small { width:100%; } .cm-raffle-pin-join,.cm-raffle-pin-link { padding:3px 6px; } }

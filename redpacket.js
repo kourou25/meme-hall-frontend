@@ -87,7 +87,7 @@ export async function makePacketClue(url, bits, doc = document) {
   return new win.File([blob], 'redpack-clue.' + (blob.type === 'image/webp' ? 'webp' : 'png'), { type: blob.type })
 }
 
-export function openRedpacket({ anchor, group, archiveGroup, userId, message, autoOpen = false, onSent, onUpdate, onClose, h, icon, api, uploadCover, uploadClue, openTitleRaffle }) {
+export function openRedpacket({ anchor, group, archiveGroup, userId, message, autoOpen = false, onSent, onUpdate, onClose, h, icon, api, uploadCover, uploadClue }) {
   let autoInspect=autoOpen
   let externalInspected=false
   let defeatScene
@@ -338,10 +338,6 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
     }
     catch (e) { if (dialog.isConnected && seq===detailSeq) content.replaceChildren(h('p', { class: 'rpk-status', role: 'alert' }, e.message), btn('重试', load)) }
   }
-  const raffleAction = p => p.id && openTitleRaffle && btn('抽一枚称号', () => {
-    dialog.addEventListener('close', () => openTitleRaffle(anchor, p.id), { once: true })
-    dialog.close()
-  }, 'rpk-secondary')
   function render(p) {
     if (p.solved && p.external) return renderExternal(p)
     const id=message.id, seq=detailSeq
@@ -350,7 +346,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
     if (p.solved) {
       content.replaceChildren(...[coverImage(p.cover),medal(p),h('div', { class: 'rpk-win' }, doodle('happy', 'rpk-celebrate'),
         h('div', { class: 'rpk-secret' }, p.secret), h('p', null, `${p.opened} 人拆过`)),
-        p.image && preview(p.image, true), p.post_id && h('a', { class: 'rpk-secondary rpk-source', href: `/m/${p.post_id}`, target: '_blank', rel: 'noopener' }, `查看原帖 No.${p.post_id}`), raffleAction(p), btn('收好红包', () => dialog.close(), 'rpk-primary')].filter(Boolean))
+        p.image && preview(p.image, true), p.post_id && h('a', { class: 'rpk-secondary rpk-source', href: `/m/${p.post_id}`, target: '_blank', rel: 'noopener' }, `查看原帖 No.${p.post_id}`), btn('收好红包', () => dialog.close(), 'rpk-primary')].filter(Boolean))
       return
     }
     if (p.unavailable) { content.replaceChildren(h('p', { class: 'rpk-status' }, '图片暂不可用，请联系发包人。')); return }
@@ -383,7 +379,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
       } catch (e) { if(seq===detailSeq)info.textContent = e.message }
       finally { busy = false; submit.disabled = false }
     } }, coverImage(p.cover),tagline, extras, !['open', 'phrase'].includes(p.mode) && p.game !== 'tiles' && field('谜底', answer), info, submit)
-    content.replaceChildren(form, raffleAction(p) || '')
+    content.replaceChildren(form)
   }
 
   function renderExternal(p) {
@@ -423,7 +419,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, au
       h('a',{class:'rpk-secondary',href:'/meme-redpacket.user.js',download:'meme-redpacket.user.js'},'下载脚本文件'),
       btn('检查连接',async()=>{try{const state=await packetBridge('ping');info.textContent='连接器已运行 · '+state.version+'。若原站返回未登录，请在这个浏览器中登录原站。'}catch(e){info.textContent=e.message+'。请确认脚本已启用、允许在本站运行，并刷新页面。'}}))
     const copy=btn('复制原站口令',async()=>{try{await win.navigator.clipboard.writeText(p.external.ref);info.textContent='已复制'}catch{info.textContent='请手动复制：'+p.external.ref}})
-    content.replaceChildren(...[coverImage(p.cover),won&&medal(p),visual,queried,fishPasswordField,claim,unsupported,h('div',{class:'rpk-actions'},query,link),raffleAction(p),...(['hb','fish'].includes(p.provider)&&p.external.ref_kind!=='id'?[h('blockquote',{class:'rpk-cipher'},p.external.ref),copy]:[]),info,helper].filter(Boolean))
+    content.replaceChildren(...[coverImage(p.cover),won&&medal(p),visual,queried,fishPasswordField,claim,unsupported,h('div',{class:'rpk-actions'},query,link),...(['hb','fish'].includes(p.provider)&&p.external.ref_kind!=='id'?[h('blockquote',{class:'rpk-cipher'},p.external.ref),copy]:[]),info,helper].filter(Boolean))
     let busy=false
     async function connect(action) {
       if(busy)return;busy=true;query.disabled=claim.disabled=true;info.textContent=action==='claim'?(p.provider==='fish'&&p.external.ref_kind==='text'?'正在向 fish 核对口令与领取结果…':'正在核对并领取…'):'正在查询…'

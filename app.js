@@ -95,6 +95,7 @@ const ICON = {
   trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   redpack: '<svg viewBox="0 0 24 24"><path d="M4 8 5 3l4 4h6l4-4 1 5v11c0 2-3 3-8 3s-8-1-8-3Z"/><path d="m4 14 8 5 8-5M9 10v1m6-1v1m-4 2q1 1 2 0"/></svg>',
   packetBag: '<svg viewBox="0 0 24 24"><path d="M6 4h12l-3 5c5 3 7 7 5 10-2 3-14 3-16 0-2-3 0-7 5-10ZM8 9h8M10 14v1m4-1v1m-4 3q2 2 4 0"/></svg>',
+  raffle: '<svg viewBox="0 0 24 24"><path d="M3 4h18v4c-2 0-3 1-3 3s1 3 3 3v6H3v-6c2 0 3-1 3-3s-1-3-3-3V4Z"/><path d="M12 6v3m0 5v4m-2-6 2-2 2 2-2 2Z"/></svg>',
 }
 const icon = (name, cls = 'i') => h('span', { class: cls, html: ICON[name], 'aria-hidden': 'true' })
 
@@ -1584,7 +1585,10 @@ const RAFFLE_TITLES = {
   muscle: { name: '筋肉欢欢', mood: '一拳打出今日份快乐', art: '<path d="M8 13q-5-4-5 4 0 8 9 10h9q8-2 8-10 0-8-5-4l-4 3-4-5-4 5ZM9 20h2m10 0h2m-12 3q5 4 10 0M8 7l-3-3m20 3 3-3"/>' },
 }
 const raffleOf = u => RAFFLE_TITLES[u?.deco?.ft] ? { ...RAFFLE_TITLES[u.deco.ft], id: u.deco.ft, n: Math.max(1, Number(u.deco.fn) || 1) } : null
-const raffleArt = id => h('span', { class: 'rt-art', 'aria-hidden': 'true', html: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${RAFFLE_TITLES[id]?.art || ''}</svg>` })
+const raffleArt = id => h('span', { class: 'rt-art', 'aria-hidden': 'true' },
+  ['mona','giant','lace','worship','muscle'].includes(id)
+    ? h('img', { src: id === 'muscle' ? '/assets/raffle/muscle-tail-still.webp' : `/assets/raffle/${id}-badge.webp`, alt: '', width: 32, height: 32, loading: 'lazy' })
+    : h('span', { html: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${RAFFLE_TITLES[id]?.art || ''}</svg>` }))
 const raffleChip = (t, mini) => h('span', { class: 'rt-badge rt-' + t.id, title: `群聊抽奖 · ${t.name} · Lv${t.n}`, 'aria-label': `${t.name} 徽章，等级 ${t.n}` }, raffleArt(t.id), !mini && h('span', null, t.name), !mini && t.n > 1 && h('small', { class: 'rt-level' }, `×${t.n}`))
 const officialById = id => (S.officialTitles || []).find(t => t.id === id && OFFICIAL_ART[id])
 const officialOf = (u, where) => officialById(decoAt(u, where)?.ot)
@@ -7718,9 +7722,11 @@ function chatPane(g, { onHead } = {}) {
     if (old) old.replaceWith(renderRow(view, m, view.items[i - 1]))
   }
   const redraw = (i) => redrawIn(mainView, i)
+  let refreshTitleRaffles = () => {}
   const add = (items, where) => {
     items = items.filter((m) => !rows.has(m.id))
     if (!items.length) return
+    if (where === 'live' && items.some(m => m.system_kind === 'title_raffle_open' || m.system_kind === 'title_raffle')) refreshTitleRaffles()
     rememberNicks(items.map((m) => m.user))
     if (where === 'top') {
       const h0 = scroller.scrollHeight
@@ -8297,7 +8303,7 @@ function chatPane(g, { onHead } = {}) {
         tb('image', '发图片 / 视频', () => att.pick()),
         tb('redpack', '发红包', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { group: g, onSent: (message) => { closeHist(); add([message], 'live'); toBottom(false) } }), { class: 'cm-ibtn cm-redpack-btn' }),
         tb('packetBag', '群红包袋', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { archiveGroup:g, onUpdate:update })),
-        tb('packetBag', '称号抽奖', (e) => titleRaffleDialog(e.currentTarget)),
+        tb('raffle', '称号抽奖', (e) => titleRaffleDialog(e.currentTarget)),
         tb('doc', '发文件（20MB 以内）', () => fileIn.click()),
         tb('at', '@ 某人', () => { insertAtCursor(ta, (/\S$/.test(ta.value.slice(0, ta.selectionStart)) ? ' ' : '') + '@') }),
         tb('quote', '引用', () => { const m = st.reply || st.items[st.items.length - 1]; if (m) quoteMsg(m) }),
@@ -8378,7 +8384,7 @@ function chatPane(g, { onHead } = {}) {
     input.focus()
     if (q0) { input.value = q0; run() }
   }
-  function destroy() { st.destroyed = true; aiPanel?.destroy(); st.done = false; CHAT.panes.delete(api_); clearTimeout(st.catchupT); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); offNotice() }
+  function destroy() { st.destroyed = true; aiPanel?.destroy(); st.done = false; CHAT.panes.delete(api_); clearTimeout(st.catchupT); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); doc.defaultView?.removeEventListener('title-raffle-update', refreshTitleRaffles); offNotice() }
 
   // 群公告：顶上一条，点 × 收起（记住这一版），右上角留个小「公告」随时再打开；公告改了会重新弹出来
   const noticeEl = h('div', { class: 'cm-notice-wrap' })
@@ -8403,8 +8409,36 @@ function chatPane(g, { onHead } = {}) {
   const offNotice = onChat(drawNotice)
   drawNotice()
 
+  const rafflePin = h('div', { class: 'cm-raffle-pin-wrap' })
+  if (g.id === 1) {
+    let pendingRaffle = false
+    refreshTitleRaffles = async () => {
+      if (pendingRaffle || st.destroyed) return
+      pendingRaffle = true
+      try {
+        const data = await api('/chat/1/title-raffles/active')
+        if (st.destroyed || !rafflePin.isConnected) return
+        const r = data.raffles?.[0]
+        if (!r) return rafflePin.replaceChildren()
+        const name = RAFFLE_TITLES[r.title]?.name || '神秘称号'
+        const remaining = data.raffles.length - 1
+        const join = r.entry_mode === 'optin' && h('button', { class: 'cm-raffle-pin-join', type: 'button', onclick: async e => {
+          const button=e.currentTarget; button.disabled = true
+          try { await api(`/chat/1/title-raffles/${r.id}/join`, { method: 'POST' }); toast('已报名，等开奖吧', 'ok'); refreshTitleRaffles() }
+          catch (error) { toast(error.message, 'err'); button.disabled = false }
+        } }, r.joined ? '已报名' : '点我报名')
+        rafflePin.replaceChildren(h('div', { class: 'cm-raffle-pin', role: 'note' }, icon('raffle', 'i tiny'),
+          h('span', { class: 'cm-raffle-pin-main' }, h('strong', null, name, ' · 抽奖中'), h('small', null, ` ${r.entries} 人报名 · ${new Date(r.closes_at * 1000).toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit', hour12:false })} 开奖`)),
+          join, h('button', { class: 'cm-raffle-pin-link', type: 'button', onclick: e => titleRaffleDialog(e.currentTarget, null, r.id) }, remaining ? `另有 ${remaining} 场` : '详情')))
+      } catch { if (rafflePin.isConnected) rafflePin.replaceChildren() }
+      finally { pendingRaffle = false }
+    }
+    doc.defaultView?.addEventListener('title-raffle-update', refreshTitleRaffles)
+  }
+
   pendingSlot()
-  const el = h('div', { class: 'cm-pane' }, noticeEl, stage, pill, latestBtn, compose)
+  const el = h('div', { class: 'cm-pane' }, noticeEl, rafflePin, stage, pill, latestBtn, compose)
+  if (g.id === 1) queueMicrotask(refreshTitleRaffles)
   // 在光标处插入 @用户名，前面不是空白就补一个空格；刚插过同一个人不重复插
   const atUser = (username) => {
     const before = ta.value.slice(0, ta.selectionStart ?? ta.value.length)
@@ -8527,8 +8561,8 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=b3e88865')
-    if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, openTitleRaffle: titleRaffleDialog, uploadCover: async file => {
+    const { openRedpacket } = await import('/redpacket.js?v=658ca5fb')
+    if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, uploadCover: async file => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
       const compact=await shrinkImage(file,{edge:1280,threshold:1024*1024,keepTall:false})
@@ -8539,11 +8573,11 @@ async function redpackDialog(anchor, options) {
     }, uploadClue: file => uploadFile(file, 'chat') })
   } catch (e) { toast(e.message, 'err') }
 }
-async function titleRaffleDialog(anchor, packetId = null) {
+async function titleRaffleDialog(anchor, packetId = null, raffleId = null) {
   try {
     closePop()
-    const { openTitleRaffle } = await import('/title-raffle.js?v=20261013')
-    openTitleRaffle({ anchor, packetId, api, h, icon })
+    const { openTitleRaffle } = await import('/title-raffle.js?v=20261014')
+    openTitleRaffle({ anchor, packetId, raffleId, api, h, icon })
   } catch (e) { toast(e.message, 'err') }
 }
 const REDPACK_AUTO = { queue: [], active: false, seen: new Set(), timer: 0 }
@@ -8583,10 +8617,19 @@ function drainRedpackAuto() {
 }
 function chatMsg(m, { cont, pane, pending } = {}) {
   const who = m.user.name || m.user.username
+  if(m.system_kind==='title_raffle_open')return h('div',{class:'cm-welcome cm-title-raffle',role:'note'},
+    h('span',{class:'cm-welcome-star','aria-hidden':'true'},icon('raffle')),
+    h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'称号抽奖已撤回':m.body)),
+    !m.deleted && m.body.includes('点这里报名') && h('button',{class:'btn btn-primary sm',type:'button',onclick:async e=>{
+      const button=e.currentTarget, view=button.ownerDocument.defaultView; button.disabled=true
+      try { await api(`/chat/1/title-raffles/${m.system_ref}/join`,{method:'POST'}); toast('已报名，等开奖吧','ok'); view?.dispatchEvent(new view.Event('title-raffle-update')) }
+      catch(error) { toast(error.message,'err'); button.disabled=false }
+    }},'点我报名'),
+    !m.deleted && h('button',{class:'btn btn-ghost sm',type:'button',onclick:e=>titleRaffleDialog(e.currentTarget,null,m.system_ref)},'详情'))
   if(m.system_kind==='title_raffle')return h('div',{class:'cm-welcome cm-title-raffle',role:'note'},
     h('span',{class:'cm-welcome-star','aria-hidden':'true'},'✦'),
     h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'称号抽奖已撤回':m.body)),
-    !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>titleRaffleDialog(e.currentTarget)},'看结果'))
+    !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>titleRaffleDialog(e.currentTarget,null,m.system_ref)},'看结果'))
   if(m.system_kind==='redpack_due')return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},icon('redpack'),
     h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'红包提醒已撤回':'红包到点啦！'),!m.deleted && h('span',null,'开奖与领取状态以原站为准')),
     !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>redpackDialog(e.currentTarget,{message:{id:Number(m.system_ref)},onUpdate:fresh=>pane?.update(fresh)})},'去看看'))
@@ -10753,7 +10796,7 @@ async function officialTitleManager(username) {
   const grid = h('div', { class: 'ot-grid' })
   panel.replaceChildren(h('div', { class: 'modal-head' }, h('h2', null, '授予称号'), h('button', { class: 'btn-icon ghost modal-close', type: 'button', 'aria-label': '关闭', onclick: () => closeModal(false) }, icon('close'))),
     h('p', { class: 'ot-recipient' }, '@' + username), status, grid)
-  let owned = new Set(), busy = false
+  let owned = new Set(), raffleGranted = null, busy = false
   const draw = () => grid.replaceChildren(...(S.officialTitles || []).map(t => {
     const has = owned.has(t.id)
     return h('article', { class: 'ot-card ot-' + t.id },
@@ -10771,8 +10814,24 @@ async function officialTitleManager(username) {
         } catch (e) { status.textContent = e.message }
         finally { busy = false; if (grid.isConnected) draw() }
       } }, has ? '已授予 · 收回' : '授予'))
+  }), ...Object.entries(RAFFLE_TITLES).map(([id,t]) => {
+    const has = raffleGranted === id
+    return h('article', { class:'ot-card rt-' + id },
+      h('div', { class:'ot-card-heading' }, raffleArt(id), h('div', null, h('strong', null, t.name), h('p', null, t.mood))),
+      h('div', { class:'ot-demo' }, h('span', { class:'cm-text rt-bubble rt-' + id }, '今天也要开心呀')),
+      h('button', { class:'btn btn-ghost sm ot-grant', type:'button', disabled:busy, onclick:async () => {
+        if (busy) return
+        busy=true; status.textContent='正在' + (has ? '收回' : '授予') + t.name; draw()
+        try {
+          await api('/admin/raffle-titles/' + encodeURIComponent(username) + '/' + id, { method: has ? 'DELETE' : 'PUT' })
+          raffleGranted=has ? null : id; USERS.delete(username)
+          if (username.toLowerCase() === S.me.username.toLowerCase()) S.me=(await api('/me')).user
+          status.textContent=(has ? '已收回 ' : '已授予 ') + t.name
+        } catch(error) { status.textContent=error.message }
+        finally { busy=false; if (grid.isConnected) draw() }
+      } }, has ? '已授予 · 收回' : '授予'))
   }))
-  try { const u = (await api('/users/' + encodeURIComponent(username))).user; owned = new Set((u.official_titles || []).map(o => o.id)); status.textContent = '仅站长可授予'; if (grid.isConnected) draw() }
+  try { const u = (await api('/users/' + encodeURIComponent(username))).user; owned = new Set((u.official_titles || []).map(o => o.id)); raffleGranted=u.deco?.fg || null; status.textContent = '仅站长可授予'; if (grid.isConnected) draw() }
   catch (e) { status.textContent = e.message }
 }
 async function memberAdmin(q0 = '') {
