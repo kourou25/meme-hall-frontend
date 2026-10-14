@@ -1,6 +1,8 @@
 // 尽欢前端：无构建、无框架
 import { onRemoval, windowContent } from '/resource-memory.js?v=9ea25050'
-import { PERSONAL_TITLES } from '/personal-catalog.js?v=762c7219'
+import { PERSONAL_TITLES as LEGACY_PERSONAL_TITLES } from '/personal-catalog.js?v=762c7219'
+import { PERSONAL_V2_TITLES } from '/personal-v2-catalog.js?v=b58331cc'
+const PERSONAL_TITLES = { ...LEGACY_PERSONAL_TITLES, ...PERSONAL_V2_TITLES }
 const S = { me: null, emojis: [], minPostTL: 1, bgKey: null, modal: null, wall: null, meSt: null, folders: null, viewer: null }
 const main = document.getElementById('main')
 
@@ -1635,10 +1637,10 @@ const officialArt = id => h('span', { class: 'ot-art', 'aria-hidden': 'true', ht
 const officialFrame = (u, where) => bubbleParts(u, where, true).filter(p => !bubblePartHidden(p)).map(p => p.classes).join('')
 const officialChip = (t, mini = false) => h('span', { class: 'ot-badge ot-' + t.id, title: `站长授予 · ${t.name}`, 'aria-label': '官方徽章：' + t.name }, officialArt(t.id), !mini && h('span', null, t.name))
 const personalOf=(u,where)=>{const id=decoAt(u,where)?.pt;return PERSONAL_TITLES[id]?{id,...PERSONAL_TITLES[id]}:null}
-const personalBadge=t=>h('span',{class:'pt-badge pt-'+t.id,title:'专属徽章 · '+t.name,'aria-label':t.name+'专属徽章'},h('img',{src:'/assets/personal/'+t.id+'.svg',alt:'',width:24,height:24,loading:'lazy'}))
+const personalBadge=t=>h('span',{class:'pt-badge pt-'+t.id,title:'专属徽章 · '+t.name,'aria-label':t.name+'专属徽章'},h('img',{src:t.art==='v2'?'/assets/personal-v2/'+t.id+'-badge.webp':'/assets/personal/'+t.id+'.svg',alt:'',width:24,height:24,loading:'lazy'}))
 function titleEl(u, where) {
   const personal=personalOf(u,where)
-  if(personal)return h('span',{class:'u-title pt-title pt-'+personal.id,title:'专属 · '+personal.mood},personal.name)
+  if(personal)return h('span',{class:'u-title pt-title pt-'+personal.id+(personal.art==='v2'?' pt-v2':''),title:(personal.rarity==='SSR'?'SSR':'普通')+' · 专属 · '+personal.mood},personal.art==='v2'?[h('span',{class:'pt-title-size','aria-hidden':'true'},personal.name),h('span',{class:'pt-title-name'},personal.name)]:personal.name)
   const forced = raffleOf(u)
   if (forced) return h('span', { class: 'u-title rt-title rt-' + forced.id, title: `${forced.rarity==='SSR'?'SSR':'普通'} · ${forced.mood}`,
     style:forced.n>1?{'--rt-level-space':(String(forced.n).length*6+20)+'px'}:null }, h('span', { class: 'rt-title-size', 'aria-hidden': 'true' }, forced.name), h('span', { class: 'rt-title-name' }, forced.name), forced.n > 1 && h('small', { class: 'rt-level' }, `Lv${forced.n}`))
@@ -1745,7 +1747,7 @@ function compactIdentity(u, where, name, ...meta) {
 function bubbleParts(u, where = 'chat', frame = false) {
   const own = !!S.me && u?.username === S.me.username
   const personal=personalOf(u,where)
-  if(personal)return [{key:'personal:'+personal.id,own,classes:' pt-'+(frame?'frame':'bubble')+' pt-'+personal.id}]
+  if(personal)return [{key:'personal:'+personal.id,own,classes:' pt-'+(frame?'frame':'bubble')+' pt-'+personal.id+(personal.art==='v2'?' pt-v2':'')}]
   const forced = raffleOf(u)
   if (forced) return forced.bubbleEnabled === false ? [] : [{ key:'raffle:' + forced.id, own, classes: (frame ? ' ot-frame rt-frame rt-' : ' ot-bubble rt-bubble rt-') + forced.id + (forced.collection && !frame ? ' rt-collection' : '') }]
   const official = officialOf(u, where)
@@ -1767,7 +1769,7 @@ function openBubbleSettings(anchor) {
   const close = () => dialog.close()
   const body = h('div', { class:'bubble-options' })
   const groups = [
-    ['普通 · 群友专属',Object.entries(PERSONAL_TITLES).map(([id,t])=>['personal:'+id,t.name])],
+    ...['normal','SSR'].map(rarity=>[rarity==='SSR'?'SSR · 群友专属':'普通 · 群友专属',Object.entries(PERSONAL_TITLES).filter(([,t])=>(t.rarity||'normal')===rarity).map(([id,t])=>['personal:'+id,t.name])]),
     ...['normal','SSR'].map(rarity=>[rarity==='SSR'?'SSR · 角色套装':'普通 · 抽奖套装', Object.entries(RAFFLE_TITLES).filter(([,t]) => t.rarity===rarity && t.enabled !== false && t.bubbleEnabled !== false).map(([id,t]) => ['raffle:' + id,t.name])]),
     ['普通 · 官方气泡', (S.officialTitles || []).map(t => ['official:' + t.id,t.name])],
     ['普通 · 日常气泡', DECO_BUBBLE.filter(([id]) => id).map(([id,name]) => ['preset:' + id,name]).concat([['preset:yinlu','引路人'],['custom','自定义气泡样式']])],
@@ -1877,11 +1879,14 @@ function decoEditor() {
   const drawOwned=()=>{
     if(!ownedItems){ownedBox.replaceChildren(h('span',{class:'muted'},ownedError||'正在读取已拥有的套装…'),ownedError&&h('button',{class:'btn btn-ghost sm',type:'button',onclick:loadOwned},'重试'));return}
     ownedBox.replaceChildren(...nodes(h('button',{class:'btn btn-ghost sm',type:'button','data-owned-raffle':'','aria-pressed':String(!d.ft&&!d.pt),onclick:()=>{delete d.ft;delete d.fn;delete d.pt;drawOwned();draw()}},'不佩戴套装'),
-      personalItems.length>0&&h('fieldset',{class:'personal-options'},h('legend',null,'普通 · 我的专属套装'),h('div',{class:'ot-options'},personalItems.map(item=>h('button',{
-        class:'ot-option'+(d.pt===item.id?' on':''),type:'button','data-personal-title':item.id,'aria-pressed':String(d.pt===item.id),onclick:()=>{
-          if(d.pt===item.id)delete d.pt;else{d.pt=item.id;delete d.ft;delete d.fn;delete d.ot;delete d.rt}
-          drawOwned();drawOfficial();drawReward();draw()
-        }},personalBadge(item),h('span',null,item.name)))),h('p',{class:'muted sm'},'为你设计的独立主题，可自行佩戴或摘下，不参加公共抽奖。')),
+      ...['normal','SSR'].map(rarity=>{
+        const items=personalItems.filter(x=>(x.rarity||'normal')===rarity)
+        return items.length>0&&h('fieldset',{class:'personal-options'},h('legend',null,rarity==='SSR'?'SSR · 我的专属套装':'普通 · 我的专属套装'),h('div',{class:'ot-options'},items.map(item=>h('button',{
+          class:'ot-option'+(d.pt===item.id?' on':''),type:'button','data-personal-title':item.id,'aria-pressed':String(d.pt===item.id),onclick:()=>{
+            if(d.pt===item.id)delete d.pt;else{d.pt=item.id;delete d.ft;delete d.fn;delete d.ot;delete d.rt}
+            drawOwned();drawOfficial();drawReward();draw()
+          }},personalBadge(item),h('span',null,item.name)))),h('p',{class:'muted sm'},'为你设计的独立主题，可自行佩戴或摘下，不参加公共抽奖。'))
+      }),
       ...['normal','SSR'].map(rarity=>{
         const items=ownedItems.filter(x=>x.rarity===rarity&&x.enabled)
         return items.length>0&&h('fieldset',null,h('legend',null,rarity==='SSR'?'SSR · 角色套装':'普通 · 轻量套装'),h('div',{class:'ot-options'},items.map(item=>h('button',{

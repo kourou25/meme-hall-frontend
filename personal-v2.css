@@ -1,0 +1,30 @@
+/* 第二轮独立素材；旧 pt-p001～pt-p059 的样式与资源保持原样。 */
+html .pt-title.u-title.pt-v2, html .cm-head .pt-title.u-title.pt-v2 {
+ position:relative; display:inline-flex; flex:none; align-items:center; justify-content:center;
+ box-sizing:border-box; width:max-content; min-width:0; max-width:none; height:26px; padding:0 var(--pv-title-pad,16px);
+ border:0; border-radius:0; background:transparent var(--pv-title) center/100% 100% no-repeat;
+ color:#304052; box-shadow:none; text-shadow:none; font-family:inherit; font-size:11px; font-weight:600; line-height:1; white-space:nowrap; overflow:visible;
+}
+.pt-v2 .pt-title-size { visibility:hidden; pointer-events:none; }
+.pt-v2 .pt-title-name { position:absolute; left:var(--pv-title-x,50%); top:var(--pv-title-y,50%); transform:translate(-50%,-50%); line-height:1; white-space:nowrap; }
+html .cm-text.pt-bubble.pt-v2 {
+ display:grid; align-items:center; position:relative; box-sizing:border-box; width:max-content;
+ min-height:0; min-width:0; max-width:min(640px,calc(100% - 32px)); margin:2px 32px 2px 0; padding:3px 4px;
+ border-style:solid; border-color:transparent; border-width:8px 14px;
+ border-image-source:var(--pv-frame); border-image-slice:var(--pv-slice,30% 18% 30% 18% fill);
+ border-image-width:8px 14px; border-image-repeat:stretch; border-radius:0;
+ background:none; color:#304052; box-shadow:none; line-height:1.5; overflow-wrap:anywhere;
+}
+html .cm-text.pt-bubble.pt-v2 > .rt-copy { display:block; min-width:0; background:none; }
+html .cm-text.pt-bubble.pt-v2::before { content:none; }
+html .cm-text.pt-bubble.pt-v2::after {
+ content:''; position:absolute; left:calc(100% + 16px); right:auto; top:50%; bottom:auto;
+ width:28px; height:32px; transform:translateY(-50%); background:var(--pv-character) center/contain no-repeat;
+ border:0; border-radius:0; box-shadow:none; pointer-events:none;
+}
+html .pt-frame.pt-v2 { border-color:#a4b5c7; background:#f5f8fb; color:#304052; }
+@media(max-width:600px) {
+ html .pt-title.u-title.pt-v2, html .cm-head .pt-title.u-title.pt-v2 { height:24px; padding:0 var(--pv-title-pad,16px); font-size:10.5px; }
+ html .cm-text.pt-bubble.pt-v2 { border-left-width:12px; border-right-width:12px; border-image-width:8px 12px; margin-right:28px; max-width:calc(100% - 28px); }
+ html .cm-text.pt-bubble.pt-v2::after { left:calc(100% + 14px); width:24px; height:28px; }
+}
