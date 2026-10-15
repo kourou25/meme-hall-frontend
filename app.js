@@ -3895,6 +3895,7 @@ async function renderMe() {
       h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: meSettings }, icon('gear', 'i tiny'), '设置'),
       h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { location.href = '/me/invites' } }, icon('users', 'i tiny'), '邀请好友'),
       h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { location.href = '/me/account' } }, icon('gear', 'i tiny'), '账号安全'),
+      h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: e => redpackDialog(e.currentTarget,{accountOnly:true}) }, icon('redpack','i tiny'), 'LDC 应用与记录'),
       S.me?.owner && h('a', { class: 'btn btn-ghost sm', href: '/admin/ai' }, icon('gear', 'i tiny'), 'AI 接入与设置'),
       S.me?.is_admin ? h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: noticeAdmin }, icon('bell', 'i tiny'), '公告设置') : null,
       S.me?.is_admin ? h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => memberAdmin() }, icon('users', 'i tiny'), '成员管理') : null,
@@ -7590,6 +7591,7 @@ function mentionPicker(ta, g, recent = () => []) {
       if (my !== seq || at < 0 || !ta.isConnected) return
       const selected = opts[sel]?.username
       const unique = new Map()
+      if(g&&hit({username:'欢欢',name:'欢欢 · 猜词红包'}))unique.set('欢欢',{username:'欢欢',name:'欢欢 · 猜词红包',avatar:null})
       for (const u of [...members, ...users]) if (u.username && u.username !== S.me?.username && hit(u) && !unique.has(u.username)) unique.set(u.username, u)
       const list = [...unique.values()].sort((a, b) => Number(b.username.toLowerCase().startsWith(q)) - Number(a.username.toLowerCase().startsWith(q)))
       opts = list.slice(0, 8)
@@ -7960,7 +7962,7 @@ function chatPane(g, { onHead } = {}) {
     if(where==='live')for(const m of items.filter(m=>m.system_kind==='redpack_due'&&!m.deleted).slice(0,3)){
       drawQueue=drawQueue.then(async()=>{
         if(drawLifetime.signal.aborted||doc.hidden)return
-        const {syncPacketDraw}=await import('/redpacket.js?v=c171f947')
+        const {syncPacketDraw}=await import('/redpacket.js?v=d85e0791')
         await syncPacketDraw({id:Number(m.system_ref),api,signal:drawLifetime.signal,onUpdate:update})
       }).catch(()=>{})
     }
@@ -8875,7 +8877,7 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=c171f947')
+    const { openRedpacket } = await import('/redpacket.js?v=d85e0791')
     if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, uploadCover: async (file,signal) => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
@@ -8944,8 +8946,9 @@ function chatMsg(m, { cont, pane, pending } = {}) {
     h('span',{class:'cm-welcome-star','aria-hidden':'true'},'✦'),
     h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'称号抽奖已撤回':m.body)),
     !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>titleRaffleDialog(e.currentTarget,null,m.system_ref)},'看结果'))
-  if(m.system_kind==='redpack_due'||m.system_kind==='redpack_draw')return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},icon('redpack'),
-    h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'红包提醒已撤回':m.system_kind==='redpack_draw'?m.body:'红包到点啦！'),!m.deleted&&m.system_kind==='redpack_due'&&h('span',null,'正在等待平台开奖结果；打开可同步名单')),
+  if(m.system_kind==='ldc_game')return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},h('span',{class:'cm-welcome-copy'},h('strong',null,m.body)),h('button',{class:'btn btn-ghost sm',type:'button',onclick:()=>pane?pane.jumpTo(Number(m.system_ref)):jumpMsg(Number(m.system_ref))},'对应发言'))
+  if(['redpack_due','redpack_draw','ldc_winner'].includes(m.system_kind))return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},icon('redpack'),
+    h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'红包提醒已撤回':m.system_kind!=='redpack_due'?m.body:'红包到点啦！'),!m.deleted&&m.system_kind==='redpack_due'&&h('span',null,'正在等待平台开奖结果；打开可同步名单')),
     !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>redpackDialog(e.currentTarget,{message:{id:Number(m.system_ref)},onUpdate:fresh=>pane?.update(fresh)})},'去看看'))
   if (m.system_kind === 'join') return h('div', { class: 'cm-welcome' + (m.deleted ? ' gone' : ''), role: 'note', 'aria-label': m.deleted ? '入群提醒已撤回' : `欢迎 ${who} 加入群聊` },
     m.deleted ? h('span', null, '入群提醒已撤回') : [
@@ -8987,8 +8990,8 @@ function chatMsg(m, { cont, pane, pending } = {}) {
       m.redpack.cover && h('img',{class:'cm-redpack-cover',src:m.redpack.cover,alt:'红包封面',loading:'lazy',onerror:e=>e.currentTarget.remove()}),
       h('span', { class: 'cm-redpack-seal', 'aria-hidden': 'true' }, icon('redpack')),
       h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || '给你一个红包'),
-        h('span', null, m.redpack.provider && m.redpack.provider!=='native' ? `${({hb:'HB',credit:'Credit',fish:'Fish'})[m.redpack.provider]} 红包` : `${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`)),
-      h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放',unconfirmed:'结果待核对'})[m.redpack.snapshot?.state] || (m.redpack.provider && m.redpack.provider!=='native' || m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, m.redpack.provider && m.redpack.provider!=='native'?'LDC 红包':`${m.redpack.opened} 人拆过`))))
+        h('span', null, m.redpack.game==='ldc'?`${({fixed:'普通红包',random:'拼手气',guess:'欢欢猜词',clues:'逐步线索'})[m.redpack.ldc_mode]||'本站红包'} · ${(m.redpack.ldc_total/100).toFixed(2)} LDC`:m.redpack.provider && m.redpack.provider!=='native' ? `${({hb:'HB',credit:'Credit',fish:'Fish'})[m.redpack.provider]} 红包` : `${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`),['guess','clues'].includes(m.redpack.ldc_mode)&&h('span',null,'群里发送“猜：答案”即可参与')),
+      h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放',unconfirmed:'结果待核对'})[m.redpack.snapshot?.state] || (m.redpack.provider && m.redpack.provider!=='native' || m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, m.redpack.game==='ldc'||m.redpack.provider && m.redpack.provider!=='native'?'LDC 红包':`${m.redpack.opened} 人拆过`))))
     if ((!m.redpack || m.redpack.shared) && m.body && !lnk?.only) body.push(h('div', stkOnly(m.body) ? { class:'cm-text stk-only' } : bubbleView(m.user, 'cm-text'),
       (raffleOf(m.user)||personalOf(m.user,'chat')) ? h('span', { class:'ds-copy rt-copy' }, richBody(m.body, { md:'lite' }), edited) : [richBody(m.body, { md: 'lite' }), edited]))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited))
