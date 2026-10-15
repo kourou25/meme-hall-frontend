@@ -901,6 +901,13 @@ textarea.input { resize: vertical; line-height: 1.55; }
 .eb-grid.big .eb-btn .stk.emo { width: 58px; height: 58px; }
 .eb-grid.big .eb-btn:hover { transform: scale(1.06); }
 .eb-btn .n { position: absolute; right: 2px; bottom: 1px; font-size: 10px; color: var(--text-3); font-weight: 700; }
+.eb-favorite { position: relative; min-width: 0; }
+.eb-favorite .eb-btn { width: 100%; }
+.eb-favorite .eb-btn img { width: 100%; height: 100%; max-height: 62px; object-fit: contain; }
+.eb-favorite-remove { position: absolute; right: 0; top: 0; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 3px #0002; }
+.eb-favorite-remove svg { width: 13px; height: 13px; }
+.eb-favorite-pages { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px; }
+.eb-favorite-pages button { padding: 8px; }
 .eb-foot { font-size: 12px; padding: 8px 12px; border-top: 1px solid var(--line); }
 
 /* ---------- 工具栏按钮 ---------- */
@@ -1932,6 +1939,9 @@ html[data-skin] .site-notice { display: none; }
   .mobile-nav a > span { display:flex; font-size:21px; line-height:1; }
   .mobile-nav a.on { color:var(--primary); font-weight:700; }
   .mobile-nav .nav-badge { position:absolute; top:4px; left:calc(50% + 8px); background:var(--like); color:#fff; font-size:10px; min-width:16px; height:16px; border-radius:8px; padding:0 4px; }
+  .mobile-nav .nav-badge { display:inline-flex; align-items:center; justify-content:center; font-style:normal; line-height:1; }
+  .mobile-nav .nav-badge[hidden] { display:none; }
+  .mobile-page-title .mobile-chat-badge { margin-left:6px; }
   .mobile-keyboard .mobile-nav { display:none; }
   html[data-mobile-nav="compact"] .mobile-nav { display:none; }
   html[data-mobile-nav="compact"] .page { padding-bottom:calc(16px + env(safe-area-inset-bottom)); }

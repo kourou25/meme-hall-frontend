@@ -161,16 +161,17 @@ const fmtN = (n) => (n >= 10000 ? (n / 10000).toFixed(1).replace(/\.0$/, '') + '
 
 // ---------- 平台表情 ----------
 // 形如 [bb:doge]，图片放在 /stickers/{pack}/{name}.{ext}
-const STICKER_EXT = { bb: 'png', bm: 'png', tieba: 'png', weibo: 'png', qq: 'gif', alu: 'png', ld: 'png' }
+const STICKER_EXT = { bb: 'png', bm: 'png', tieba: 'png', weibo: 'png', qq: 'gif', alu: 'png', ld: 'png', muscle: 'webp', nga: 'png' }
 const STICKER_RE = /\[([a-z]+):([a-z0-9_]+)\]/g
-// 自建包（scripts/build_custom_stickers.py）的后缀从 packs.json 读；png / gif 混放时加载失败换另一个后缀再试一次
+// 首次渲染不依赖打开表情面板；自建混合格式最多尝试三个受支持后缀。
 const sticker = (pack, name, cls = 'stk') => {
   const ext = STICKER_EXT[pack] || 'png'
   return h('img', {
     class: cls, src: `/stickers/${pack}/${name}.${ext}`, alt: `[${pack}:${name}]`, title: name, loading: 'lazy',
     onerror: (e) => {
-      const alt = `/stickers/${pack}/${name}.${ext === 'png' ? 'gif' : 'png'}`
-      if (!e.target.dataset.retry) { e.target.dataset.retry = 1; e.target.src = alt } else e.target.replaceWith(`[${pack}:${name}]`)
+      const alternatives=['png','gif','webp'].filter(x=>x!==ext),attempt=Number(e.target.dataset.retry||0)
+      if(attempt<alternatives.length){e.target.dataset.retry=attempt+1;e.target.src=`/stickers/${pack}/${name}.${alternatives[attempt]}`}
+      else e.target.replaceWith(`[${pack}:${name}]`)
     },
   })
 }
@@ -247,12 +248,12 @@ const recentEmos = () => { try { return JSON.parse(localStorage.getItem('emo-rec
 const pushRecent = (k) => localStorage.setItem('emo-recent', JSON.stringify([k, ...recentEmos().filter((x) => x !== k)].slice(0, 24)))
 
 let emojiWordsP
-const loadEmojiWords = () => emojiWordsP ||= fetch('/emoji-search.json?v=ca8246e7').then(r => {
+const loadEmojiWords = () => emojiWordsP ||= fetch('/emoji-search.json?v=fbfc7101').then(r => {
   if (!r.ok) throw Error('词库加载失败')
   return r.json()
 }).catch(e => { emojiWordsP = null; throw e })
 const emojiSearchKey = s => s.normalize('NFKC').replaceAll('\ufe0f', '').toLowerCase()
-function emojiBoard(onPick, { mine = new Set(), counts = {}, foot = null } = {}) {
+function emojiBoard(onPick, { mine = new Set(), counts = {}, foot = null, onMediaPick = null } = {}) {
   const uniTabs = h('div', { class: 'eb-row' })
   const pakTabs = h('div', { class: 'eb-row' })
   const tabs = h('div', { class: 'eb-tabs' }, uniTabs, pakTabs)
@@ -288,7 +289,7 @@ function emojiBoard(onPick, { mine = new Set(), counts = {}, foot = null } = {})
       item.search += ' ' + emojiSearchKey(k + ' ' + item.label + ' ' + p.label)
       all.set(k, item)
     }
-    let limit = 80
+    let limit = 80, favorites=null, favoritesLoading=false, favoritesError='',favoritePage=0
     const show = () => {
       const tokens = emojiSearchKey(search.value.trim()).split(/\s+/).filter(Boolean)
       clear.hidden = !search.value
@@ -303,6 +304,32 @@ function emojiBoard(onPick, { mine = new Set(), counts = {}, foot = null } = {})
       grid.className = 'eb-grid' + (tokens.length ? ' searching' : pg.big ? ' big' : '')
       grid.replaceChildren(...keys.map((k) => h('button', { type: 'button', class: 'eb-btn' + (mine.has(k) ? ' on' : ''), title: all.get(k)?.label || emoLabel(k), 'aria-label': emoLabel(k), 'data-emoji': k,
         onclick: () => { pushRecent(k); onPick(k) } }, emo(k), counts[k] ? h('span', { class: 'n' }, counts[k]) : null)))
+      if(!tokens.length&&pg.key==='p:💗'&&onMediaPick&&S.me){
+        grid.append(h('p',{class:'eb-empty'},'右键或长按群聊图片可添加表情，最多 100 张。来源撤回后不再显示。'))
+        if(favorites===null&&!favoritesLoading&&!favoritesError){
+          favoritesLoading=true
+          api('/chat/stickers').then(d=>{favorites=d.items}).catch(e=>{favoritesError=e.message}).finally(()=>{favoritesLoading=false;if(board.isConnected)show()})
+        }
+        if(favoritesLoading)grid.append(h('p',{class:'eb-empty',role:'status'},'正在加载收藏…'))
+        if(favoritesError)grid.append(h('button',{class:'eb-more',type:'button',onclick:()=>{favoritesError='';show()}},favoritesError+'，点击重试'))
+        favoritePage=Math.min(favoritePage,Math.max(0,Math.ceil((favorites?.length||0)/12)-1))
+        for(const item of (favorites||[]).slice(favoritePage*12,(favoritePage+1)*12)){
+          const use=h('button',{class:'eb-btn',type:'button',disabled:!!item.unavailable,'aria-label':item.unavailable?'来源不可用，可移除':item.animated?'使用收藏动图':'使用收藏图片',onclick:async()=>{
+            if(use.disabled)return;use.disabled=true
+            try{await onMediaPick(item)}catch(e){toast(e.message,'err')}finally{use.disabled=false}
+          }},item.unavailable?'来源不可用':h('img',{src:item.url,alt:item.animated?'收藏动图':'收藏图片',loading:'lazy',decoding:'async'}))
+          const remove=h('button',{class:'eb-favorite-remove',type:'button','aria-label':'移除收藏表情',onclick:async()=>{
+            remove.disabled=true
+            try{await api(`/chat/stickers/${item.message_id}/${item.index}`,{method:'DELETE'});favorites=favorites.filter(x=>x!==item);if(board.isConnected)show()}
+            catch(e){toast(e.message,'err');remove.disabled=false}
+          }},icon('close'))
+          grid.append(h('div',{class:'eb-favorite'},use,remove))
+        }
+        if(favorites?.length>12)grid.append(h('div',{class:'eb-favorite-pages'},
+          h('button',{type:'button',disabled:favoritePage===0,onclick:()=>{favoritePage--;show()}},'上一页'),
+          h('span',null,`${favoritePage+1} / ${Math.ceil(favorites.length/12)}`),
+          h('button',{type:'button',disabled:(favoritePage+1)*12>=favorites.length,onclick:()=>{favoritePage++;show()}},'下一页')))
+      }
       if (!matches.length) grid.append(h('p', { class: 'eb-empty', role: 'status' }, '没找到，换个词试试'))
       if (tokens.length && keys.length < matches.length) grid.append(h('button', { class: 'eb-more', type: 'button', onclick: () => { const top = grid.scrollTop; limit += 80; show(); grid.scrollTop = top } }, `更多表情（${matches.length - keys.length}）`))
       grid.scrollTop = 0
@@ -319,7 +346,7 @@ function packTabs(packs) {
   const tabs = new Map()
   for (const p of packs) {
     if (p.hidden) continue
-    const label = PACK_MERGE[p.tab || p.key] || p.label.replace(/^L站·/, '')
+    const label = p.key==='muscle'?'💗':PACK_MERGE[p.tab || p.key] || p.label.replace(/^L站·/, '')
     if (!tabs.has(label)) tabs.set(label, { key: 'p:' + label, label, big: true, list: [] })
     tabs.get(label).list.push(p)
   }
@@ -2361,7 +2388,7 @@ function mobilePages(anchor) {
     ['chat', '群聊', 'chat', '/chat'], ['road', '鞭打', 'pen', '/road'], ['me', '我的', 'contacts', '/me']]
   openPop(anchor, h('nav', { class: 'mobile-more mobile-pages', 'aria-label': '切换页面' }, pages.map(([key, label, ic, path]) =>
     h('button', { class: 'mobile-more-item' + (cur === key ? ' on' : ''), type: 'button',
-      'aria-current': cur === key ? 'page' : null, onclick: () => { closePop(); navigate(path) } }, icon(ic), label))),
+      'aria-current': cur === key ? 'page' : null, onclick: () => { closePop(); navigate(path) } }, icon(ic), label, key === 'chat' && chatBadge()))),
   { key: 'mobilepages', align: 'left', cls: 'sheet' })
 }
 function mobileSearch(anchor) {
@@ -2581,6 +2608,7 @@ function markNav() {
   if(title) {
     title.textContent=p.startsWith('/dm')?'私信':({wall:'图廊',series:'图集',chat:'群聊',road:'鞭打',me:'我的'})[cur] || '尽欢'
     title.setAttribute('aria-label', '切换页面，当前' + title.textContent)
+    title.append(chatBadge('chat-badge mobile-chat-badge'))
   }
 }
 
@@ -6664,6 +6692,22 @@ const onChat = (fn) => { CHAT.subs.add(fn); return () => CHAT.subs.delete(fn) }
 const chatUnread = () => CHAT.groups.reduce((a, g) => a + (g.muted ? (g.at_me || 0) : (g.unread || 0)), 0)
 const findGroup = (id) => CHAT.groups.find((g) => g.id === id)
 const findGone = (id) => (CHAT.gone || []).find((g) => g.id === id)
+// 只保存消息编号与视口偏移，不缓存聊天正文；同一浏览器按账号、群隔离。
+const CHAT_POS = {
+  all() { try { const a = JSON.parse(localStorage.getItem('chatReading:v1')); return a && typeof a === 'object' && !Array.isArray(a) ? a : {} } catch { return {} } },
+  get(key) {
+    const p = this.all()[key]
+    return p && Number.isSafeInteger(p.id) && p.id > 0 && Number.isFinite(p.offset) && Math.abs(p.offset) < 100000
+      && Number.isFinite(p.at) && Date.now() - p.at < 30 * 86400000 ? p : null
+  },
+  set(key, p) {
+    try {
+      const a = this.all(); delete a[key]; a[key] = p
+      const keys = Object.keys(a); keys.slice(0, Math.max(0, keys.length - 50)).forEach(k => delete a[k])
+      localStorage.setItem('chatReading:v1', JSON.stringify(a))
+    } catch {} // 存储满或被浏览器禁用时仍可使用服务端已读边界。
+  },
+}
 // 被移出 / 自己退了的群：不给看历史，只有一张卡片 + 申请回来。被移出的不说被移出，只说群聊临时关闭
 function goneView(x, { onBack } = {}) {
   const box = h('div', { class: 'chat-gone' })
@@ -6725,6 +6769,9 @@ function syncChatBadges() {
   const n = chatUnread()
   syncTab()
   document.querySelectorAll('[data-chat-badge]').forEach((el) => { el.textContent = n > 99 ? '99+' : n; el.hidden = !n })
+  document.querySelectorAll('.mobile-nav [data-nav="chat"]').forEach(el => el.setAttribute('aria-label', n ? `群聊，${n > 99 ? '99+' : n} 条未读` : '群聊'))
+  const title = document.getElementById('mobile-page-title')
+  if (title) title.setAttribute('aria-label', `切换页面，当前${title.firstChild?.textContent || ''}${n ? `，群聊 ${n > 99 ? '99+' : n} 条未读` : ''}`)
 }
 onChat(syncChatBadges)
 const chatBadge = (cls = 'chat-badge') => { const n = chatUnread(); return h('i', { class: cls, 'data-chat-badge': '', hidden: !n }, n > 99 ? '99+' : n) }
@@ -7579,6 +7626,8 @@ function mentionPicker(ta, g, recent = () => []) {
 // 一个群的消息区 + 输入框：站内群聊页、飞书伪装、LINUX DO 聊天抽屉共用，外观由各自的 CSS 决定
 function chatPane(g, { onHead } = {}) {
   const st = { first: 0, last: 0, more: true, busy: false, olderFailed: false, since: 0, items: [], unreadAt: null, sentRead: 0, stick: true, done: false }
+  const positionKey = `${S.me?.id || 0}:${g.id}`
+  let positionTimer = 0
   let aiPanel, aiLoading
   async function openAi(anchor, mode = 'summary', range = '200') {
     try {
@@ -7616,6 +7665,19 @@ function chatPane(g, { onHead } = {}) {
   } })
   const nearBottom = () => scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80
   const exactBottom = () => scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 3
+  function savePosition() {
+    clearTimeout(positionTimer)
+    if (!st.done || st.restoring || st.destroyed || !scroller.isConnected || !scroller.clientHeight || !st.items.length) return
+    // 二分查找视口第一行，避免每次滚动逐条测量整个历史窗口。
+    const children = list.children, top = scroller.scrollTop
+    let lo = 0, hi = children.length - 1
+    while (lo < hi) { const mid = (lo + hi) >> 1, r = children[mid]; if (r.offsetTop + r.offsetHeight <= top) lo = mid + 1; else hi = mid }
+    const r = children[lo], id = Number(r?.dataset.row)
+    if (!Number.isSafeInteger(id) || id <= 0) return
+    CHAT_POS.set(positionKey, { id, offset: r.offsetTop - top, height: r.offsetHeight, width: scroller.clientWidth,
+      tail: st.items.at(-1).id, bottom: !st.after && exactBottom(), at: Date.now() })
+  }
+  const queuePosition = () => { clearTimeout(positionTimer); positionTimer = setTimeout(savePosition, 400) }
   const pauseFollow = () => {
     if (!st.done || st.followPaused) return
     st.followPaused = true
@@ -7645,12 +7707,12 @@ function chatPane(g, { onHead } = {}) {
   // 「N 条新消息」：记住是哪几条，往下滑看到一条就减一条，全看到了就收起
   st.newIds = []
   const recount = () => {
-    if (!st.newIds.length) { pill.hidden = true; st.newN = 0; return }
+    if (!st.newIds.length) { pill.hidden = true; st.newN = 0; drawDown(); return }
     const edge = scroller.scrollTop + scroller.clientHeight
     const live = new Set(st.items.filter((m) => !m.deleted).map((m) => m.id))
     st.newIds = [...new Set(st.newIds)].filter((id) => { const r = rows.get(id); return live.has(id) && r?.isConnected && r.offsetTop + Math.min(r.offsetHeight, 40) > edge })
     st.newN = st.newIds.length
-    pill.hidden = !st.newN
+    pill.hidden = !st.newN || !!st.after
     if (st.newN) pill.textContent = `${st.newN} 条待阅读 ↓`
     drawDown()
   }
@@ -7679,6 +7741,7 @@ function chatPane(g, { onHead } = {}) {
     st.stick = true
     drawDown()
     markRead()
+    queuePosition()
   }
   // 标签页切走期间、以及切回来那一下拉到的消息：不自动滚到底，免得漏看
   const doc = scroller.ownerDocument
@@ -7691,7 +7754,7 @@ function chatPane(g, { onHead } = {}) {
     if (st.backAt - st.hiddenAt > 60000) setTimeout(showAway, 1500) // 等切回来那次轮询拉完
   }
   const onVis = () => {
-    if (doc.hidden) { if (!st.blur) { st.hiddenAt = Date.now(); st.awayEnd = 0; dropAway(); st.awayDismissed = false } return }
+    if (doc.hidden) { savePosition(); if (!st.blur) { st.hiddenAt = Date.now(); st.awayEnd = 0; dropAway(); st.awayDismissed = false } return }
     if (st.blur && doc.hasFocus()) st.blur = false // 有的浏览器切回标签页不发 focus
     if (!st.blur) back()
   }
@@ -7701,6 +7764,7 @@ function chatPane(g, { onHead } = {}) {
   const onFocus = () => { if (!st.blur) return; st.blur = false; if (!doc.hidden) back() }
   win?.addEventListener('blur', onBlur)
   win?.addEventListener('focus', onFocus)
+  doc.defaultView?.addEventListener('pagehide', savePosition)
   // 「你离开的 x 分钟里有 N 条新消息」：速览 / 从第一条看 / 导出
   st.awayIds = []
   let awayEl = null
@@ -7947,25 +8011,55 @@ function chatPane(g, { onHead } = {}) {
     st.busy = true
     let loaded = false
     try {
-      const d = await api(`/chat/groups/${g.id}/messages` + (st.first ? `?before=${st.first}` : ''))
+      const initial = !st.first && !st.done
+      const saved = initial && !st.forceLatest ? CHAT_POS.get(positionKey) : null
+      const currentGroup = initial ? findGroup(g.id) || g : g
+      const resume = saved && (!saved.bottom || (currentGroup.latest?.id || 0) > saved.tail) ? saved : null
+      const around = initial && !st.forceLatest ? (resume?.id || (currentGroup.unread > 0 ? Math.max(1, currentGroup.last_read || 0) : 0)) : 0
+      const d = await api(`/chat/groups/${g.id}/messages` + (st.first ? `?before=${st.first}` : around ? `?around=${around}` : ''))
       if (st.destroyed) return
       if (!scroller.isConnected && st.first) return
-      const initial = !st.first && !st.done
       if (initial) {
+        st.restoring = true
+        st.stick = false
+        st.followPaused = true
         st.since = d.now
         const lr = d.last_read || 0
+        st.sentRead = lr
         st.unreadAt = d.items.find((m) => m.id > lr && !m.mine)?.id ?? -1
-        if (st.unreadAt === d.items[0]?.id && d.more) st.unreadAt = -1 // 未读比一页还多，就不画分隔线了
+        st.newIds = d.items.filter(m => m.id > lr && !m.mine && !m.deleted).map(m => m.id)
+        st.after = d.more_after ? d.items.at(-1)?.id || 0 : 0
+        if (st.after) st.last = Math.max(st.last, currentGroup.latest?.id || 0)
       }
       st.more = d.more
       add(d.items, initial ? 'bottom' : 'top')
       topSpin.replaceChildren(st.more ? h('div', { class: 'spinner' }) : h('div', { class: 'cm-begin' }, d.items.length || st.items.length ? `这是「${g.name}」最早的消息` : `「${g.name}」还没有消息，来说第一句`))
       if (!initial) trimHistory('older')
       if (initial) {
+        // 导航插入 pane、手机紧凑头部和同步占位尺寸完成后再恢复，期间不标已读。
+        await new Promise(resolve => requestAnimationFrame(resolve))
+        if (st.destroyed || !scroller.isConnected) return
         const mark = list.querySelector('.cm-unread')
-        if (mark) scroller.scrollTop = mark.offsetTop - 40
-        else toBottom(false)
+        const target = resume && (rows.get(resume.id) || rows.get(d.items.find(m => m.id >= resume.id)?.id) || rows.get(d.items.at(-1)?.id))
+        const place = () => { if (target) {
+          const offset = Math.abs((resume.width || 0) - scroller.clientWidth) > 20 && resume.height > 0
+            ? Math.min(0, resume.offset / resume.height) * target.offsetHeight : resume.offset
+          scroller.scrollTop = target.offsetTop - offset
+        } else if (!st.forceLatest && mark) scroller.scrollTop = Math.max(0, mark.offsetTop - 40)
+        else if (!st.after) toBottom(false) }
+        place()
+        // 离屏占位首轮测量可能修正上方行高；在恢复阶段完成一次校准，之后不抢用户滚动。
+        await new Promise(resolve => requestAnimationFrame(resolve))
+        if (st.destroyed || !scroller.isConnected) return
+        place()
         st.done = true
+        st.restoring = false
+        st.forceLatest = false
+        st.lastHeadScroll = scroller.scrollTop
+        recount()
+        drawLatest()
+        if (st.stick && !st.followPaused) markRead()
+        queuePosition()
         refreshReads()
         onHead?.(d.group, d.total)
         // 从提醒 / 搜索点进来的：首屏加载完再跳到那条
@@ -8000,6 +8094,15 @@ function chatPane(g, { onHead } = {}) {
       if (st.after) { more = false; return } // 在跳转窗口里，最新的消息等回到底部再拉
       if (d.items.length) {
         const others = d.items.filter((m) => !m.mine && !m.deleted && !rows.has(m.id))
+        const gg = findGroup(g.id)
+        if (gg) {
+          const fresh = others.filter(m => m.id > Math.max(gg.last_read || 0, gg.latest?.id || 0))
+          gg.unread = Math.min(100, (gg.unread || 0) + fresh.length)
+          gg.at_me = Math.min(20, (gg.at_me || 0) + fresh.filter(m => meRe()?.test(stripQuotes(m.body || ''))).length)
+          const last = d.items.at(-1)
+          if (last.id > (gg.latest?.id || 0)) gg.latest = { id: last.id, at: last.created_at, by: last.user.name || last.user.username, text: previewText(last.body || '') }
+          CHAT.subs.forEach(fn => fn())
+        }
         const duringAway = others.filter((m) => !st.awayDismissed && st.hiddenAt && m.created_at >= Math.floor(st.hiddenAt / 1000) && (!st.awayEnd || m.created_at <= st.awayEnd))
         const gone = others.length > 0 && (away() || duringAway.length > 0)
         // 来新消息要不要跟着滚：在底部时跟（默认）/ 总是滚到最新 / 不自动滚（只出按钮）
@@ -8173,24 +8276,34 @@ function chatPane(g, { onHead } = {}) {
     st.busy = true
     try {
       const d = await api(`/chat/groups/${g.id}/messages?around=${st.after}`)
+      if (st.destroyed || !scroller.isConnected) return
       const items = d.items.filter((m) => m.id > st.after)
       add(items, 'bottom')
+      st.newIds.push(...items.filter(m => m.id > st.sentRead && !m.mine && !m.deleted).map(m => m.id))
       st.after = d.more_after ? items[items.length - 1]?.id || 0 : 0
       trimHistory('newer')
       drawLatest()
+      recount()
     } catch {} finally { st.busy = false }
   }
   async function backToLatest() {
+    if (st.busy || st.destroyed) return
     st.after = 0
     st.more = true
     resetList()
     drawLatest()
     st.busy = false
     st.done = false
+    st.forceLatest = true
     await older()
   }
   const latestBtn = h('button', { class: 'cm-pill cm-latest', type: 'button', hidden: true, onclick: () => backToLatest() }, '回到最新消息 ↓')
-  const drawLatest = () => { latestBtn.hidden = !st.after }
+  const drawLatest = () => {
+    latestBtn.hidden = !st.after
+    const unread = (findGroup(g.id) || g).unread || 0
+    latestBtn.textContent = (unread ? `${unread > 99 ? '99+' : unread} 条未读 · ` : '') + '回到最新消息 ↓'
+  }
+  const offUnread = onChat(drawLatest)
   // 看大图：整个群已加载的图串成一组，左右键能一直翻（历史层传它那一段）
   function gallery(m, i) { return galleryOf(st.items, m, i) }
   function galleryOf(items, m, i) {
@@ -8243,8 +8356,9 @@ function chatPane(g, { onHead } = {}) {
     if (nk && b.textContent.startsWith('@')) b.textContent = `${nk}(${b.textContent})`
   })).catch(() => {})
   async function markRead() {
-    if (!S.me || scroller.ownerDocument.hidden || !scroller.offsetParent || histEl || st.after || !nearBottom() || st.reading || st.last <= st.sentRead) return
-    const upto = st.last
+    if (!S.me || !st.done || st.restoring || st.destroyed || st.followPaused || st.blur || scroller.ownerDocument.hidden || !scroller.offsetParent || histEl || st.after || !exactBottom() || st.reading) return
+    const upto = st.items.at(-1)?.id || 0
+    if (upto <= st.sentRead) return
     st.reading = true
     try {
       await api(`/chat/groups/${g.id}/read`, { method: 'POST', body: { id: upto } })
@@ -8261,6 +8375,7 @@ function chatPane(g, { onHead } = {}) {
     } catch {} finally { st.reading = false }
   }
   scroller.addEventListener('scroll', () => {
+    if (!st.done || st.restoring || st.destroyed) return
     const delta=scroller.scrollTop-(st.lastHeadScroll ?? scroller.scrollTop)
     const header=scroller.closest('.chat-body')?.querySelector('.chat-head')
     if(header && innerWidth<=640) {
@@ -8276,9 +8391,10 @@ function chatPane(g, { onHead } = {}) {
     if (st.after && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 300) newer()
     if (scroller.scrollTop < 300) older()
     drawDown()
+    queuePosition()
   }, { passive: true })
   // 图片晚加载会把内容往下顶：原本贴着底部就继续贴着
-  scroller.addEventListener('load', () => { if (st.stick && !st.followPaused) scroller.scrollTop = scroller.scrollHeight }, true)
+  scroller.addEventListener('load', () => { if (st.done && !st.restoring && st.stick && !st.followPaused) scroller.scrollTop = scroller.scrollHeight }, true)
   // 输入框
   const reply = h('div', { class: 'cm-reply', hidden: true })
   const setReply = (m) => {
@@ -8453,7 +8569,16 @@ function chatPane(g, { onHead } = {}) {
           // 表情包和普通表情一样先放进输入框，自己点发送
           closePop()
           insertAtCursor(ta, k.includes(':') ? `[${k}]` : k)
-        }), { key, cls: 'pop-stk', up: true }), { 'data-pop': key }),
+        },{onMediaPick:async item=>{
+          const current=(await api(`/chat/stickers/${item.message_id}/${item.index}`)).item
+          if(st.destroyed||!scroller.isConnected)throw Error('聊天窗口已关闭')
+          const response=await fetch(current.url,{signal:AbortSignal.timeout(20000)})
+          if(!response.ok)throw Error('收藏图片已失效或暂时无法读取')
+          const blob=await response.blob()
+          if(!/^image\/(png|jpeg|gif|webp)$/.test(blob.type)||!blob.size||blob.size>20*1024*1024)throw Error('收藏图片格式或大小不可用')
+          if(st.destroyed||!scroller.isConnected)throw Error('聊天窗口已关闭')
+          closePop();att.add([new File([blob],`表情-${item.message_id}-${item.index}.${blob.type.split('/')[1]}`,{type:blob.type})]);ta.focus({preventScroll:true})
+        }}), { key, cls: 'pop-stk', up: true }), { 'data-pop': key }),
         tb('image', '发图片 / 视频', () => att.pick()),
         tb('redpack', '发红包', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { group: g, onSent: (message) => {
           const follow = st.stick && !st.followPaused && nearBottom() && !histEl
@@ -8543,7 +8668,7 @@ function chatPane(g, { onHead } = {}) {
     input.focus()
     if (q0) { input.value = q0; run() }
   }
-  function destroy() { st.destroyed = true; aiPanel?.destroy(); st.done = false; CHAT.panes.delete(api_); clearTimeout(st.catchupT); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); doc.defaultView?.removeEventListener('title-raffle-update', refreshTitleRaffles); offNotice() }
+  function destroy() { savePosition(); st.destroyed = true; aiPanel?.destroy(); st.done = false; CHAT.panes.delete(api_); clearTimeout(positionTimer); clearTimeout(awayT); clearTimeout(st.catchupT); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); doc.defaultView?.removeEventListener('pagehide', savePosition); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); doc.defaultView?.removeEventListener('title-raffle-update', refreshTitleRaffles); offNotice(); offUnread() }
 
   // 群公告：顶上一条，点 × 收起（记住这一版），右上角留个小「公告」随时再打开；公告改了会重新弹出来
   const noticeEl = h('div', { class: 'cm-notice-wrap' })
@@ -8723,7 +8848,7 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=ba24ef17')
+    const { openRedpacket } = await import('/redpacket.js?v=e2390249')
     if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, uploadCover: async (file,signal) => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
@@ -9087,6 +9212,10 @@ function chatMenu(m, pane, e) {
   const mine = new Set(m.reactions.filter((r) => r.mine).map((r) => r.emoji))
   const pic = m.media?.[0]?.u || m.image
   const media = (m.media || []).filter(it => it.k !== 'f')
+  const clickedImage=e.target.closest?.('[data-mi]')
+  const stickerIndex=clickedImage?Number(clickedImage.dataset.mi):-1
+  const stickerMedia=media.length?media:m.image?[{u:m.image}]:[]
+  const favoriteCandidate=stickerMedia[stickerIndex]
   const clickedVideo = e.target.closest?.('[data-video][data-mi]')
   const clickedIndex = clickedVideo ? Number(clickedVideo.dataset.mi) : -1
   const normalVideo = it => it?.k === 'v' && !!it.v && !it.b && !it.o
@@ -9110,6 +9239,10 @@ function chatMenu(m, pane, e) {
       if (t) setTimeout(() => doc.getSelection().selectAllChildren(t), 50)
     }),
     pic && item('复制图片链接', 'image', () => copyText(location.origin + pic)),
+    S.me&&!m.deleted&&!m.redpack&&favoriteCandidate?.u&&!favoriteCandidate.b&&!favoriteCandidate.v&&item('添加表情','heart',async()=>{
+      try{await api(`/chat/messages/${m.id}/sticker`,{method:'POST',body:{index:stickerIndex}});toast('已添加到表情包 💗','ok')}
+      catch(error){toast(error.message,'err')}
+    }),
     m.reactions.length > 0 && item('谁回应了', 'users', () => whoReacted(anchor, `/chat/messages/${m.id}/reactions`, 'rxw' + m.id)),
     (m.image || m.media?.length) && (m.meme_id
       ? item('看转成的帖子', 'ext', () => navigate('/m/' + m.meme_id))

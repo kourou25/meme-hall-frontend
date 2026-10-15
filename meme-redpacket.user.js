@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         尽欢红包连接器
 // @namespace    https://52dmeme.com/
-// @version      1.2.0
+// @version      1.2.1
 // @downloadURL  https://52dmeme.com/meme-redpacket.user.js
 // @updateURL    https://52dmeme.com/meme-redpacket.user.js
 // @description  用本人登录态查询领取 HB/Credit/fish；Credit 发包仅在其来源页本人确认，不托管积分或登录凭据。
@@ -276,11 +276,14 @@ async function fishPacket(action,ext,request) {
   return refreshed.snapshot
 }
 window.addEventListener('message', async event => {
-  if(event.source!==window || event.origin!==location.origin || location.origin!=='https://52dmeme.com')return
+  // Tampermonkey 的 window 是沙箱代理；MessageEvent.source 指向文档所属的真实窗口。
+  // 仍严格校验同一窗口和本站来源，不能仅删除 source 检查。
+  const pageWindow=window.document?.defaultView || window
+  if(event.source!==pageWindow || event.origin!==location.origin || location.origin!=='https://52dmeme.com')return
   const data=event.data
   if(data?.type!=='meme-redpacket-request' || !/^[a-f0-9-]{36}$/i.test(data.id))return
-  const reply=(result,error)=>window.postMessage({type:'meme-redpacket-result',id:data.id,result,error},location.origin)
-  if(data.action==='ping'){reply({version:'1.2.0',creditCreate:true,participationV2:true});return}
+  const reply=(result,error)=>pageWindow.postMessage({type:'meme-redpacket-result',id:data.id,result,error},location.origin)
+  if(data.action==='ping'){reply({version:'1.2.1',creditCreate:true,participationV2:true});return}
   if(['prepareCreate','awaitCreate'].includes(data.action)){
     try{
       if(typeof GM_getValue!=='function'||typeof GM_setValue!=='function')throw Error('请更新红包连接器并允许脚本存储')
