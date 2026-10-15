@@ -104,6 +104,7 @@ const icon = (name, cls = 'i') => h('span', { class: cls, html: ICON[name], 'ari
 
 async function api(path, opts = {}) {
   const init = { method: opts.method || 'GET', headers: {}, credentials: 'same-origin' }
+  if(opts.signal)init.signal=opts.signal
   if (opts.body instanceof FormData) init.body = opts.body
   else if (opts.body !== undefined) {
     init.headers['content-type'] = 'application/json'
@@ -6974,12 +6975,12 @@ function probeMedia(f, url) {
     v.src = url
   })
 }
-async function uploadFile(file, forWhat, as) {
+async function uploadFile(file, forWhat, as, signal) {
   const fd = new FormData()
   fd.append('file', file)
   fd.append('for', forWhat)
   if (as) fd.append('as', as)
-  return api('/uploads', { method: 'POST', body: fd })
+  return api('/uploads', { method: 'POST', body: fd, signal })
 }
 
 // 待发的媒体托盘：选完马上在后台上传，点发送时多半已经传好
@@ -8722,14 +8723,14 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=658ca5fb')
-    if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, uploadCover: async file => {
+    const { openRedpacket } = await import('/redpacket.js?v=ba24ef17')
+    if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, uploadCover: async (file,signal) => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
       const compact=await shrinkImage(file,{edge:1280,threshold:1024*1024,keepTall:false})
       if(compact.size>MAX_FILE)throw Error('封面超过20MB')
       const url=URL.createObjectURL(compact)
-      try {const size=await probeMedia(compact,url);if(!size.w || !size.h)throw Error('无法读取这张图片');return await uploadFile(compact,'chat')}
+      try {const size=await probeMedia(compact,url);if(!size.w || !size.h)throw Error('无法读取这张图片');if(signal?.aborted)throw Error('上传已取消');return await uploadFile(compact,'chat',undefined,signal)}
       finally {URL.revokeObjectURL(url)}
     }, uploadClue: file => uploadFile(file, 'chat') })
   } catch (e) { toast(e.message, 'err') }
@@ -8834,8 +8835,8 @@ function chatMsg(m, { cont, pane, pending } = {}) {
       m.redpack.cover && h('img',{class:'cm-redpack-cover',src:m.redpack.cover,alt:'红包封面',loading:'lazy',onerror:e=>e.currentTarget.remove()}),
       h('span', { class: 'cm-redpack-seal', 'aria-hidden': 'true' }, icon('redpack')),
       h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || '给你一个红包'),
-        h('span', null, `${({hb:'HB · ',credit:'Credit · ',fish:'fish · '})[m.redpack.provider] || ''}${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`)),
-      h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放'})[m.redpack.snapshot?.state] || (m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, `${m.redpack.opened} 人拆过${m.redpack.provider && m.redpack.provider!=='native'?'包装':''}`))))
+        h('span', null, m.redpack.provider && m.redpack.provider!=='native' ? `${({hb:'HB',credit:'Credit',fish:'Fish'})[m.redpack.provider]} 红包` : `${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`)),
+      h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放',unconfirmed:'结果待核对'})[m.redpack.snapshot?.state] || (m.redpack.provider && m.redpack.provider!=='native' || m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, m.redpack.provider && m.redpack.provider!=='native'?'LDC 红包':`${m.redpack.opened} 人拆过`))))
     if ((!m.redpack || m.redpack.shared) && m.body && !lnk?.only) body.push(h('div', stkOnly(m.body) ? { class:'cm-text stk-only' } : bubbleView(m.user, 'cm-text'),
       (raffleOf(m.user)||personalOf(m.user,'chat')) ? h('span', { class:'ds-copy rt-copy' }, richBody(m.body, { md:'lite' }), edited) : [richBody(m.body, { md: 'lite' }), edited]))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited))

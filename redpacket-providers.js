@@ -1,19 +1,37 @@
 // 外站响应白名单。只用于展示个人查询结果，不作为本站积分账本。
 const packetMoney = value => /^(?:0|[1-9]\d{0,12})(?:\.\d{1,8})?$/.test(String(value)) ? String(value) : null
 const packetCount = value => Number.isSafeInteger(value) && value >= 0 ? value : null
-export function packetSnapshot(provider, raw) {
+export function packetSnapshot(provider, raw, viewer) {
   if(provider==='fish')return fishSnapshot(raw)
   const d = provider === 'credit' ? raw?.data : raw
   const p = provider === 'credit' ? d?.red_envelope : d
   const states = { active: 'active', finished: 'exhausted', exhausted: 'exhausted', expired: 'expired', cancelled: 'cancelled', drawn: 'drawn' }
-  if (!p || !['hb','credit'].includes(provider) || !states[p.status] || !p.id || (typeof p.id === 'number' && !Number.isSafeInteger(p.id))) throw Error('外站返回无法识别，请到原站核对')
+  if (!p || !['hb','credit'].includes(provider) || !states[p.status] || !p.id || (typeof p.id === 'number' && !Number.isSafeInteger(p.id))) throw Error('红包平台返回无法识别，请打开平台核对')
   const mine = provider === 'credit' ? d.user_claimed : p.mine
-  return { id: String(p.id).slice(0,100), state: states[p.status], kind: String(p.type || 'unknown').slice(0,30),
+  const result = { id: String(p.id).slice(0,100), state: states[p.status], kind: String(p.type || 'unknown').slice(0,30),
     total: packetCount(provider === 'credit' ? p.total_count : p.count), remaining: packetCount(p.remaining_count),
     creator: String(provider === 'credit' ? p.creator_username || '' : p.creator?.username || '').slice(0,100),
     wish: String(provider === 'credit' ? p.greeting || '' : p.wish || '').slice(0,120),
     expires_at: provider === 'credit' && Number.isFinite(Date.parse(p.expires_at)) ? Math.floor(Date.parse(p.expires_at)/1000) : null,
-    claimed: mine != null && mine !== false, amount: mine && typeof mine==='object' ? packetMoney(mine.amount) : null }
+    claimed: mine != null && mine !== false, amount: mine != null && mine !== false ? packetMoney(typeof mine==='object' ? mine.amount : mine) : null }
+  if(provider==='hb'){
+    // viewer 仅来自 HB 当前会话。不得用本站合并后的用户 ID 推断领奖身份。
+    const known=viewer!==undefined,uid=viewer?.linuxdo_id
+    result.blocked=known&&!viewer?'login':uid!=null&&String(uid)===String(p.creator?.linuxdo_id)?'own':
+      known&&viewer&&p.target_username&&String(viewer.username).toLowerCase()!==String(p.target_username).toLowerCase()?'exclusive':null
+    if(p.type==='lottery'){
+      const winner=uid!=null&&Array.isArray(p.winners)?p.winners.find(w=>String(w.linuxdo_id)===String(uid)):null
+      const ended=!!p.drawn_at||p.status==='drawn',clock=Number.isFinite(p.server_now)?p.server_now:Date.now()
+      result.expires_at=Number.isFinite(p.draw_at)?Math.floor(p.draw_at/1000):null
+      result.claimed=!!winner&&winner.payout_status==='paid'
+      result.amount=result.claimed?packetMoney(winner.amount):null
+      if(winner)result.state=result.claimed?'drawn':'payment_pending'
+      else if(ended)result.state=p.joined?'not_won':'drawn'
+      else if(p.status==='active'&&Number.isFinite(p.draw_at)&&p.draw_at<=clock)result.state='drawing'
+      else if(p.status==='active'&&p.joined)result.state='registered'
+    }
+  }
+  return result
 }
 function fishSnapshot(raw) {
   const p=raw?.activity,registration=raw?.registration,claim=raw?.claim || registration?.claim,q=p?.quantity

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         尽欢红包连接器
 // @namespace    https://52dmeme.com/
-// @version      1.1.1
+// @version      1.2.0
 // @downloadURL  https://52dmeme.com/meme-redpacket.user.js
 // @updateURL    https://52dmeme.com/meme-redpacket.user.js
 // @description  用本人登录态查询领取 HB/Credit/fish；Credit 发包仅在其来源页本人确认，不托管积分或登录凭据。
@@ -22,19 +22,37 @@
 // 外站响应白名单。只用于展示个人查询结果，不作为本站积分账本。
 const packetMoney = value => /^(?:0|[1-9]\d{0,12})(?:\.\d{1,8})?$/.test(String(value)) ? String(value) : null
 const packetCount = value => Number.isSafeInteger(value) && value >= 0 ? value : null
-function packetSnapshot(provider, raw) {
+function packetSnapshot(provider, raw, viewer) {
   if(provider==='fish')return fishSnapshot(raw)
   const d = provider === 'credit' ? raw?.data : raw
   const p = provider === 'credit' ? d?.red_envelope : d
   const states = { active: 'active', finished: 'exhausted', exhausted: 'exhausted', expired: 'expired', cancelled: 'cancelled', drawn: 'drawn' }
-  if (!p || !['hb','credit'].includes(provider) || !states[p.status] || !p.id || (typeof p.id === 'number' && !Number.isSafeInteger(p.id))) throw Error('外站返回无法识别，请到原站核对')
+  if (!p || !['hb','credit'].includes(provider) || !states[p.status] || !p.id || (typeof p.id === 'number' && !Number.isSafeInteger(p.id))) throw Error('红包平台返回无法识别，请打开平台核对')
   const mine = provider === 'credit' ? d.user_claimed : p.mine
-  return { id: String(p.id).slice(0,100), state: states[p.status], kind: String(p.type || 'unknown').slice(0,30),
+  const result = { id: String(p.id).slice(0,100), state: states[p.status], kind: String(p.type || 'unknown').slice(0,30),
     total: packetCount(provider === 'credit' ? p.total_count : p.count), remaining: packetCount(p.remaining_count),
     creator: String(provider === 'credit' ? p.creator_username || '' : p.creator?.username || '').slice(0,100),
     wish: String(provider === 'credit' ? p.greeting || '' : p.wish || '').slice(0,120),
     expires_at: provider === 'credit' && Number.isFinite(Date.parse(p.expires_at)) ? Math.floor(Date.parse(p.expires_at)/1000) : null,
-    claimed: mine != null && mine !== false, amount: mine && typeof mine==='object' ? packetMoney(mine.amount) : null }
+    claimed: mine != null && mine !== false, amount: mine != null && mine !== false ? packetMoney(typeof mine==='object' ? mine.amount : mine) : null }
+  if(provider==='hb'){
+    // viewer 仅来自 HB 当前会话。不得用本站合并后的用户 ID 推断领奖身份。
+    const known=viewer!==undefined,uid=viewer?.linuxdo_id
+    result.blocked=known&&!viewer?'login':uid!=null&&String(uid)===String(p.creator?.linuxdo_id)?'own':
+      known&&viewer&&p.target_username&&String(viewer.username).toLowerCase()!==String(p.target_username).toLowerCase()?'exclusive':null
+    if(p.type==='lottery'){
+      const winner=uid!=null&&Array.isArray(p.winners)?p.winners.find(w=>String(w.linuxdo_id)===String(uid)):null
+      const ended=!!p.drawn_at||p.status==='drawn',clock=Number.isFinite(p.server_now)?p.server_now:Date.now()
+      result.expires_at=Number.isFinite(p.draw_at)?Math.floor(p.draw_at/1000):null
+      result.claimed=!!winner&&winner.payout_status==='paid'
+      result.amount=result.claimed?packetMoney(winner.amount):null
+      if(winner)result.state=result.claimed?'drawn':'payment_pending'
+      else if(ended)result.state=p.joined?'not_won':'drawn'
+      else if(p.status==='active'&&Number.isFinite(p.draw_at)&&p.draw_at<=clock)result.state='drawing'
+      else if(p.status==='active'&&p.joined)result.state='registered'
+    }
+  }
+  return result
 }
 function fishSnapshot(raw) {
   const p=raw?.activity,registration=raw?.registration,claim=raw?.claim || registration?.claim,q=p?.quantity
@@ -262,7 +280,7 @@ window.addEventListener('message', async event => {
   const data=event.data
   if(data?.type!=='meme-redpacket-request' || !/^[a-f0-9-]{36}$/i.test(data.id))return
   const reply=(result,error)=>window.postMessage({type:'meme-redpacket-result',id:data.id,result,error},location.origin)
-  if(data.action==='ping'){reply({version:'1.1.1',creditCreate:true});return}
+  if(data.action==='ping'){reply({version:'1.2.0',creditCreate:true,participationV2:true});return}
   if(['prepareCreate','awaitCreate'].includes(data.action)){
     try{
       if(typeof GM_getValue!=='function'||typeof GM_setValue!=='function')throw Error('请更新红包连接器并允许脚本存储')
@@ -291,9 +309,11 @@ window.addEventListener('message', async event => {
   if(!['query','claim'].includes(data.action))return
   try {
     const ext=data.external,provider=ext?.provider,ref=String(ext?.ref || '')
+    const platform=({hb:'HB',credit:'Credit',fish:'Fish'})[provider]||'红包平台'
     let lookup
     if(provider==='credit' && /^[1-9][0-9]{0,19}$/.test(ref))lookup='https://credit.linux.do/api/v1/redenvelope/'+ref
-    else if(provider==='hb' && ((ext.ref_kind==='numeric' && /^[0-9]{8}$/.test(ref)) || (ext.ref_kind==='text' && [...ref].length>=6 && [...ref].length<=18 && !/[\p{Cc}\p{Cf}]/u.test(ref))))lookup='https://hb.unsnow.org/api/hongbao/'+(ext.ref_kind==='numeric'?'code/':'text-code/')+encodeURIComponent(ref)
+    else if(provider==='hb'&&ext.ref_kind==='id'&&/^[A-Za-z0-9]{1,100}$/.test(ref))lookup='https://hb.unsnow.org/api/hongbao/'+ref
+    else if(provider==='hb' && ((ext.ref_kind==='numeric' && /^[0-9]{8}$/.test(ref)) || (ext.ref_kind==='text' && fishCode(ref))))lookup='https://hb.unsnow.org/api/hongbao/'+(ext.ref_kind==='numeric'?'code/':'text-code/')+encodeURIComponent(ref)
     else if(provider==='fish' && (ext.ref_kind==='id'&&fishUuid(ref) || ext.ref_kind==='text'&&fishCode(ref)))lookup='https://meme.442224.xyz/api/session'
     else throw Error('红包来源或口令无效，未发送请求')
     if(!navigator.locks?.request)throw Error('浏览器不支持领取锁，请前往原站')
@@ -311,25 +331,40 @@ window.addEventListener('message', async event => {
         headers:{Accept:'application/json',...(provider==='credit'?{'X-Requested-With':'XMLHttpRequest'}:{}),...(method==='POST'?{'Content-Type':'application/json'}:{}),...extraHeaders},
         ...(body?{data:JSON.stringify(body)}:{}),
         onload:r=>{
-          if(r.status<200 || r.status>=300){const error=Error(r.status===401?'请先在原站登录自己的账号':String(r.response?.error?.message || r.response?.error || `外站返回 ${r.status}，请到原站核对`).slice(0,180));error.status=r.status;reject(error);return}
-          if(!r.response || typeof r.response!=='object'){reject(Error('外站需要验证或返回格式变化，请打开原站'));return}
+          if(r.status<200 || r.status>=300){const error=Error(r.status===401?'请先登录 '+platform+'，再回群里刷新状态':String(r.response?.error?.message || r.response?.error || `${platform} 返回 ${r.status}，请打开平台核对`).slice(0,180));error.status=r.status;reject(error);return}
+          if(!r.response || typeof r.response!=='object'){reject(Error(platform+' 需要验证或返回格式变化，请打开平台核对'));return}
           resolve(r.response)
-        },onerror:()=>reject(Error('外站连接失败，请到原站核对')),ontimeout:()=>reject(Error('外站请求超时，请到原站核对')),
+        },onerror:()=>reject(Error(platform+' 连接失败，请打开平台核对')),ontimeout:()=>reject(Error(platform+' 请求超时，请打开平台核对')),
       }))
       if(provider==='fish'){reply(await fishPacket(data.action,ext,request));return}
-      const snapshot=packetSnapshot(provider,await request(lookup))
+      const viewer=provider==='hb'?(await request('https://hb.unsnow.org/api/me')).user??null:undefined
+      const snapshot=packetSnapshot(provider,await request(lookup),viewer)
       const uncertain='memeRedpacketUncertain:'+provider+':'+ref
-      if(data.action==='query'){localStorage.setItem(uncertain,'');reply(snapshot);return}
-      if(snapshot.claimed || snapshot.state!=='active'){reply(snapshot);return}
-      if(!['fixed','equal','random','exclusive'].includes(snapshot.kind)){reply(snapshot);return}
-      if(localStorage.getItem(uncertain))throw Error('上次领取结果未确认，请先刷新状态或到原站核对')
-      if(!/^[a-zA-Z0-9_-]{1,100}$/.test(snapshot.id))throw Error('外站红包编号异常，未领取')
+      const resolved=s=>s.claimed||['exhausted','expired','cancelled','drawn','registered','drawing','not_won','payment_pending'].includes(s.state)
+      if(data.action==='query'){
+        if(resolved(snapshot))localStorage.setItem(uncertain,'')
+        reply(localStorage.getItem(uncertain)?{...snapshot,state:'unconfirmed'}:snapshot);return
+      }
+      if(snapshot.claimed || snapshot.state!=='active' || snapshot.blocked){if(resolved(snapshot))localStorage.setItem(uncertain,'');reply(snapshot);return}
+      if(!(provider==='hb'?['fixed','equal','random','exclusive','lottery']:['fixed','random']).includes(snapshot.kind)){reply(snapshot);return}
+      if(localStorage.getItem(uncertain))throw Error('上次领取结果未确认，请刷新状态或打开 '+platform+' 核对，勿连续领取')
+      if(!/^[a-zA-Z0-9_-]{1,100}$/.test(snapshot.id))throw Error(platform+' 红包编号异常，未领取')
       localStorage.setItem(uncertain,'1')
       let receipt
       try {
         const raw=await request(provider==='credit'?'https://credit.linux.do/api/v1/redenvelope/claim':'https://hb.unsnow.org/api/hongbao/'+encodeURIComponent(snapshot.id)+'/grab','POST',provider==='credit'?{id:ref}:undefined)
+        if(provider==='hb'&&snapshot.kind==='lottery'){
+          // 报名返回 packet，不是金额收据。只认已报名/开奖/发放状态。
+          const fresh=packetSnapshot('hb',raw?.packet||await request(lookup),viewer)
+          if(resolved(fresh))localStorage.setItem(uncertain,'')
+          reply(localStorage.getItem(uncertain)?{...fresh,state:'unconfirmed'}:fresh);return
+        }
         receipt=claimReceipt(provider,raw)
-      }catch(error){throw Error('领取结果未确认：'+error.message+'。请先刷新状态，勿连续领取')}
+      }catch(error){
+        if(error.status>=400&&error.status<500){localStorage.setItem(uncertain,'');throw error}
+        try{const fresh=packetSnapshot(provider,await request(lookup),viewer);if(resolved(fresh)){localStorage.setItem(uncertain,'');reply(fresh);return}}catch{}
+        throw Error('领取结果未确认：'+error.message+'。请刷新状态或打开 '+platform+' 核对，勿连续领取')
+      }
       localStorage.setItem(uncertain,'')
       reply({...snapshot,...receipt,remaining:null})
     })
