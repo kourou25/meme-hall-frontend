@@ -1546,6 +1546,7 @@ const decoHide = () => {
 let decoViewPrefs = null, decoBubbleKeys = new Set()
 const decoHidden = (u, k) => k !== 'title' && !!u && !!S.me && u.username !== S.me.username && !!decoHide()[k]
 const bubbleBlocked = k => !!decoHide().bubbleAll || decoBubbleKeys.has(k)
+const bubbleMotion = () => ['play', 'pause'].includes(decoHide().bubbleMotion) ? decoHide().bubbleMotion : 'auto'
 function saveDecoView(p) {
   try { localStorage.setItem('decoHide', JSON.stringify(p)) } catch { toast('浏览器未允许保存设置', 'err'); return false }
   decoViewPrefs = p; decoBubbleKeys = new Set(p.bubbleKeys || [])
@@ -1554,6 +1555,7 @@ function saveDecoView(p) {
   for (const win of PIPS) { try { if (!win.closed) docs.push(win.document) } catch { /* 已跳往外站的小窗不再处理。 */ } }
   for (const doc of docs) {
     doc.documentElement.dataset.bubbleLegacy = p.bubbleLegacy ? '1' : '0'
+    doc.documentElement.dataset.bubbleMotion = bubbleMotion()
     for (const el of doc.querySelectorAll('[data-bubble-parts]')) {
       const parts = JSON.parse(el.dataset.bubbleParts)
       for (const part of parts) {
@@ -1566,6 +1568,7 @@ function saveDecoView(p) {
 }
 const bubblePartHidden = p => bubbleBlocked(p.key) || (!p.own && (!!decoHide().bubble || (p.key === 'custom' && !!decoHide().css)))
 document.documentElement.dataset.bubbleLegacy = decoHide().bubbleLegacy ? '1' : '0'
+document.documentElement.dataset.bubbleMotion = bubbleMotion()
 // 这个人的装扮在这里（chat 群聊 / post 帖子和评论 / card 名片）生不生效
 function decoAt(u, where) {
   const d = u?.deco
@@ -1814,13 +1817,28 @@ function openBubbleSettings(anchor) {
         else e.target.checked = !e.target.checked
       } }), label))))))
   const all = blocked => { if (saveDecoView({ ...decoHide(), bubble:false, bubbleAll:blocked, bubbleKeys:[] })) syncChoices() }
+  const media = doc.defaultView.matchMedia('(prefers-reduced-motion: reduce)')
+  const motionStatus = h('p', { id:'bubble-motion-status', class:'muted', role:'status' })
+  const motion = h('select', { 'aria-label':'气泡动图', 'aria-describedby':'bubble-motion-status', onchange:() => {
+    saveDecoView({ ...decoHide(), bubbleMotion:motion.value })
+    syncMotion()
+  } }, [['auto','跟随系统'],['play','播放'],['pause','暂停']].map(([value,label]) => h('option', { value }, label)))
+  const syncMotion = () => {
+    const mode = bubbleMotion()
+    motion.value = mode
+    motionStatus.textContent = mode === 'auto'
+      ? (media.matches ? '系统已减少动画，气泡动图当前暂停。选择“播放”可单独开启。' : '气泡动图当前播放；系统减少动画时会自动暂停。')
+      : mode === 'play' ? '气泡动图已开启，不受系统减少动画设置影响。' : '气泡动图已暂停，显示静态画面。'
+  }
   const dialog = h('dialog', { class:'bubble-dialog', 'aria-labelledby':'bubble-settings-title' },
-    h('header', null, h('h2', { id:'bubble-settings-title' }, '屏蔽哪些气泡'), h('button', { class:'btn-icon', type:'button', 'aria-label':'关闭气泡设置', onclick:close }, icon('close'))),
+    h('header', null, h('h2', { id:'bubble-settings-title' }, '气泡显示设置'), h('button', { class:'btn-icon', type:'button', 'aria-label':'关闭气泡设置', onclick:close }, icon('close'))),
+    h('label', { class:'bubble-motion-choice' }, '气泡动图', motion), motionStatus,
     h('p', { class:'muted' }, '勾选后显示普通气泡，称号和内容保留。设置保存在本浏览器。'),
     h('div', { class:'bubble-options-actions' }, h('button', { class:'btn btn-ghost sm', type:'button', onclick:() => all(true) }, '全部屏蔽'), h('button', { class:'btn btn-ghost sm', type:'button', onclick:() => all(false) }, '全部显示')),
     body)
-  paint(); doc.body.append(dialog)
-  dialog.addEventListener('close', () => { dialog.remove(); anchor.isConnected && anchor.focus({ preventScroll:true }) }, { once:true })
+  paint(); syncMotion(); doc.body.append(dialog)
+  media.addEventListener('change', syncMotion)
+  dialog.addEventListener('close', () => { media.removeEventListener('change', syncMotion); dialog.remove(); anchor.isConnected && anchor.focus({ preventScroll:true }) }, { once:true })
   dialog.showModal()
 }
 function decoHideSettings() {
@@ -1829,7 +1847,7 @@ function decoHideSettings() {
     if (saveDecoView({ ...decoHide(), [k]: e.target.checked })) toast('已保存', 'ok')
     else e.target.checked = !e.target.checked
   } }), l)
-  return h('div', { class: 'deco-hide' }, h('button', { class:'btn btn-ghost sm', type:'button', onclick:e => openBubbleSettings(e.currentTarget) }, icon('chat'), '选择屏蔽气泡'),
+  return h('div', { class: 'deco-hide' }, h('button', { class:'btn btn-ghost sm', type:'button', onclick:e => openBubbleSettings(e.currentTarget) }, icon('chat'), '气泡显示设置'),
     box('fancy', '不看别人的炫彩昵称'), box('badge', '不看别人的徽章'), box('css', '不看别人的自定义样式'))
 }
 // 装扮编辑：称号文字 + 颜色 / 字体 / 形状 / 填充 / 动效，炫彩名配色，气泡，生效范围；边改边预览
@@ -9822,7 +9840,7 @@ async function chatPopout(g0, { pip = false } = {}) {
   const bar = h('div', { class: 'pip-bar' }, h('strong', { class: 'pip-name' }, gname()), h('span', { class: 'grow' }),
     h('label', { class: 'pip-op' }, icon('eye', 'i tiny'), opR, opN), pin,
     h('a', { class: 'pip-btn', href: '/tools/jinhuan-moyu.cmd', download: 'jinhuan-moyu.cmd', title: '下载摸鱼助手（Windows）：透明和置顶靠它', 'aria-label': '下载摸鱼助手' }, icon('download', 'i tiny')))
-  for (const a of ['data-theme', 'data-skin', 'data-blur-all', 'data-bubble-legacy']) {
+  for (const a of ['data-theme', 'data-skin', 'data-blur-all', 'data-bubble-legacy', 'data-bubble-motion']) {
     const v = document.documentElement.getAttribute(a)
     if (v != null) doc.documentElement.setAttribute(a, v)
   }

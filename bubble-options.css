@@ -3,6 +3,8 @@
 .bubble-dialog header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .bubble-dialog h2 { margin:0; font-size:18px; }
 .bubble-dialog p { font-size:13px; line-height:1.6; margin:8px 0 12px; }
+.bubble-motion-choice { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; font-size:14px; }
+.bubble-motion-choice select { min-width:120px; min-height:36px; max-width:60%; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:4px 8px; font:inherit; }
 .bubble-options-actions { display:flex; gap:8px; margin-bottom:12px; }
 .bubble-options fieldset { border:0; border-top:1px solid var(--line); padding:12px 0; margin:0; min-width:0; }
 .bubble-options legend { padding:0 8px 0 0; font-weight:600; }

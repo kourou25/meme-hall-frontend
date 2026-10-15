@@ -32,6 +32,8 @@ html[data-theme=dark] .rt-bubble.rt-collection { color:var(--ot-ink); background
  html .cm-head .rt-title.u-title:is(.rt-maid,.rt-whalepunch,.rt-nightdevil,.rt-whalebuddy,.rt-gpt,.rt-claude,.rt-gemini,.rt-whitedragon) { min-width:136px; height:32px; font-size:10.5px; padding:0 19px; }
 }
 @media(prefers-reduced-motion:reduce) { .rt-whalepunch { --cf-character:url('/assets/raffle/collection/whalepunch-tail-still.webp'); } }
+html[data-bubble-motion=play] .rt-whalepunch { --cf-character:url('/assets/raffle/collection/whalepunch-tail.webp'); }
+html[data-bubble-motion=pause] .rt-whalepunch { --cf-character:url('/assets/raffle/collection/whalepunch-tail-still.webp'); }
 
 /* 聊天密度统一：绘制边框与文字留白分开，角色不再挤占半行正文。 */
 .rt-maid { --cf-top:12px; --cf-bottom:14px; --cf-left:22px; --cf-right:22px; --cf-inset-left:16px; --cf-inset-right:16px; }
