@@ -271,6 +271,13 @@
 .rpk-dialog button:disabled { opacity: .48; cursor: default; }
 .rpk-status { margin: 0; font-size: 14px; color: var(--err); line-height: 1.6; overflow-wrap: anywhere; }
 .rpk-status:empty { display: none; }
+.rpk-countdown { display: block; font-size: 14px; font-variant-numeric: tabular-nums; font-weight: 650; }
+.rpk-roster { min-width: 0; border-top: 1px solid var(--line); padding-top: 10px; }
+.rpk-roster summary { cursor: pointer; font-weight: 650; }
+.rpk-roster ul { margin: 8px 0 0; padding: 0; max-height: 240px; overflow: auto; list-style: none; }
+.rpk-roster li { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 14px; overflow-wrap: anywhere; }
+.rpk-roster li > span { min-width: 0; }
+.cm-redpack-due .cm-welcome-copy strong { white-space: pre-line; overflow-wrap: anywhere; }
 .rpk-search-row { display: flex; gap: 8px; }
 .rpk-search-row button { flex: none; }
 .rpk-post-results { display: grid; gap: 6px; margin-top: 8px; font-size: 14px; }

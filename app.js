@@ -7951,10 +7951,19 @@ function chatPane(g, { onHead } = {}) {
   }
   const redraw = (i) => redrawIn(mainView, i)
   let refreshTitleRaffles = () => {}
+  const drawLifetime=new AbortController()
+  let drawQueue=Promise.resolve()
   const add = (items, where) => {
     items = items.filter((m) => !rows.has(m.id))
     if (!items.length) return
     if (where === 'live' && items.some(m => m.system_kind === 'title_raffle_open' || m.system_kind === 'title_raffle')) refreshTitleRaffles()
+    if(where==='live')for(const m of items.filter(m=>m.system_kind==='redpack_due'&&!m.deleted).slice(0,3)){
+      drawQueue=drawQueue.then(async()=>{
+        if(drawLifetime.signal.aborted||doc.hidden)return
+        const {syncPacketDraw}=await import('/redpacket.js?v=c171f947')
+        await syncPacketDraw({id:Number(m.system_ref),api,signal:drawLifetime.signal,onUpdate:update})
+      }).catch(()=>{})
+    }
     rememberNicks(items.map((m) => m.user))
     if (where === 'top') {
       const h0 = scroller.scrollHeight
@@ -8686,7 +8695,7 @@ function chatPane(g, { onHead } = {}) {
     input.focus()
     if (q0) { input.value = q0; run() }
   }
-  function destroy() { savePosition(); st.destroyed = true; aiPanel?.destroy(); st.done = false; CHAT.panes.delete(api_); clearTimeout(positionTimer); clearTimeout(awayT); clearTimeout(st.catchupT); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); doc.defaultView?.removeEventListener('pagehide', savePosition); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); doc.defaultView?.removeEventListener('title-raffle-update', refreshTitleRaffles); offNotice(); offUnread() }
+  function destroy() { drawLifetime.abort(); savePosition(); st.destroyed = true; aiPanel?.destroy(); st.done = false; CHAT.panes.delete(api_); clearTimeout(positionTimer); clearTimeout(awayT); clearTimeout(st.catchupT); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); doc.defaultView?.removeEventListener('pagehide', savePosition); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); doc.defaultView?.removeEventListener('title-raffle-update', refreshTitleRaffles); offNotice(); offUnread() }
 
   // 群公告：顶上一条，点 × 收起（记住这一版），右上角留个小「公告」随时再打开；公告改了会重新弹出来
   const noticeEl = h('div', { class: 'cm-notice-wrap' })
@@ -8866,7 +8875,7 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=052a6d65')
+    const { openRedpacket } = await import('/redpacket.js?v=c171f947')
     if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, uploadCover: async (file,signal) => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
@@ -8935,8 +8944,8 @@ function chatMsg(m, { cont, pane, pending } = {}) {
     h('span',{class:'cm-welcome-star','aria-hidden':'true'},'✦'),
     h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'称号抽奖已撤回':m.body)),
     !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>titleRaffleDialog(e.currentTarget,null,m.system_ref)},'看结果'))
-  if(m.system_kind==='redpack_due')return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},icon('redpack'),
-    h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'红包提醒已撤回':'红包到点啦！'),!m.deleted && h('span',null,'开奖与领取状态以原站为准')),
+  if(m.system_kind==='redpack_due'||m.system_kind==='redpack_draw')return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},icon('redpack'),
+    h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'红包提醒已撤回':m.system_kind==='redpack_draw'?m.body:'红包到点啦！'),!m.deleted&&m.system_kind==='redpack_due'&&h('span',null,'正在等待平台开奖结果；打开可同步名单')),
     !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>redpackDialog(e.currentTarget,{message:{id:Number(m.system_ref)},onUpdate:fresh=>pane?.update(fresh)})},'去看看'))
   if (m.system_kind === 'join') return h('div', { class: 'cm-welcome' + (m.deleted ? ' gone' : ''), role: 'note', 'aria-label': m.deleted ? '入群提醒已撤回' : `欢迎 ${who} 加入群聊` },
     m.deleted ? h('span', null, '入群提醒已撤回') : [
@@ -8974,7 +8983,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
     const edited = m.edited_at && h('span', { class: 'cm-edited', title: '编辑于 ' + new Date(m.edited_at * 1000).toLocaleString('zh-CN', { hour12: false }) }, '（已编辑）')
     if (m.road_id) body.push(h('a', { class: 'cm-road', href: `/road?item=${m.road_id}`, 'data-link': '' }, `已转到鞭打 #${m.road_id}`))
     if (m.redpack) body.push(h('button', { type: 'button', class: 'cm-redpack' + (m.redpack.solved ? ' is-open' : ''), 'aria-label': '打开红包',
-      onclick: (e) => redpackDialog(e.currentTarget, { message: m, onUpdate: (fresh) => pane?.update(fresh) }) },
+      onclick: (e) => redpackDialog(e.currentTarget, { message: m, claimOnOpen:true, onUpdate: (fresh) => pane?.update(fresh) }) },
       m.redpack.cover && h('img',{class:'cm-redpack-cover',src:m.redpack.cover,alt:'红包封面',loading:'lazy',onerror:e=>e.currentTarget.remove()}),
       h('span', { class: 'cm-redpack-seal', 'aria-hidden': 'true' }, icon('redpack')),
       h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || '给你一个红包'),

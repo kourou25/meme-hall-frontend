@@ -27,8 +27,8 @@ export function platformCreateForm({provider,userId,groupId,h,bridge,win,onState
   if(busy)return;busy=true;sync()
   try{
    const connected=await bridge('ping')
-   if(!connected.platformCreateV1)throw Error('创建HB/Fish需要1.3.0连接器，请打开顶部“连接器”更新')
-   options=await bridge('creationOptions',{provider})
+   if(!connected.creationRecoveryV1)throw Error('创建HB/Fish需要1.4.0连接器，请打开顶部“连接器”更新')
+   options=await bridge('creationOptions',{provider,operation})
    account.textContent=label+'：'+options.name+' · '+(options.ready?'已配置':'需在平台完成LDC绑定')
    if(provider==='fish'){
     merchant.replaceChildren(...options.merchants.map(m=>h('option',{value:m.id,disabled:!m.current},m.name+(!m.current?'（历史商户）':m.ready?'':'（开放时验证）'))))
@@ -41,6 +41,7 @@ export function platformCreateForm({provider,userId,groupId,h,bridge,win,onState
    }
    if(draft&&options.pending?.operation===operation){draft.status=options.pending.status;persist()}
    if(draft?.input?.account&&draft.input.account!==options.account)throw Error('平台账户与待确认红包不一致，请切回原账户核对')
+   if(draft&&!draft.result&&options.current?.operation===operation&&options.current.editable&&!options.current.id)resetDraft()
    info.textContent=options.pending?'已恢复待确认操作，请继续同一个红包。':options.ready?'账户已检测，可以填写红包。':'完成平台绑定后，回这里重新检测。'
   }catch(error){info.textContent=error.message}finally{busy=false;sync()}
  }},'检测 '+label+' 账户')
@@ -55,6 +56,7 @@ export function platformCreateForm({provider,userId,groupId,h,bridge,win,onState
  const controls={kind,amount,count,amounts,target,codeType,code,drawSeconds,distribution,algorithm,merchant,participantLimit,fullPool}
  for(const control of Object.values(controls))control.addEventListener('change',sync)
  function persist(){win.localStorage.setItem(key,JSON.stringify(draft))}
+ function resetDraft(){win.localStorage.removeItem(key);draft=null;operation=crypto.randomUUID()}
  function restore(){
   if(!draft?.input)return
   for(const [name,control]of Object.entries(controls)){
@@ -81,7 +83,16 @@ export function platformCreateForm({provider,userId,groupId,h,bridge,win,onState
   const input=draft?.input||{provider,operation,account:options.account,kind:kind.value,amount:amount.value,count:Number(count.value),greeting,target:target.value,codeType:codeType.value,code:code.value,drawSeconds:Number(drawSeconds.value),distribution:distribution.value,algorithm:algorithm.value,participation:codeType.value,merchantId:selected?.id,credentialVersion:selected?.credentialVersion,amounts:amounts.value,participantLimit:participantLimit.value,distributeFullPool:fullPool.checked}
   normalizePlatformCreate({...input,provider,operation})
   draft={provider,operation,input};persist();sync()
-  const result=await bridge('platformCreate',{...input,provider,operation})
+  let result
+  try{result=await bridge('platformCreate',{...input,provider,operation})}catch(error){
+   const outcome=error.creation
+   if(outcome?.provider===provider&&outcome.operation===operation){
+    if(outcome.editable===true&&!outcome.id){resetDraft();info.textContent='本次没有创建红包，已恢复编辑。修改后可重新提交。'}
+    else {draft.status=outcome.status;persist()}
+    sync()
+   }
+   throw error
+  }
   if(typeof result?.id!=='string'||typeof result?.url!=='string')throw Error('创建结果无法确认，请继续原操作')
   draft.result={...result,operation};persist();return draft.result
  },published(){win.localStorage.removeItem(key)}}

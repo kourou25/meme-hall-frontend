@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         尽欢红包连接器
 // @namespace    https://52dmeme.com/
-// @version      1.3.0
+// @version      1.4.0
 // @downloadURL  https://52dmeme.com/meme-redpacket.user.js
 // @updateURL    https://52dmeme.com/meme-redpacket.user.js
 // @description  用本人登录态查询领取 HB/Credit/fish；Credit 发包仅在其来源页本人确认，不托管积分或登录凭据。
@@ -22,6 +22,10 @@
 // 外站响应白名单。只用于展示个人查询结果，不作为本站积分账本。
 const packetMoney = value => /^(?:0|[1-9]\d{0,12})(?:\.\d{1,8})?$/.test(String(value)) ? String(value) : null
 const packetCount = value => Number.isSafeInteger(value) && value >= 0 ? value : null
+const packetName = value => String(value??'').normalize('NFC').replace(/[\p{Cc}\p{Cf}]/gu,'').slice(0,80)
+const packetDate = value => typeof value==='string'&&Number.isFinite(Date.parse(value))?Math.floor(Date.parse(value)/1000):null
+const packetPeople = (list,convert) => Array.isArray(list)?list.slice(0,100).map(convert):[]
+const packetPerson = p => ({name:packetName(p.name||p.displayName||p.username||'匿名用户'),username:packetName(p.username),amount:packetMoney(p.amount)})
 function packetSnapshot(provider, raw, viewer) {
   if(provider==='fish')return fishSnapshot(raw)
   const d = provider === 'credit' ? raw?.data : raw
@@ -35,6 +39,10 @@ function packetSnapshot(provider, raw, viewer) {
     wish: String(provider === 'credit' ? p.greeting || '' : p.wish || '').slice(0,120),
     expires_at: provider === 'credit' && Number.isFinite(Date.parse(p.expires_at)) ? Math.floor(Date.parse(p.expires_at)/1000) : null,
     claimed: mine != null && mine !== false, amount: mine != null && mine !== false ? packetMoney(typeof mine==='object' ? mine.amount : mine) : null }
+  result.claimed_count=provider==='hb'?packetCount(p.claimed_count):result.total!==null&&result.remaining!==null?Math.max(0,result.total-result.remaining):null
+  if(provider==='hb'&&result.remaining===null&&result.total!==null&&result.claimed_count!==null)result.remaining=Math.max(0,result.total-result.claimed_count)
+  result.recipients=packetPeople(provider==='credit'?d.claims:p.claims,packetPerson)
+  result.roster_more=Array.isArray(provider==='credit'?d.claims:p.claims)&&(provider==='credit'?d.claims:p.claims).length>100
   if(provider==='hb'){
     // viewer 仅来自 HB 当前会话。不得用本站合并后的用户 ID 推断领奖身份。
     const known=viewer!==undefined,uid=viewer?.linuxdo_id
@@ -44,6 +52,14 @@ function packetSnapshot(provider, raw, viewer) {
       const winner=uid!=null&&Array.isArray(p.winners)?p.winners.find(w=>String(w.linuxdo_id)===String(uid)):null
       const ended=!!p.drawn_at||p.status==='drawn',clock=Number.isFinite(p.server_now)?p.server_now:Date.now()
       result.expires_at=Number.isFinite(p.draw_at)?Math.floor(p.draw_at/1000):null
+      result.draw_at=result.expires_at;result.draw_complete=ended
+      result.server_now=Number.isFinite(p.server_now)?Math.floor(p.server_now/1000):null
+      result.participant_count=Array.isArray(p.participants)?p.participants.length:null
+      result.winner_count=ended&&Array.isArray(p.winners)?p.winners.length:null
+      result.winners=ended?packetPeople(p.winners,w=>({...packetPerson(w),payout:w.payout_status==='paid'?'paid':'pending'})):[]
+      const winners=new Set((Array.isArray(p.winners)?p.winners:[]).map(w=>String(w.linuxdo_id)))
+      result.participants=packetPeople(p.participants,v=>({...packetPerson(v),amount:null,result:ended?(winners.has(String(v.linuxdo_id))?'won':'not_won'):'registered'}))
+      result.roster_more=(p.winners?.length||0)>100||(p.participants?.length||0)>100
       result.claimed=!!winner&&winner.payout_status==='paid'
       result.amount=result.claimed?packetMoney(winner.amount):null
       if(winner)result.state=result.claimed?'drawn':'payment_pending'
@@ -60,18 +76,30 @@ function fishSnapshot(raw) {
   const total=q?.mode==='exact'?packetCount(q.total):null, count=q?.mode==='exact'?packetCount(q.claimed):null
   const remaining=total!==null && count!==null ? Math.max(0,total-count) : null
   const empty=!p.draw && (remaining===0 || q?.mode==='availability' && q.available===false || q?.mode==='fuzzy' && q.level==='empty')
-  const expires=Number.isFinite(Date.parse(p.deadlineAt))?Math.floor(Date.parse(p.deadlineAt)/1000):null
+  const expires=packetDate(p.deadlineAt),completed=['completed','empty'].includes(p.draw?.state)
   let state=p.status==='draft'?'draft':empty?'exhausted':['ended','archived'].includes(p.status)?'expired':expires && expires<=Date.now()/1000&&!p.draw?'expired':'active'
   if(p.draw?.state==='settling')state='drawing'
-  if(p.draw && expires && expires<=Date.now()/1000)state='drawing'
+  if(p.draw && expires && expires<=Date.now()/1000&&!completed)state='drawing'
+  if(completed)state='drawn'
   if(registration?.status==='registered')state='registered'
   if(registration?.status==='drawing')state='drawing'
   if(registration?.status==='not_won')state='not_won'
   if(registration?.status==='won')state='payment_pending'
   const claimed=claim?.rewardType==='ldc' && claim.payment?.mode==='real' && claim.payment?.status==='confirmed'
   if(claim?.rewardType==='ldc'&&!claimed)state=claim.payment?.mode==='simulation'?'simulation':'payment_pending'
+  const list=raw?.roster,visible=p.showRecipientList===true&&list?.enabled!==false
+  const people=visible?packetPeople(list?.items,row=>{
+    const user=row.claimant||row.participant||row
+    return {...packetPerson({...user,amount:p.showRecipientAmount!==false?row.amount:null}),
+      ...(p.showRecipientUsername===false?{name:'匿名用户',username:''}:{}),
+      result:['registered','drawing','won','not_won'].includes(row.status)?row.status:undefined}
+  }):[]
   return {id:p.id,state,kind:p.rewardType==='text'?'text':String(p.reward?.mode || 'unknown'),claimed,amount:claimed?packetMoney(claim.amount):null,
-    total,remaining,expires_at:expires,requires_password:p.participationMode!=='direct',creator:String(p.author?.displayName || p.author?.username || '').slice(0,100),wish:String(p.title || '').slice(0,120)}
+    total,remaining,claimed_count:count,participant_count:packetCount(p.draw?.registeredCount),winner_count:completed?packetCount(p.draw?.winnerCount):null,
+    draw_at:p.draw?(packetDate(registration?.drawAt)||expires):null,draw_deadline:!!p.draw,draw_complete:completed,
+    winners:p.draw&&completed?people:[],participants:p.draw&&!completed?people:[],recipients:!p.draw?people:[],
+    roster_more:visible&&(!!list?.nextCursor||(list?.items?.length||0)>100),roster_error:raw?.roster_error===true,
+    expires_at:expires,requires_password:p.participationMode!=='direct',creator:String(p.author?.displayName || p.author?.username || '').slice(0,100),wish:String(p.title || '').slice(0,120)}
 }
 function claimReceipt(provider, raw) {
   const d = provider === 'credit' ? raw?.data : raw
@@ -136,6 +164,16 @@ function mountCreditCreatePage(){
  let record=null,configReady=false,waiting=0
  const display=(text)=>{state.textContent=text}
  const stop=(text)=>{intro.textContent=text;form.hidden=true;detail.hidden=true}
+ if(new URLSearchParams(location.search).get('jh-cancel')==='1'){
+  if(!navigator.locks?.request){stop('浏览器不支持安全取消，请回到原确认窗口取消。');return}
+  navigator.locks.request('jh-credit-create',{mode:'exclusive'},async()=>{
+   const current=GM_getValue(key,null)
+   if(!current||['pending','cancelled'].includes(current.status)){
+    GM_setValue(key,{...current,status:'cancelled'});stop('未提交的草稿已取消。回到群聊可重新编辑。')
+   }else stop('此红包已提交或结果未确认，不能直接取消。请核对Credit已发送记录。')
+  }).catch(()=>stop('无法安全取消，请在原确认窗口核对。'))
+  return
+ }
  const poll=setInterval(async()=>{
   if(!host.isConnected){clearInterval(poll);return}
   record=GM_getValue(key,null)
@@ -157,9 +195,14 @@ function mountCreditCreatePage(){
    detail.hidden=false;form.hidden=false;configReady=true;input.focus()
   }catch(error){stop(error.message||'无法核对 Credit 配置，请到原站确认')}
  },1000)
- cancel.addEventListener('click',event=>{
+ cancel.addEventListener('click',async event=>{
   if(!event.isTrusted)return
-  if(record?.status==='pending'){GM_setValue(key,{...record,status:'cancelled'});stop('已取消，未发送扣款请求。')}
+  if(!navigator.locks?.request){display('请关闭此确认窗口；浏览器暂不支持安全取消。');return}
+  await navigator.locks.request('jh-credit-create',{mode:'exclusive'},async()=>{
+   const current=GM_getValue(key,null)
+   if(current?.status==='pending'){record={...current,status:'cancelled'};GM_setValue(key,record);stop('已取消，未发送扣款请求。')}
+   else display('此红包已提交或结果未知，请核对Credit已发送记录。')
+  })
  })
  known.addEventListener('click',event=>{
   if(!event.isTrusted || !['sent','unknown'].includes(record?.status))return
@@ -275,6 +318,19 @@ function normalizePlatformCreate(input){
 
 // 固定平台、本人登录态、按账户持久化操作。未知结果不创建第二笔。
 async function platformCreate(action,ext,request){
+ try{return await platformCreateAttempt(action,ext,request)}catch(error){
+  if(action==='platformCreate'&&['hb','fish'].includes(ext?.provider)&&platformUuid(ext.operation)&&typeof GM_getValue==='function'){
+   error.creation=platformCreationOutcome(ext.provider,ext.operation)
+  }
+  throw error
+ }
+}
+function platformCreationOutcome(provider,operation){
+ const record=GM_getValue('packet-create:'+provider+':'+operation,null)
+ return {provider,operation,status:record?.status||'not_submitted',id:record?.id||record?.result?.id||null,
+  editable:!record||['prepared','rejected','abandoned'].includes(record.status)}
+}
+async function platformCreateAttempt(action,ext,request){
  const provider=ext?.provider
  if(!['hb','fish'].includes(provider))throw Error('创建平台无效')
  if(typeof GM_getValue!=='function'||typeof GM_setValue!=='function')throw Error('请允许连接器存储待确认操作')
@@ -283,8 +339,10 @@ async function platformCreate(action,ext,request){
  const account=String(provider==='hb'?session.user?.linuxdo_id??'':session.user?.id??'')
  if(!account)throw Error('请先登录 '+(provider==='hb'?'HB':'Fish')+'，再回本站检测账户')
  const globalKey='packet-create-pending:'+provider+':'+account
- const pendingOperation=GM_getValue(globalKey,null)
- const pending=pendingOperation?GM_getValue('packet-create:'+provider+':'+pendingOperation,null):null
+ let pendingOperation=GM_getValue(globalKey,null)
+ let pending=pendingOperation?GM_getValue('packet-create:'+provider+':'+pendingOperation,null):null
+ // 兼容1.3.0曾留下的明确拒绝记录；保留操作墓碑，解除跨操作锁。
+ if(pending?.status==='rejected'){GM_setValue(globalKey,null);pendingOperation=null;pending=null}
  const headers=provider==='fish'?{'X-CSRF-Token':session.csrfToken}:{}
  let merchants=[]
  if(provider==='fish'){
@@ -296,7 +354,9 @@ async function platformCreate(action,ext,request){
    merchants=items.filter(m=>m?.mode==='real'&&platformUuid(m.id)).map(m=>({id:m.id,name:String(m.label||m.name||'LDC商户').slice(0,100),credentialVersion:m.credentialVersion,ready:m.publicationEligibility?.allowed===true,current:m.id===data.currentMerchantId}))
   }
  }
- if(action==='creationOptions')return {account,name:String(session.user?.username||session.user?.name||account).slice(0,100),ready:provider==='hb'?session.canCreate===true:session.user?.canUseLdc===true&&merchants.some(m=>m.current),merchants,pending:pending?{operation:pending.operation,form:pending.form,status:pending.status,id:pending.id||null}:null}
+ if(action==='creationOptions')return {account,name:String(session.user?.username||session.user?.name||account).slice(0,100),ready:provider==='hb'?session.canCreate===true:session.user?.canUseLdc===true&&merchants.some(m=>m.current),merchants,
+  current:platformUuid(ext.operation)?platformCreationOutcome(provider,ext.operation):null,
+  pending:pending?{operation:pending.operation,form:pending.form,status:pending.status,id:pending.id||null}:null}
  if(action==='releaseCreation'){
   if(provider!=='hb'||ext.account!==account||ext.operation!==pendingOperation||!['prepared','rejected','sent','unknown'].includes(pending?.status)||ext.ack!=='checked-platform-history')throw Error('待确认操作不匹配，不能清理')
   // 用户已明确核对平台记录；只结束本机待确认流程，不重试、不撤销平台红包。
@@ -310,6 +370,7 @@ async function platformCreate(action,ext,request){
  let record=GM_getValue(key,null)
  if(record&&JSON.stringify(record.params)!==JSON.stringify(params))throw Error('待确认红包的参数已改变，请恢复原参数')
  if(record?.status==='abandoned')throw Error('原操作已结束，请使用新的红包表单')
+ if(record?.status==='rejected')throw Error('原操作已拒绝，请修改表单后重新提交')
  if(record?.status==='opened')return record.result
  if(pendingOperation&&pendingOperation!==params.operation)throw Error('这个账户还有一笔创建结果待确认，请先恢复原操作')
  if(provider==='hb'&&!session.canCreate)throw Error('请先在 HB“我的配置”完成 LDC 绑定，密钥仅保留在 HB')
@@ -332,22 +393,29 @@ async function platformCreate(action,ext,request){
   for(const field of ['kind','amount','count','greeting','target','codeType','code','distribution','drawSeconds','merchantId','credentialVersion','participation','algorithm','amounts','participantLimit','distributeFullPool'])if(ext[field]!==undefined)form[field]=ext[field]
   record={params,form,operation:params.operation,account,status:'prepared'}
  }
- const save=()=>{GM_setValue(key,record);GM_setValue(globalKey,record.status==='opened'?null:params.operation)}
+ const save=()=>{GM_setValue(key,record);GM_setValue(globalKey,['opened','rejected'].includes(record.status)?null:params.operation)}
+ const definiteRejection=error=>[400,401,403,404,405,422].includes(error.status)
  if(provider==='hb'){
   if(record.status==='sent'||record.status==='unknown')throw Error('HB上次创建结果未确认，不能再次扣积分。请打开HB已发记录，使用“分享已有红包”发送对应红包；确认没有创建后再解除待确认状态')
   await verifyAccount();record.status='sent';save()
   let result
   try{result=await request(origin+'/api/hongbao','POST',params.payload)}
-  catch(error){record.status=error.status>=400&&error.status<500&&![408,429].includes(error.status)?'rejected':'unknown';save();throw error}
+  catch(error){record.status=definiteRejection(error)?'rejected':'unknown';save();throw error}
   if(!/^[A-Za-z0-9]{1,100}$/.test(String(result.id||''))){record.status='unknown';save();throw Error('HB已接收请求但返回编号无法确认，请核对已发记录，勿重复创建')}
-  record.result={id:String(result.id),url:origin+'/hb/'+encodeURIComponent(result.id),code:typeof result.code==='string'?result.code:null}
+  const code=params.payload.code_type==='text'?params.payload.text_code:typeof result.code==='string'?result.code:null
+  record.result={id:String(result.id),url:origin+'/hb/'+encodeURIComponent(result.id),code,
+   shareUrl:code?origin+(params.payload.code_type==='text'?'/text-code/':'/code/')+encodeURIComponent(code):null,
+   draw_at:Number.isFinite(result.draw_at)?Math.floor(result.draw_at/1000):null,kind:params.payload.type}
   record.status='opened';save();return record.result
  }
  await verifyMerchant()
  if(!record.id){
+  const wasUncertain=['sent','unknown'].includes(record.status)
   await verifyAccount();record.status='sent';save()
   // Fish明确支持requestId幂等；重试保持相同账户、参数和requestId。
-  const result=await request(origin+'/api/activities','POST',{requestId:params.operation,activity:params.payload},headers)
+  let result
+  try{result=await request(origin+'/api/activities','POST',{requestId:params.operation,activity:params.payload},headers)}
+  catch(error){record.status=!wasUncertain&&definiteRejection(error)?'rejected':'unknown';save();throw error}
   const activity=result.activity
   if(!platformUuid(activity?.id)||!Number.isSafeInteger(activity.version)){record.status='unknown';save();throw Error('Fish创建结果未确认，请继续核对原操作')}
   record.id=activity.id;record.version=activity.version;record.status='created';save()
@@ -360,7 +428,9 @@ async function platformCreate(action,ext,request){
  }
  const complete=activity=>{
   if(!activity.openedAt)throw Error('Fish草稿已保存，尚未开放，请继续原操作')
-  record.status='opened';record.result={id:record.id,url:origin+'/activities/'+record.id};save();return record.result
+  record.status='opened';record.result={id:record.id,url:origin+'/activities/'+record.id,
+   code:params.payload.passwords?.[0]||null,kind:params.payload.money?.mode,
+   draw_at:activity.deadlineAt?Math.floor(Date.parse(activity.deadlineAt)/1000):null};save();return record.result
  }
  const activity=await readActivity()
  if(activity.openedAt)return complete(activity)
@@ -404,7 +474,12 @@ async function fishPacket(action,ext,request) {
     if(!fishUuid(activityId))throw Error('fish 活动标识无效')
     const data=await request(origin+'/api/activities/'+activityId)
     const own=data.activity?.rewardType==='ldc'?await request(origin+'/api/activities/'+activityId+'/participation'):{}
-    return {data,snapshot:packetSnapshot('fish',{...data,...own})}
+    let roster,roster_error=false
+    if(data.activity?.showRecipientList===true){
+      const kind=data.activity.draw&&!['completed','empty'].includes(data.activity.draw.state)?'registrations':'recipients'
+      try{roster=await request(origin+'/api/activities/'+activityId+'/'+kind)}catch{roster_error=true}
+    }
+    return {data,snapshot:packetSnapshot('fish',{...data,...own,roster,roster_error})}
   }
   if(!id && action==='query')return {state:'unmatched',kind:'password',claimed:false,remaining:null,total:null,amount:null}
   if(!id) {
@@ -435,6 +510,7 @@ async function fishPacket(action,ext,request) {
     if(data.activity.participationMode==='direct')submission={submissionId:crypto.randomUUID(),participationMode:'direct'}
     else {
       const password=ext.ref_kind==='text'?ext.ref:String(ext.password || '')
+      if(!password)return {...snapshot,requires_password:true}
       if(!fishCode(password))throw Error('这个 fish 活动需要6–18字原站口令，请填写后再领取')
       submission={submissionId:crypto.randomUUID(),password}
     }
@@ -456,8 +532,8 @@ window.addEventListener('message', async event => {
   if(event.source!==pageWindow || event.origin!==location.origin || location.origin!=='https://52dmeme.com')return
   const data=event.data
   if(data?.type!=='meme-redpacket-request' || !/^[a-f0-9-]{36}$/i.test(data.id))return
-  const reply=(result,error)=>pageWindow.postMessage({type:'meme-redpacket-result',id:data.id,result,error},location.origin)
-  if(data.action==='ping'){reply({version:'1.3.0',creditCreate:true,participationV2:true,platformCreateV1:true});return}
+  const reply=(result,error,creation)=>pageWindow.postMessage({type:'meme-redpacket-result',id:data.id,result,error,creation},location.origin)
+  if(data.action==='ping'){reply({version:'1.4.0',creditCreate:true,participationV2:true,platformCreateV1:true,creationRecoveryV1:true,packetDetailsV1:true});return}
   if(['creationOptions','platformCreate','releaseCreation'].includes(data.action)){
     try{
       if(!['hb','fish'].includes(data.external?.provider))throw Error('创建平台无效')
@@ -466,18 +542,28 @@ window.addEventListener('message', async event => {
         if(!lock)throw Error('另一窗口正在处理创建，请稍后核对原操作')
         reply(await platformCreate(data.action,data.external,packetPlatformRequest(data.external.provider)))
       })
-    }catch(error){reply(null,error.message)}
+    }catch(error){reply(null,error.message,error.creation)}
     return
   }
-  if(['prepareCreate','awaitCreate'].includes(data.action)){
+  if(['prepareCreate','awaitCreate','awaitCancel'].includes(data.action)){
     try{
       if(typeof GM_getValue!=='function'||typeof GM_setValue!=='function')throw Error('请更新红包连接器并允许脚本存储')
       const ext=data.external
       if(ext?.provider!=='credit'||!operationPattern.test(String(ext.operation||'')))throw Error('Credit 创建操作无效')
       const key='credit-create:'+ext.operation
+      if(data.action==='awaitCancel'){
+        for(let i=0;i<30;i++){
+          const current=GM_getValue(key,null)
+          if(current?.status==='cancelled'){reply({cancelled:true});return}
+          if(['sent','unknown','created'].includes(current?.status))throw Error('红包已提交或结果未知，不能取消，请核对Credit已发送记录')
+          await new Promise(resolve=>setTimeout(resolve,1000))
+        }
+        throw Error('尚未收到取消结果，请查看Credit确认窗口')
+      }
       if(data.action==='prepareCreate'){
         const params=normalizeCreditCreate(ext),cached=GM_getValue(key,null),global=GM_getValue('credit-create-uncertain',null)
         if(global)throw Error('上次扣款结果未确认，请先核对 Credit 已发送记录')
+        if(cached?.status==='cancelled')throw Error('这个草稿已取消，请重新填写')
         if(['sent','unknown','created'].includes(cached?.status) && JSON.stringify(cached.params)!==JSON.stringify(params))throw Error('创建参数已改变，请核对上次操作')
         if(cached?.status==='created'){reply({id:cached.id});return}
         if(cached?.status==='sent'||cached?.status==='unknown')throw Error('上次扣款结果未确认，请到 Credit 核对')
@@ -509,9 +595,9 @@ window.addEventListener('message', async event => {
       if(!lock)throw Error('另一页面正在查询或领取，请稍后重试')
       // 查询不消费领取冷却。用户看过状态后应能立即开包；连续领取仍限流。
       if(data.action==='claim'){
-        const timeKey='memeRedpacketClaimTime:'+provider,last=Number(localStorage.getItem(timeKey)||0)
+        const timeKey='memeRedpacketClaimTime:'+provider+':'+ref,last=Number(localStorage.getItem(timeKey)||0)
         if(!Number.isFinite(last) || last>Date.now())throw Error('本机时间异常，请到原站核对')
-        if(Date.now()-last<5000)throw Error('稍等 '+Math.ceil((5000-Date.now()+last)/1000)+' 秒再试')
+        if(Date.now()-last<800)throw Error('操作正在处理中，请稍候')
         localStorage.setItem(timeKey,String(Date.now()))
       }
       const request=(url,method='GET',body,extraHeaders={})=>new Promise((resolve,reject)=>GM_xmlhttpRequest({
@@ -526,7 +612,15 @@ window.addEventListener('message', async event => {
       }))
       if(provider==='fish'){reply(await fishPacket(data.action,ext,request));return}
       const viewer=provider==='hb'?(await request('https://hb.unsnow.org/api/me')).user??null:undefined
-      const snapshot=packetSnapshot(provider,await request(lookup),viewer)
+      // 直链可补口令，先按口令查到同一个红包。不能把粘贴了另一个包的口令当作当前包报名。
+      if(provider==='hb'&&ext.ref_kind==='id'&&ext.password){
+        const password=String(ext.password).normalize('NFC').trim()
+        if(!/^\d{8}$/.test(password)&&!fishCode(password))throw Error('HB口令需为8位数字或6–18字中英文数字')
+        lookup='https://hb.unsnow.org/api/hongbao/'+(/^\d{8}$/.test(password)?'code/':'text-code/')+encodeURIComponent(password)
+      }
+      const rawPacket=await request(lookup)
+      if(provider==='hb'&&ext.ref_kind==='id'&&String(rawPacket.id)!==ref)throw Error('口令对应另一份红包，请核对当前红包的口令；未报名或领取')
+      const snapshot=packetSnapshot(provider,rawPacket,viewer)
       const uncertain='memeRedpacketUncertain:'+provider+':'+ref
       const resolved=s=>s.claimed||['exhausted','expired','cancelled','drawn','registered','drawing','not_won','payment_pending'].includes(s.state)
       if(data.action==='query'){

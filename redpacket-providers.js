@@ -1,6 +1,10 @@
 // 外站响应白名单。只用于展示个人查询结果，不作为本站积分账本。
 const packetMoney = value => /^(?:0|[1-9]\d{0,12})(?:\.\d{1,8})?$/.test(String(value)) ? String(value) : null
 const packetCount = value => Number.isSafeInteger(value) && value >= 0 ? value : null
+const packetName = value => String(value??'').normalize('NFC').replace(/[\p{Cc}\p{Cf}]/gu,'').slice(0,80)
+const packetDate = value => typeof value==='string'&&Number.isFinite(Date.parse(value))?Math.floor(Date.parse(value)/1000):null
+const packetPeople = (list,convert) => Array.isArray(list)?list.slice(0,100).map(convert):[]
+const packetPerson = p => ({name:packetName(p.name||p.displayName||p.username||'匿名用户'),username:packetName(p.username),amount:packetMoney(p.amount)})
 export function packetSnapshot(provider, raw, viewer) {
   if(provider==='fish')return fishSnapshot(raw)
   const d = provider === 'credit' ? raw?.data : raw
@@ -14,6 +18,10 @@ export function packetSnapshot(provider, raw, viewer) {
     wish: String(provider === 'credit' ? p.greeting || '' : p.wish || '').slice(0,120),
     expires_at: provider === 'credit' && Number.isFinite(Date.parse(p.expires_at)) ? Math.floor(Date.parse(p.expires_at)/1000) : null,
     claimed: mine != null && mine !== false, amount: mine != null && mine !== false ? packetMoney(typeof mine==='object' ? mine.amount : mine) : null }
+  result.claimed_count=provider==='hb'?packetCount(p.claimed_count):result.total!==null&&result.remaining!==null?Math.max(0,result.total-result.remaining):null
+  if(provider==='hb'&&result.remaining===null&&result.total!==null&&result.claimed_count!==null)result.remaining=Math.max(0,result.total-result.claimed_count)
+  result.recipients=packetPeople(provider==='credit'?d.claims:p.claims,packetPerson)
+  result.roster_more=Array.isArray(provider==='credit'?d.claims:p.claims)&&(provider==='credit'?d.claims:p.claims).length>100
   if(provider==='hb'){
     // viewer 仅来自 HB 当前会话。不得用本站合并后的用户 ID 推断领奖身份。
     const known=viewer!==undefined,uid=viewer?.linuxdo_id
@@ -23,6 +31,14 @@ export function packetSnapshot(provider, raw, viewer) {
       const winner=uid!=null&&Array.isArray(p.winners)?p.winners.find(w=>String(w.linuxdo_id)===String(uid)):null
       const ended=!!p.drawn_at||p.status==='drawn',clock=Number.isFinite(p.server_now)?p.server_now:Date.now()
       result.expires_at=Number.isFinite(p.draw_at)?Math.floor(p.draw_at/1000):null
+      result.draw_at=result.expires_at;result.draw_complete=ended
+      result.server_now=Number.isFinite(p.server_now)?Math.floor(p.server_now/1000):null
+      result.participant_count=Array.isArray(p.participants)?p.participants.length:null
+      result.winner_count=ended&&Array.isArray(p.winners)?p.winners.length:null
+      result.winners=ended?packetPeople(p.winners,w=>({...packetPerson(w),payout:w.payout_status==='paid'?'paid':'pending'})):[]
+      const winners=new Set((Array.isArray(p.winners)?p.winners:[]).map(w=>String(w.linuxdo_id)))
+      result.participants=packetPeople(p.participants,v=>({...packetPerson(v),amount:null,result:ended?(winners.has(String(v.linuxdo_id))?'won':'not_won'):'registered'}))
+      result.roster_more=(p.winners?.length||0)>100||(p.participants?.length||0)>100
       result.claimed=!!winner&&winner.payout_status==='paid'
       result.amount=result.claimed?packetMoney(winner.amount):null
       if(winner)result.state=result.claimed?'drawn':'payment_pending'
@@ -39,18 +55,30 @@ function fishSnapshot(raw) {
   const total=q?.mode==='exact'?packetCount(q.total):null, count=q?.mode==='exact'?packetCount(q.claimed):null
   const remaining=total!==null && count!==null ? Math.max(0,total-count) : null
   const empty=!p.draw && (remaining===0 || q?.mode==='availability' && q.available===false || q?.mode==='fuzzy' && q.level==='empty')
-  const expires=Number.isFinite(Date.parse(p.deadlineAt))?Math.floor(Date.parse(p.deadlineAt)/1000):null
+  const expires=packetDate(p.deadlineAt),completed=['completed','empty'].includes(p.draw?.state)
   let state=p.status==='draft'?'draft':empty?'exhausted':['ended','archived'].includes(p.status)?'expired':expires && expires<=Date.now()/1000&&!p.draw?'expired':'active'
   if(p.draw?.state==='settling')state='drawing'
-  if(p.draw && expires && expires<=Date.now()/1000)state='drawing'
+  if(p.draw && expires && expires<=Date.now()/1000&&!completed)state='drawing'
+  if(completed)state='drawn'
   if(registration?.status==='registered')state='registered'
   if(registration?.status==='drawing')state='drawing'
   if(registration?.status==='not_won')state='not_won'
   if(registration?.status==='won')state='payment_pending'
   const claimed=claim?.rewardType==='ldc' && claim.payment?.mode==='real' && claim.payment?.status==='confirmed'
   if(claim?.rewardType==='ldc'&&!claimed)state=claim.payment?.mode==='simulation'?'simulation':'payment_pending'
+  const list=raw?.roster,visible=p.showRecipientList===true&&list?.enabled!==false
+  const people=visible?packetPeople(list?.items,row=>{
+    const user=row.claimant||row.participant||row
+    return {...packetPerson({...user,amount:p.showRecipientAmount!==false?row.amount:null}),
+      ...(p.showRecipientUsername===false?{name:'匿名用户',username:''}:{}),
+      result:['registered','drawing','won','not_won'].includes(row.status)?row.status:undefined}
+  }):[]
   return {id:p.id,state,kind:p.rewardType==='text'?'text':String(p.reward?.mode || 'unknown'),claimed,amount:claimed?packetMoney(claim.amount):null,
-    total,remaining,expires_at:expires,requires_password:p.participationMode!=='direct',creator:String(p.author?.displayName || p.author?.username || '').slice(0,100),wish:String(p.title || '').slice(0,120)}
+    total,remaining,claimed_count:count,participant_count:packetCount(p.draw?.registeredCount),winner_count:completed?packetCount(p.draw?.winnerCount):null,
+    draw_at:p.draw?(packetDate(registration?.drawAt)||expires):null,draw_deadline:!!p.draw,draw_complete:completed,
+    winners:p.draw&&completed?people:[],participants:p.draw&&!completed?people:[],recipients:!p.draw?people:[],
+    roster_more:visible&&(!!list?.nextCursor||(list?.items?.length||0)>100),roster_error:raw?.roster_error===true,
+    expires_at:expires,requires_password:p.participationMode!=='direct',creator:String(p.author?.displayName || p.author?.username || '').slice(0,100),wish:String(p.title || '').slice(0,120)}
 }
 export function claimReceipt(provider, raw) {
   const d = provider === 'credit' ? raw?.data : raw

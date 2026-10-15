@@ -116,7 +116,10 @@ export function parsePacketReference(value, provider = 'auto') {
 export function cleanExternalPacket(body) {
     if (!body.provider || body.provider === 'native')
         return {provider:'native', external_ref:'', external_kind:''};
-    return parsePacketReference(body.external_ref, String(body.provider));
+    const packet = parsePacketReference(body.external_ref, String(body.provider));
+    const code = packetText(body.external_code);
+    if (code && !/^[\p{Script=Han}A-Za-z0-9]{6,18}$/u.test(code)) throw new Error('活动口令需要6–18字中英文或数字');
+    return code ? {...packet, external_code: code} : packet;
 }
 export function packetReferenceUrl(packet) {
     const {provider, external_ref:ref, external_kind:kind} = packet;

@@ -1,4 +1,4 @@
-export type ExternalPacket = {provider:string;external_ref:string;external_kind:string}
+export type ExternalPacket = {provider:string;external_ref:string;external_kind:string;external_code?:string}
 export function packetText(value:unknown):string
 export function decodeSharedCode(value:string):string
 export function sharedPacket(body:string):ExternalPacket|null
