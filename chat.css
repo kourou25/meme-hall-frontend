@@ -316,6 +316,11 @@
 .rpk-options { margin: 12px 0; }
 .rpk-options summary { cursor: pointer; min-height: 36px; padding: 8px 0; }
 .rpk-platforms { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.rpk-flow-nav { display:flex; gap:6px; padding:0 18px 10px; flex-shrink:0; }
+.rpk-flow-nav button { flex:1; min-width:0; padding:8px 5px; }
+.rpk-flow-nav [aria-pressed=true] { background:var(--rpk-coral); color:#382b25; }
+.rpk-platform-create { display:grid; gap:12px; }
+.rpk-input:is(textarea) { resize:vertical; min-height:80px; }
 .rpk-platforms [aria-pressed=true] { background: var(--rpk-coral); color: #382b25; border-width: 2px; }
 .rpk-crop { display: grid; gap: 12px; }
 .rpk-crop h3 { margin: 0; font-size: 18px; }
