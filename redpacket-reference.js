@@ -1,4 +1,5 @@
 // 浏览器与服务端共用的官方红包引用解析；这里不请求平台或领取红包。
+import {fishActivityId,fishShareCode} from './fish-ecoji.js?v=98ddcc7d'
 export const packetText = (v) => String(v ?? '').normalize('NFC').trim();
 // 兼容已有分享脚本的可逆口令格式；解析聊天正文时不请求外站。
 export function decodeSharedCode(value) {
@@ -60,7 +61,7 @@ export function sharedPacket(body) {
     for (const token of body.match(/https:\/\/[^\s<>"'，。！？）)\]】]+/gi) || []) {
         try {
             const url = new URL(token);
-            const provider = url.hostname === 'credit.linux.do' ? 'credit' : url.hostname === 'meme.442224.xyz' ? 'fish' : '';
+            const provider = url.hostname === 'credit.linux.do' ? 'credit' : ['hb.lafi.sh','meme.442224.xyz'].includes(url.hostname) ? 'fish' : '';
             if (provider)
                 found.push(cleanPacketReference({ provider, external_ref: token }));
             if (url.origin === 'https://hb.unsnow.org' && !url.username && !url.password) {
@@ -83,7 +84,13 @@ export function sharedPacket(body) {
         }
     }
     const unique = new Map(found.map(p => [p.provider + ':' + p.external_ref, p]));
-    return unique.size === 1 ? [...unique.values()][0] : null;
+    if (unique.size !== 1) return null;
+    const packet = [...unique.values()][0];
+    if (packet.provider !== 'fish' || packet.external_kind !== 'id') return packet;
+    const codes = new Set([...body.matchAll(/(?:^|\r?\n)[ \t]*(?:输入[ \t]*)?口令[ \t]*[:：][ \t]*([^\r\n]+)/gmu)]
+      .map(match => match[1].trim().replace(/[。！!，,]+$/u, ''))
+      .filter(code => [...code].length >= 6 && [...code].length <= 18 && /^[\p{Script=Han}A-Za-z0-9]+$/u.test(code)));
+    return codes.size === 1 ? {...packet, external_code:[...codes][0]} : packet;
 }
 export function parsePacketReference(value, provider = 'auto') {
     const input = packetText(value);
@@ -96,7 +103,7 @@ export function parsePacketReference(value, provider = 'auto') {
     // 完整URL严格校验，避免带凭据、查询参数的URL被宽松提取。
     if (/^https:\/\/\S+$/i.test(input) && !/[。，！）)]$/.test(input)) {
         let detected = '';
-        try { detected = ({'hb.unsnow.org':'hb','credit.linux.do':'credit','meme.442224.xyz':'fish'})[new URL(input).hostname] || ''; } catch {}
+        try { detected = ({'hb.unsnow.org':'hb','credit.linux.do':'credit','hb.lafi.sh':'fish','meme.442224.xyz':'fish'})[new URL(input).hostname] || ''; } catch {}
         if (!detected || (provider !== 'auto' && provider !== detected))
             throw new Error('红包链接与所选平台不一致');
         return cleanPacketReference({provider:detected, external_ref:input});
@@ -107,7 +114,7 @@ export function parsePacketReference(value, provider = 'auto') {
             throw new Error('红包分享内容与所选平台不一致');
         return shared;
     }
-    if (/https?:\/\/|hb\.unsnow\.org|\s/.test(input))
+    if (/https?:\/\/|hb\.unsnow\.org|hb\.lafi\.sh|\s/.test(input))
         throw new Error('未能识别唯一红包，请一次粘贴一个官方分享链接或完整分享内容');
     if (provider === 'auto')
         throw new Error('只有口令或编号时，请先选择所属平台');
@@ -124,7 +131,7 @@ export function cleanExternalPacket(body) {
 export function packetReferenceUrl(packet) {
     const {provider, external_ref:ref, external_kind:kind} = packet;
     if (provider === 'credit') return 'https://credit.linux.do/redenvelope/' + encodeURIComponent(ref);
-    if (provider === 'fish') return kind === 'id' ? 'https://meme.442224.xyz/activities/' + encodeURIComponent(ref) : 'https://meme.442224.xyz/';
+    if (provider === 'fish') return kind === 'id' ? 'https://hb.lafi.sh/🧧/' + encodeURIComponent(fishShareCode(ref) || ref) : 'https://hb.lafi.sh/';
     if (provider === 'hb') return 'https://hb.unsnow.org/' + (kind === 'id' ? 'hb/' : kind === 'numeric' ? 'code/' : 'text-code/') + encodeURIComponent(ref);
     throw new Error('请选择支持的红包平台');
 }
@@ -138,15 +145,21 @@ export function cleanPacketReference(b) {
     if (provider === 'fish') {
         if (/^https:/i.test(ref)) {
             const url = new URL(ref);
-            if (url.origin !== 'https://meme.442224.xyz' || url.username || url.password || url.search || url.hash)
+            if (!['https://hb.lafi.sh','https://meme.442224.xyz'].includes(url.origin) || url.username || url.password || url.hash)
                 throw new Error('请粘贴 fish 官方活动链接');
-            ref = url.pathname.match(/^\/activities\/([a-f0-9-]{36})\/?$/i)?.[1] || '';
+            const path=decodeURIComponent(url.pathname)
+            const image=path.match(/^\/🧧\/([^/]+)\/🖼️?\.svg$/u)
+            if(url.search && (!image || [...url.searchParams.keys()].length!==1 || !/^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+)*$/.test(url.searchParams.get('tz')||'')))
+                throw new Error('请粘贴 fish 官方活动链接');
+            ref=path.match(/^\/activities\/([a-f0-9-]{36})\/?$/i)?.[1]
+              || fishActivityId(path.match(/^\/🧧\/([^/]+)\/?$/u)?.[1]||image?.[1]) || '';
         }
+        else ref=fishActivityId(ref)||ref;
         if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(ref))
             return { provider, external_ref: ref, external_kind: 'id' };
         if ([...ref].length >= 6 && [...ref].length <= 18 && /^[\p{Script=Han}A-Za-z0-9]+$/u.test(ref))
             return { provider, external_ref: ref, external_kind: 'text' };
-        throw new Error('fish 需要活动链接、UUID 或6–18字中英文数字口令');
+        throw new Error('Fish 需要官方红包链接、14位表情码、UUID 或6–18字中英文数字口令');
     }
     if (provider === 'credit') {
         if (/^https:/i.test(ref)) {

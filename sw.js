@@ -6,6 +6,34 @@ const IMG_MAX = 400
 const STATIC_RE = /^\/(stickers|emoji|wallpapers|disguise)\/.+\.(png|jpe?g|gif|webp|svg|avif)$/i // packs.json 之类不缓存
 const IMG_RE = /^\/img\//
 
+self.addEventListener('push',e=>{
+ e.waitUntil((async()=>{
+  let data;try{data=e.data?.json()}catch{return}
+  if(!data||typeof data.binding!=='string')return
+  const sub=await self.registration.pushManager.getSubscription()
+  if(!sub)return
+  // A logged-out/rebound browser must not show an old account's queued notification.
+  let state
+  try{const res=await fetch('/api/push/status',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({endpoint:sub.endpoint}),signal:AbortSignal.timeout(5000)});if(!res.ok)return;state=await res.json()}catch{return}
+  if(!state.enabled||state.binding!==data.binding)return
+  const url=typeof data.url==='string'&&/^\/chat\/\d+$/.test(data.url)?data.url:'/chat'
+  const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true})
+  if(windows.some(w=>w.visibilityState==='visible'&&new URL(w.url).pathname===url))return
+  await self.registration.showNotification('尽欢',{body:'群聊有新消息',tag:'jh-group-message',renotify:false,data:{url},icon:'/favicon.svg'})
+ })())
+})
+self.addEventListener('notificationclick',e=>{
+ e.notification.close()
+ e.waitUntil((async()=>{
+  const value=e.notification.data?.url,url=typeof value==='string'&&/^\/chat\/\d+$/.test(value)?value:'/chat'
+  const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true})
+  const same=windows.find(w=>new URL(w.url).origin===location.origin&&new URL(w.url).pathname===url)
+  if(same){await same.focus();return}
+  // Existing chat startup restores this account's saved reading position.
+  await self.clients.openWindow(url)
+ })())
+})
+
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {

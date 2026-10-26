@@ -1,4 +1,4 @@
-import {normalizePlatformCreate} from '/redpacket-create-core.js?v=be7c145d'
+import {normalizePlatformCreate} from '/redpacket-create-core.js?v=98ddcc7d'
 
 // 仅打开HB/Fish创建表单时加载；无定时器和后台监听。
 export function platformCreateForm({provider,userId,groupId,h,bridge,win,onState}){
@@ -27,7 +27,7 @@ export function platformCreateForm({provider,userId,groupId,h,bridge,win,onState
   if(busy)return;busy=true;sync()
   try{
    const connected=await bridge('ping')
-   if(!connected.creationRecoveryV1)throw Error('创建HB/Fish需要1.4.0连接器，请打开顶部“连接器”更新')
+   if(!connected.creationRecoveryV1 || provider==='fish'&&!connected.fishV2)throw Error('创建Fish需要1.5.0连接器，请打开顶部“连接器”更新')
    options=await bridge('creationOptions',{provider,operation})
    account.textContent=label+'：'+options.name+' · '+(options.ready?'已配置':'需在平台完成LDC绑定')
    if(provider==='fish'){
@@ -45,7 +45,7 @@ export function platformCreateForm({provider,userId,groupId,h,bridge,win,onState
    info.textContent=options.pending?'已恢复待确认操作，请继续同一个红包。':options.ready?'账户已检测，可以填写红包。':'完成平台绑定后，回这里重新检测。'
   }catch(error){info.textContent=error.message}finally{busy=false;sync()}
  }},'检测 '+label+' 账户')
- const binding=h('a',{class:'rpk-secondary',href:provider==='hb'?'https://hb.unsnow.org/':'https://meme.442224.xyz/my/merchants',target:'_blank',rel:'noopener noreferrer'},provider==='hb'?'HB 配置与已发记录':'Fish 商户与已发记录')
+ const binding=h('a',{class:'rpk-secondary',href:provider==='hb'?'https://hb.unsnow.org/':'https://hb.lafi.sh/my/merchants',target:'_blank',rel:'noopener noreferrer'},provider==='hb'?'HB 配置与已发记录':'Fish 商户与已发记录')
  const release=h('button',{type:'button',class:'rpk-secondary',hidden:true,onclick:async()=>{
   if(busy||!options||!win.confirm('请先核对HB已发记录。清理只结束本站待确认状态，不会撤销已创建红包。之后提交将是一笔新的红包。确认已核对？'))return
   busy=true;sync()

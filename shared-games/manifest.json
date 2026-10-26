@@ -1,0 +1,15 @@
+{
+  "version": "1.0.2",
+  "protocol": 1,
+  "files": {
+    "chat.css": "0a6ff9c91188c9b0574645664285d6c958dfacbadd1d402d2c3bb82197c6d991",
+    "chat.js": "b0d3f782cc5c4f23867629deb9ff032826ff5be420ee3c14b916f252c97cef4d",
+    "dom.js": "669d682b4e64b99c95abe65e271163b2597b369fdc37a3fef862154e0fe6590d",
+    "guess-view.js": "e82ecb5373968f53767ceaf1f489937b14e574640e28b31b9f1f42943e087a8a",
+    "rules-data.js": "7b7f3876318785a35fdf37f61f19f0a8254cbf3412f0b3c3ca4e9a13a11b9856",
+    "session.css": "e38cd7179a595f902fe9834d237ae4f3690428f0ae8ab97ca2d56dcb551ca638",
+    "session.js": "15d6b173fb4b71e05a9a0de87200b4c1fdc95aefb07c06ace3c614cd1604929c",
+    "winner-chat.css": "212215b385697d0f9523dae5c0ee675854e68e4b0fe426ac29aa06c493e80f48",
+    "winner-chat.js": "10ce727e136fa9f93591d6ab63c672b5a4131ae7eb64a12c29382d8a56d9f4fb"
+  }
+}

@@ -1,0 +1,14 @@
+/* Restore the illustrated collections without rolling back levels or ownership. */
+.rt-title.rt-lace{--title-image:url('/assets/raffle/v2/lace-frame.webp');--title-ink:#573472}
+.rt-title.rt-giant{--title-image:url('/assets/raffle/v2/giant-frame.webp');--title-ink:#923c4e}
+.rt-restored.rt-badge .rt-art{width:26px;height:26px;padding:0;border:0;background:none;box-shadow:none;animation:none}
+html .rt-restored.rt-title .rt-title-name{color:var(--title-ink);background:none;text-shadow:none;animation:none;letter-spacing:0}
+html .rt-restored.rt-bubble:not(.rt-whalebuddy)::after{animation:none;translate:none;rotate:none}
+html .rt-restored.rt-title{vertical-align:middle}
+html .rt-restored.rt-title .rt-level{top:50%;translate:0 0;transform:translateY(-50%)}
+html .cm-text.rt-restored.rt-worship{min-height:0;padding:3px 5px;border-width:14px 28px 14px 23px;border-image-width:14px 28px 14px 23px;max-width:min(640px,100%);line-height:1.5}
+html:not([data-bubble-legacy='1']) .cm-text.rt-restored.rt-lace{min-height:0;max-width:min(640px,100%);padding:3px 6px;border-width:22px 25px 17px;border-image-width:22px 25px 17px;line-height:1.5}
+html:not([data-bubble-legacy='1']) .cm-text.rt-restored.rt-giant{min-height:0;max-width:min(640px,100%);padding:3px 6px;border-width:15px 34px 15px 32px;border-image-width:15px 34px 15px 32px;line-height:1.5}
+.ic-identity{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
+.ic-actual-preview{min-width:0;max-width:100%;padding:8px 0}
+.ic-actual-preview>.cm-text{margin-top:8px}

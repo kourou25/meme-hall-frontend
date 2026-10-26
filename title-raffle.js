@@ -42,12 +42,19 @@ export function openTitleRaffle({ anchor, api, h, icon, packetId = null, raffleI
           h('div', { class: 'tr-meta' },
             r.packet_id ? '红包限定 · 报名开奖' : r.entry_mode === 'all' ? '最近 24 小时活跃群友参与' : `${r.entries} 人已报名`,
             ' · ', new Date(r.closes_at * 1000).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })),
-          r.status === 'drawn' && h('div', { class: 'tr-winner' }, '✦ ', r.winner_name || r.winner_username || '群友', ' 获得称号', r.level > 1 && ` · Lv${r.level}`,h('small',null,' · 可在「我的 → 装扮」自行佩戴')),
+          r.paid_version===1 && h('p',{class:'tr-meta'},`每人独立开奖 · 基础5% · 每追加100 D币 +1个百分点 · 最高25%${r.joined?'。你已付 '+r.my_paid+' D币，中奖率 '+(5+r.my_boosts)+'%。':''}`),
+          r.paid_version===1 && h('p',{class:'tr-meta'},'报名后不支持退出，未中奖不退款；整场取消或开奖时资格失效，全额退回。重复中奖使称号升一级，鲸伴最高20级。'),
+          r.paid_version===1 && (r.status==='drawn'||r.status==='cancelled') && h('div',{class:'tr-winner'},r.status==='cancelled'?'已取消，报名与追加费用已退回':`${r.winner_count} 人中奖 · ${r.my_result===1?'你已中奖，可到装扮佩戴':r.my_result===2?'参与资格失效，费用已退回':r.my_result===0?'本次未中奖':'你未参与'}`),
+          r.paid_version!==1 && r.status === 'drawn' && h('div', { class: 'tr-winner' }, '✦ ', r.winner_name || r.winner_username || '群友', ' 获得称号', r.level > 1 && ` · Lv${r.level}`,h('small',null,' · 可在「我的 → 装扮」自行佩戴')),
           h('div', { class: 'tr-actions' },
-            active && r.entry_mode === 'optin' && h('button', { type: 'button', class: 'tr-action primary', onclick: () => mutate(BASE + '/' + r.id + '/join', r.joined ? 'DELETE' : 'POST') }, r.joined ? '已报名 · 退出' : '报名抽取'),
+            active && r.entry_mode === 'optin' && r.paid_version!==1 && h('button', { type: 'button', class: 'tr-action primary', onclick: () => mutate(BASE + '/' + r.id + '/join', r.joined ? 'DELETE' : 'POST') }, r.joined ? '已报名 · 退出' : '报名抽取'),
             active && data.can_create && h('button', { type: 'button', class: 'tr-action primary', onclick: () => mutate(BASE + '/' + r.id + '/draw', 'POST') }, '立即开奖'),
             active && data.can_create && h('button', { type: 'button', class: 'tr-action', onclick: () => mutate(BASE + '/' + r.id + '/cancel', 'POST') }, '取消抽奖')),
           h('span', { class: 'tr-error', role: 'alert' }))
+        const records=h('div'),details=h('details',null,h('summary',null,'参与明细 · 投入与开奖结果'),records)
+        let recordsLoaded=false
+        const loadRecords=async(before=null)=>{records.textContent='正在读取…';try{const d=await api(BASE+'/'+r.id+'/participants'+(before?'?before='+before:''));records.replaceChildren(...d.participants.map(x=>h('div',{class:'tr-participant'},h('strong',null,x.name||x.username||'已注销用户'),h('span',null,x.paid+' D币'),h('span',null,x.result===1?'中奖':x.result===0?'未中奖':x.result===2?(x.refunded?'已退款':'已取消'):'待开奖'))),d.next?h('button',{class:'tr-action',onclick:()=>loadRecords(d.next)},'下一页'):h('span'),before?h('button',{class:'tr-action',onclick:()=>loadRecords()},'返回最新'):h('span'));recordsLoaded=true}catch(e){records.replaceChildren(h('p',{class:'tr-error'},e.message),h('button',{class:'tr-action',onclick:()=>loadRecords(before)},'重试'))}}
+        details.ontoggle=()=>{if(details.open&&!recordsLoaded)loadRecords()};row.append(details)
         return row
       })
       const controls = h('div', { class: 'tr-controls' },
@@ -55,24 +62,10 @@ export function openTitleRaffle({ anchor, api, h, icon, packetId = null, raffleI
         before && h('button', { type: 'button', class: 'tr-action', onclick: () => { before = null; load() } }, '返回最新'),
         data.next && h('button', { type: 'button', class: 'tr-action', onclick: () => { before = data.next; load() } }, '更早抽奖'),
         h('button', { type: 'button', class: 'tr-action', onclick: load }, '刷新'))
-      const create = data.can_create && !raffleId ? createForm(data.titles) : null
+      const create = h('p',{class:'tr-info'},'旧场次保留原结算与退款规则；新参与请使用独立「抽卡」。')
       body.replaceChildren(controls, create || '', rows.length ? h('div', { class: 'tr-list' }, rows) : h('p', { class: 'tr-empty' }, packetId ? '这个红包还没有称号抽奖' : '今天还没有称号抽奖'))
     } catch (e) { body.replaceChildren(h('p', { class: 'tr-error', role: 'alert' }, e.message || '加载失败'), h('button', { class: 'tr-action', onclick: load }, '重试')) }
   }
-  function createForm(titles) {
-    const titleSelect = h('select', { class: 'tr-input', 'aria-label': '抽取称号' }, ['normal','SSR'].map(rarity=>h('optgroup',{label:rarity==='SSR'?'SSR · 角色套装':'普通 · 轻量套装'},titles.filter(t=>t.enabled!==false&&t.rarity===rarity).map(t=>h('option',{value:t.id},t.name)))))
-    const mode = h('select', { class: 'tr-input', 'aria-label': '参与方式' },
-      h('option', { value: 'optin' }, '报名参与'), !packetId && h('option', { value: 'all' }, '全员参与（24 小时活跃）'))
-    const duration = h('select', { class: 'tr-input', 'aria-label': '开奖时间' }, Object.entries(WHEN).map(([n, label]) => h('option', { value: n }, label)))
-    const feedback = h('span', { class: 'tr-error', role: 'alert' })
-    const submit = h('button', { class: 'tr-action primary', type: 'submit' }, '发起抽奖')
-    return h('form', { class: 'tr-create', onsubmit: async e => {
-      e.preventDefault(); if (busy) return; busy = true; submit.disabled = true; feedback.textContent = ''
-      try { await api(BASE, { method: 'POST', body: { title: titleSelect.value, entry_mode: mode.value, duration_seconds: Number(duration.value), packet_id: packetId } }); changed(); await load() }
-      catch (err) { feedback.textContent = err.message || '发起失败' }
-      finally { busy = false; submit.disabled = false }
-    } }, h('strong', null, packetId ? '给这个红包挂一个称号' : '群主发起'),
-    h('div', { class: 'tr-create-fields' }, titleSelect, mode, duration, submit), feedback)
-  }
   load()
 }
+

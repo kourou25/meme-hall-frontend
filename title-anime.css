@@ -1,0 +1,13 @@
+/* Shared title identity; message bubble details stay compact and secondary. */
+html .rt-nameplate.rt-title.u-title[class],html .cm-head .rt-nameplate.rt-title.u-title[class]{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;width:max-content;min-width:0;max-width:100%;height:27px;margin:0;padding:2px 7px 2px 10px;border:1px solid color-mix(in srgb,var(--rt-color) 65%,#fff);border-radius:7px 3px 9px 3px;background:linear-gradient(112deg,color-mix(in srgb,var(--rt-accent) 28%,#fff),#fffefa 58%,color-mix(in srgb,var(--rt-color) 15%,#fff));box-shadow:inset 0 0 0 2px #fff8,0 1px 1px #28332912;color:color-mix(in srgb,var(--rt-color) 70%,#212e40);font-size:11px;line-height:1.3;vertical-align:middle;isolation:isolate}
+html .rt-nameplate.rt-title.u-title[class] .rt-title-name{position:static;inset:auto;transform:none;translate:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:inherit;background:none;animation:none;text-shadow:0 1px #fff9;letter-spacing:.1px;line-height:1.3}
+html .rt-nameplate.rt-title .rt-title-size{display:none}
+html .rt-nameplate.rt-title .rt-level{position:static;inset:auto;transform:none;translate:none;flex:none;display:inline-flex;align-items:center;height:17px;padding:0 4px;background:color-mix(in srgb,var(--rt-color) 85%,#fff);color:#fff;border-radius:3px;font:700 9px/1.1 var(--font);text-shadow:none;border:0}
+html .rt-nameplate.rt-title::before{content:none}
+html .rt-title-emblem{display:block;flex:none;width:15px;height:15px;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;fill:none;overflow:visible}
+html .rt-nameplate.rt-title::after{content:none}
+html .rt-nameplate.rt-badge{display:inline-flex;align-items:center;vertical-align:middle;gap:4px;flex:none}
+html .rt-nameplate.rt-badge .rt-art{display:inline-flex;align-items:center;justify-content:center;flex:none;width:29px;height:29px;padding:0;border:0;border-radius:0;box-shadow:none;background:none;animation:none;filter:none}
+html .rt-nameplate.rt-badge .rt-art img{display:block;width:100%;height:100%;object-fit:contain}
+
+@media(max-width:600px){html .rt-nameplate.rt-title.u-title[class],html .cm-head .rt-nameplate.rt-title.u-title[class]{height:25px;font-size:10.5px;padding:2px 5px 2px 8px;gap:4px}html .rt-nameplate.rt-badge .rt-art{width:27px;height:27px}}

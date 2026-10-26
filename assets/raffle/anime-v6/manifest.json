@@ -1,0 +1,312 @@
+[
+  {
+    "id": "blacksilk",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 97306
+  },
+  {
+    "id": "loli",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 96846
+  },
+  {
+    "id": "blade",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 94198
+  },
+  {
+    "id": "spear",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 110784
+  },
+  {
+    "id": "sword",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 101560
+  },
+  {
+    "id": "halberd",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 108564
+  },
+  {
+    "id": "snow",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 84376
+  },
+  {
+    "id": "moon",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 90320
+  },
+  {
+    "id": "wind",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 83774
+  },
+  {
+    "id": "flower",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 84902
+  },
+  {
+    "id": "sun",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 87954
+  },
+  {
+    "id": "star",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 91212
+  },
+  {
+    "id": "cloud",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 90488
+  },
+  {
+    "id": "mona",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 106392
+  },
+  {
+    "id": "lace",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 94900
+  },
+  {
+    "id": "giant",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 80772
+  },
+  {
+    "id": "worship",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 90964
+  },
+  {
+    "id": "muscle",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 65998
+  },
+  {
+    "id": "deepseek",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 98330
+  },
+  {
+    "id": "gpt",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 106368
+  },
+  {
+    "id": "claude",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 92708
+  },
+  {
+    "id": "gemini",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 110578
+  },
+  {
+    "id": "maid",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 80410
+  },
+  {
+    "id": "nightdevil",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 102622
+  },
+  {
+    "id": "whitedragon",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 86408
+  },
+  {
+    "id": "deepseekupgrade",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 108968
+  },
+  {
+    "id": "whalepunch",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 109704
+  },
+  {
+    "id": "newcomer",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 82050
+  },
+  {
+    "id": "rascal",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 95948
+  },
+  {
+    "id": "weirdo",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 92416
+  },
+  {
+    "id": "electric",
+    "columns": 4,
+    "rows": 2,
+    "cell": [
+      128,
+      160
+    ],
+    "bytes": 109030
+  }
+]

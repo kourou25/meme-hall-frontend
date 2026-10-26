@@ -1,0 +1,9 @@
+/* A compact rose-gold laurel set. The text box retains its normal dimensions. */
+.resource_respect{--gr-accent:#a96983;--gr-soft:#f7ecf1;--gr-ink:#754a65;border-color:var(--gr-accent)!important;background-color:var(--gr-soft)!important;color:var(--gr-ink)!important}
+[data-theme=dark] .resource_respect{--gr-soft:#352d40;--gr-ink:#f1dce9;--gr-accent:#bc8aa4}
+.resource_respect.gr-2{--gr-accent:#b78358}.resource_respect.gr-3{--gr-accent:#a97eac}.resource_respect.gr-4{--gr-accent:#a46895}.resource_respect.gr-5{--gr-accent:#b68d54}
+.guess-title.resource_respect{border-radius:6px 12px 6px 12px;background-image:linear-gradient(115deg,transparent,rgba(225,190,138,.22),transparent)}
+.guess-bubble.resource_respect,.cm-text.resource_respect{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gr-accent) 18%,transparent);border-radius:14px 14px 14px 5px;background-image:radial-gradient(ellipse at 100% 100%,rgba(206,166,199,.2),transparent 60%)}
+.resource_respect.gr-4,.resource_respect.gr-5{border-style:double!important;border-width:3px!important}
+.resource-honor-badge{display:inline-flex;width:36px;height:36px;flex:none;align-items:center;justify-content:center}.resource-honor-badge img{width:100%;height:100%;object-fit:contain}.resource-honor-badge[data-level="5"]{filter:drop-shadow(0 0 3px #d3a96866)}
+.rs-comment.resource_respect{border-radius:12px;padding:12px;margin:12px 0;border:1px solid var(--gr-accent)}

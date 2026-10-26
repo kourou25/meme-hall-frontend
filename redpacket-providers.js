@@ -66,18 +66,23 @@ function fishSnapshot(raw) {
   if(registration?.status==='won')state='payment_pending'
   const claimed=claim?.rewardType==='ldc' && claim.payment?.mode==='real' && claim.payment?.status==='confirmed'
   if(claim?.rewardType==='ldc'&&!claimed)state=claim.payment?.mode==='simulation'?'simulation':'payment_pending'
-  const list=raw?.roster,visible=p.showRecipientList===true&&list?.enabled!==false
+  // 新版公开活动省略旧显示开关，名单接口自身控制可见性；显式false继续尊重。
+  const list=raw?.roster,visible=p.showRecipientList!==false&&list?.enabled!==false
+  const high=Array.isArray(list?.titles?.highestClaimIds)?list.titles.highestClaimIds.slice(0,100):[]
+  const low=Array.isArray(list?.titles?.lowestClaimIds)?list.titles.lowestClaimIds.slice(0,100):[]
   const people=visible?packetPeople(list?.items,row=>{
     const user=row.claimant||row.participant||row
+    const king=typeof row.id==='string'&&high.includes(row.id),last=typeof row.id==='string'&&low.includes(row.id)
     return {...packetPerson({...user,amount:p.showRecipientAmount!==false?row.amount:null}),
       ...(p.showRecipientUsername===false?{name:'匿名用户',username:''}:{}),
+      luck:p.reward?.mode==='random'&&king!==last?(king?'king':'last'):undefined,
       result:['registered','drawing','won','not_won'].includes(row.status)?row.status:undefined}
   }):[]
   return {id:p.id,state,kind:p.rewardType==='text'?'text':String(p.reward?.mode || 'unknown'),claimed,amount:claimed?packetMoney(claim.amount):null,
     total,remaining,claimed_count:count,participant_count:packetCount(p.draw?.registeredCount),winner_count:completed?packetCount(p.draw?.winnerCount):null,
     draw_at:p.draw?(packetDate(registration?.drawAt)||expires):null,draw_deadline:!!p.draw,draw_complete:completed,
     winners:p.draw&&completed?people:[],participants:p.draw&&!completed?people:[],recipients:!p.draw?people:[],
-    roster_more:visible&&(!!list?.nextCursor||(list?.items?.length||0)>100),roster_error:raw?.roster_error===true,
+    roster_more:visible&&(!!list?.nextCursor||list?.truncated===true||(list?.items?.length||0)>100),roster_error:raw?.roster_error===true,
     expires_at:expires,requires_password:p.participationMode!=='direct',creator:String(p.author?.displayName || p.author?.username || '').slice(0,100),wish:String(p.title || '').slice(0,120)}
 }
 export function claimReceipt(provider, raw) {

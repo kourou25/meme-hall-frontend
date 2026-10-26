@@ -1,0 +1,173 @@
+/* Continuous illustrated frames, with fixed corner proportions for long messages. */
+html .cm-text.rt-anime.rt-bubble{
+ --rt-cap:14px;--rt-portrait-size:22px;--rt-cycle:8s;--rt-finish:none;--rt-spark:none;
+ --rt-paper:color-mix(in srgb,var(--rt-color) 5%,#fffdf7);--rt-paper-end:color-mix(in srgb,var(--rt-accent) 10%,#fffdf8);
+ --rt-shape:20px;--rt-spark-shape:50%;--rt-spark-ink:var(--rt-accent);
+ position:relative;display:block;box-sizing:border-box;width:auto;min-width:0;max-width:min(640px,100%);min-height:0;
+ margin:4px 0;padding:7px 12px;border:0;border-radius:4px 12px 12px 12px;border-image:none;background:none;box-shadow:none;
+ color:var(--text);font-size:inherit;line-height:1.6;text-align:start;white-space:pre-wrap;overflow:visible;overflow-wrap:normal;word-break:break-word;isolation:isolate;
+}
+html .cm-text.rt-anime.rt-bubble::before{content:'';position:absolute;inset:0;z-index:-2;width:auto;height:auto;border:0;border-radius:inherit;background:linear-gradient(115deg,var(--rt-paper),var(--rt-paper-end));transform:none;translate:none;rotate:none;animation:none;opacity:1;filter:none;box-shadow:none;pointer-events:none}
+html .cm-text.rt-anime.rt-bubble::after{content:none}
+html .rt-anime.rt-bubble>.rt-copy{position:static;display:contents;overflow-wrap:inherit;word-break:inherit;background:none}
+html .rt-anime.rt-bubble>.rt-copy::before,html .rt-anime.rt-bubble>.rt-copy::after{content:none}
+html .rt-anime.rt-bubble>.rt-copy a{overflow-wrap:normal;word-break:break-all}
+html .rt-anime.rt-bubble>.rt-detail{position:absolute;inset:0;display:block;z-index:-1;pointer-events:none;border-radius:inherit}
+.rt-detail>i{position:absolute;display:block;pointer-events:none}
+.rt-trim-frame,.rt-trim-finish{inset:-4px -7px;border-style:solid;border-color:transparent;box-sizing:border-box;border-width:calc(var(--rt-cap) * var(--rt-top-ratio,.76)) var(--rt-cap) calc(var(--rt-cap) * var(--rt-bottom-ratio,.76));border-image-width:calc(var(--rt-cap) * var(--rt-top-ratio,.76)) var(--rt-cap) calc(var(--rt-cap) * var(--rt-bottom-ratio,.76));border-image-source:var(--rt-frame);border-image-slice:var(--rt-slice);border-image-repeat:stretch}
+.rt-trim-finish{opacity:0;filter:brightness(1.6) saturate(.85);animation:var(--rt-finish) var(--rt-cycle) ease-in-out infinite;mix-blend-mode:screen}
+/* A continuous outline owns the geometry. The intact portrait sits below the
+   outer side edge; neither image nor theme changes the text's inline size. */
+html .cm-text.rt-anime.rt-portrait{margin-block:4px}
+.rt-portrait .rt-trim-frame,.rt-portrait .rt-trim-finish{inset:-1px;border:1.5px solid transparent;border-image:none;border-radius:inherit;background:linear-gradient(115deg,var(--rt-color),var(--rt-accent) 35%,#fff4da 53%,var(--rt-color)) border-box;mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);mask-composite:exclude}
+.rt-trim-portrait-rim{inset:-3px -1px;border:solid transparent;border-width:7px 0 6px;border-image:var(--rt-frame) 35 140 20 140 / 7px 0 6px stretch}
+.rt-trim-portrait-left,.rt-trim-portrait-right{aspect-ratio:140/128;height:auto;background-image:var(--rt-frame);background-size:274.2857% 100%;background-repeat:no-repeat}
+.rt-trim-portrait-left{width:21px;left:-10px;top:-4px;background-position:left top}
+.rt-trim-portrait-right{width:min(var(--rt-portrait-size),80%);right:calc(12px - var(--rt-portrait-size));bottom:0;background-position:right bottom}
+.rt-trim-spark{left:calc(23% + var(--rt-i) * 24%);bottom:-4px;width:6px;height:5px;opacity:0;border-radius:var(--rt-spark-shape);background:var(--rt-spark-ink);box-shadow:0 0 2px #fff;animation:var(--rt-spark) var(--rt-cycle) ease-in-out infinite;animation-delay:calc(var(--rt-i) * -.8s)}
+.rt-trim-muzzle{left:-18px;top:calc(100% - 9px);width:8px;height:5px;opacity:0;border-radius:50%;background:#eefaff;box-shadow:7px 5px 0 #d2efff,0 0 8px #8ad6ff}
+.rt-trim-cannon{left:calc(10px - var(--rt-cannon-size,28px));bottom:-3px;width:var(--rt-cannon-size,28px);aspect-ratio:1296/1184;background:url('/assets/raffle/bubble-reading-v10/cannon.webp') center/contain no-repeat;transform-origin:85% 15%}
+html .cm-text.rt-anime.rt-railcannon{margin-block:4px}
+.rt-railcannon:is(.rt-growth-5,.rt-growth-6,.rt-growth-7,.rt-growth-8) .rt-trim-cannon{--rt-cannon-size:31px}
+.rt-railcannon:is(.rt-growth-9,.rt-growth-10) .rt-trim-cannon{--rt-cannon-size:34px}
+html .cm-text.rt-anime.rt-railcannon:is(.rt-growth-9,.rt-growth-10){margin-block:4px}
+.rt-railcannon.rt-is-firing .rt-trim-cannon{animation:rt-cannon-kick .55s ease-out 2}
+.rt-is-firing .rt-trim-frame{animation:rt-frame-kick .32s ease-out 2}
+.rt-is-firing .rt-trim-muzzle{animation:rt-muzzle .6s ease-out}
+html .rt-anime.rt-bubble.rt-growth-2{--rt-cap:14px;--rt-portrait-size:22px;}
+html .rt-anime.rt-bubble.rt-growth-3{--rt-cap:15px;--rt-portrait-size:22px;--rt-paper-end:color-mix(in srgb,var(--rt-accent) 20%,#fffdf8);}
+html .rt-anime.rt-bubble.rt-growth-4{--rt-cap:15px;--rt-portrait-size:22px;--rt-paper-end:color-mix(in srgb,var(--rt-accent) 24%,#fffdf8);}
+html .rt-anime.rt-bubble.rt-growth-5{--rt-cap:16px;--rt-portrait-size:23px;--rt-paper-end:color-mix(in srgb,var(--rt-accent) 28%,#fffdf8);--rt-finish:rt-rim-awake;}
+html .rt-anime.rt-bubble.rt-growth-6{--rt-cap:16px;--rt-portrait-size:23px;--rt-paper-end:color-mix(in srgb,var(--rt-accent) 32%,#fffdf8);--rt-finish:rt-rim-awake;}
+html .rt-anime.rt-bubble.rt-growth-7{--rt-cap:17px;--rt-portrait-size:23px;--rt-paper-end:color-mix(in srgb,var(--rt-accent) 36%,#fffdf8);--rt-finish:rt-rim-awake;--rt-spark:rt-rim-stars;}
+html .rt-anime.rt-bubble.rt-growth-8{--rt-cap:17px;--rt-portrait-size:23px;--rt-paper-end:color-mix(in srgb,var(--rt-accent) 40%,#fffdf8);--rt-finish:rt-rim-awake;--rt-spark:rt-rim-stars;--rt-cycle:5s;}
+html .rt-anime.rt-bubble.rt-growth-9{--rt-cap:17px;--rt-portrait-size:24px;--rt-paper-end:color-mix(in srgb,var(--rt-accent) 44%,#fffdf8);--rt-finish:rt-rim-awake;--rt-spark:rt-rim-stars;--rt-cycle:5s;}
+html .rt-anime.rt-bubble.rt-growth-10{--rt-cap:17px;--rt-portrait-size:24px;--rt-paper-end:color-mix(in srgb,var(--rt-accent) 48%,#fffdf8);--rt-finish:rt-rim-awake;--rt-spark:rt-rim-stars;--rt-cycle:5s;--rt-paper:color-mix(in srgb,var(--rt-color) 9%,#fffdf7);}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-gpt,.rt-whitedragon){--rt-finish:rt-dragon-scales;--rt-spark:rt-dragon-breath;--rt-spark-ink:#cfb8ed;--rt-spark-shape:80% 10%}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-deepseek,.rt-deepseekupgrade,.rt-maid){--rt-finish:rt-tide-roll;--rt-spark:rt-water-bubbles;--rt-spark-ink:#a5dff3}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-claude,.rt-flower,.rt-mona,.rt-newcomer){--rt-finish:rt-petal-open;--rt-spark:rt-petal-turn;--rt-spark-shape:90% 10% 90% 10%;--rt-spark-ink:color-mix(in srgb,var(--rt-color) 40%,#ffdecb)}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-muscle,.rt-whalepunch){--rt-finish:rt-power-punch;--rt-spark:rt-impact;--rt-spark-shape:20%;--rt-cycle:3.8s}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-nightdevil,.rt-rascal,.rt-weirdo){--rt-finish:rt-imp-wink;--rt-spark:rt-imp-bounce;--rt-spark-shape:70% 0}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-blacksilk,.rt-lace,.rt-wind,.rt-spear){--rt-finish:rt-silk-wave;--rt-spark:rt-feather-float;--rt-spark-shape:100% 0;--rt-cycle:6s}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-loli,.rt-moon,.rt-cloud){--rt-finish:rt-cloud-dream;--rt-spark:rt-dream-puffs;--rt-cycle:6.5s}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-snow){--rt-finish:rt-frost-grow;--rt-spark:rt-snow-fall;--rt-spark-ink:#c7e8ff;--rt-spark-shape:10%}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-electric,.rt-railcannon){--rt-finish:rt-charge-rail;--rt-spark:rt-electric-hop;--rt-spark-ink:#a2e8ff;--rt-spark-shape:15%;--rt-cycle:4s}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-blade,.rt-sword,.rt-halberd){--rt-finish:rt-blade-draw;--rt-spark:rt-sword-firefly;--rt-spark-shape:80% 0;--rt-cycle:4s}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-gemini,.rt-star,.rt-sun){--rt-finish:rt-star-orbit;--rt-spark:rt-rim-stars;--rt-spark-ink:#fff0a6;--rt-spark-shape:15%;--rt-cycle:5s}
+html .rt-anime.rt-bubble:is(.rt-growth-9,.rt-growth-10):is(.rt-giant,.rt-worship){--rt-finish:rt-gold-peel;--rt-spark:rt-gold-jump;--rt-spark-ink:#e9bf5d;--rt-cycle:4.7s}
+
+html .cm-text.rt-anime:is(.rt-gpt,.rt-whitedragon){--rt-shape:25px 14px 23px 16px}
+html .cm-text.rt-anime:is(.rt-claude,.rt-flower,.rt-mona){--rt-shape:24px 31px 22px 28px}
+html .cm-text.rt-anime:is(.rt-deepseek,.rt-deepseekupgrade,.rt-maid){--rt-shape:30px 20px 30px 20px}
+html .cm-text.rt-anime:is(.rt-lace,.rt-blacksilk){--rt-shape:22px 11px;--rt-paper:#fcf4f8}
+html .cm-text.rt-anime:is(.rt-giant,.rt-worship){--rt-shape:32px 44px;--rt-paper:#fff8df}
+html .cm-text.rt-anime.rt-railcannon{--rt-shape:28px;--rt-paper:#fff8fc;--rt-paper-end:#f3f8ff}
+html .cm-text.rt-anime:is(.rt-blade,.rt-sword,.rt-halberd,.rt-spear){--rt-shape:14px 25px 14px 22px}
+html .cm-text.rt-anime:is(.rt-cloud,.rt-snow,.rt-moon,.rt-loli){--rt-shape:35px;--rt-paper:#faf6ff}
+/* Supplied meme, unchanged, in a one-sided chamber with matching white material. */
+@property --cg-hue{syntax:'<angle>';inherits:true;initial-value:0deg}
+.rt-chickengun{--rt-color:#ad686f;--rt-accent:#f3d4b7;--cg-cap:30px;--cg-default:30px;--cg-width:clamp(24px,var(--cg-size,var(--cg-default)),var(--cg-cap))}
+.rt-chickengun.rt-growth-2{--cg-cap:32px;--cg-default:32px}.rt-chickengun.rt-growth-3{--cg-cap:36px;--cg-default:34px}.rt-chickengun.rt-growth-4{--cg-cap:40px;--cg-default:36px}.rt-chickengun.rt-growth-5{--cg-cap:44px;--cg-default:40px}.rt-chickengun.rt-growth-6{--cg-cap:48px;--cg-default:44px}.rt-chickengun.rt-growth-7{--cg-cap:51px;--cg-default:48px}.rt-chickengun.rt-growth-8{--cg-cap:54px;--cg-default:50px}.rt-chickengun.rt-growth-9{--cg-cap:57px;--cg-default:52px}.rt-chickengun.rt-growth-10{--cg-cap:60px;--cg-default:54px}
+html .cm-text.rt-anime.rt-chickengun{margin-block:4px;--rt-paper:#fff;--rt-paper-end:#fff8f1}
+html .cm-text.rt-anime.rt-chickengun::before{inset:0;border:0;background:linear-gradient(90deg,#fff,var(--rt-paper-end));box-shadow:0 0 0 1px #c28c83}
+.rt-chickengun .rt-trim-frame{inset:-1px;border:0;border-bottom:2px solid #b87c72;border-radius:inherit}
+.rt-chickengun .rt-trim-finish{display:none}
+.rt-chickengun .rt-trim-meme{left:max(-44px,calc(8px - var(--cg-width)));top:calc(100% - 12px);width:var(--cg-width);height:calc(var(--cg-width) * 1.0862069);background:transparent url('/stickers/heartgif/thumbs/heartgif_013.webp') calc(var(--cg-width) * -.5689655) calc(var(--cg-width) * -.2068966) / calc(var(--cg-width) * 2.5862069) calc(var(--cg-width) * 1.2931034) no-repeat;filter:url('#rt-weapon-ink');clip-path:polygon(0 0,100% 0,100% 55%,68% 75%,45% 100%,0 100%)}
+.rt-chickengun:is(.rt-growth-2,.rt-growth-3,.rt-growth-4,.rt-growth-5,.rt-growth-6,.rt-growth-7,.rt-growth-8,.rt-growth-9,.rt-growth-10) .rt-trim-meme{background-image:url('/stickers/heartgif/heartgif_013.webp')}
+.rt-chickengun:is(.rt-growth-5,.rt-growth-6) .rt-trim-frame{border-bottom-width:3px;box-shadow:inset 0 -4px #e6b29f33}
+.rt-chickengun:is(.rt-growth-7,.rt-growth-8,.rt-growth-9,.rt-growth-10) .rt-trim-frame{border-bottom-width:4px;box-shadow:inset 0 -4px #e6b29f66,0 1px #fff2da}
+.rt-chickengun.rt-is-firing .rt-trim-meme{animation:rt-meme-recoil .45s linear 2}
+.rt-chickengun:is(.rt-growth-5,.rt-growth-6)::before{border-color:#ab746e;background:linear-gradient(115deg,#fff 0 70px,#fff9f2 115px,#f7dcc9)}
+.rt-chickengun:is(.rt-growth-7,.rt-growth-8,.rt-growth-9,.rt-growth-10)::before{border:2px solid #b57d6c;background:linear-gradient(115deg,#fff 0 70px,#fff7ef 110px,#efd4ba);box-shadow:0 1px 0 #fff2dc,0 2px 0 #a7685f38}
+.rt-chickengun.rt-growth-10 .rt-trim-frame{border:3px solid #bf856f;border-left:5px solid #ad7368;box-shadow:inset 0 0 0 1px #fff4de;animation:rt-meme-charge 4s ease-in-out infinite}
+.rt-chickengun.rt-growth-10::before{background:linear-gradient(115deg,#fff 0 70px,#fff6eb 100px,#f5d5b3 70%,#edc49f);border-color:#a46b58}
+.rt-chickengun.rt-growth-10 .rt-trim-spark{--rt-spark:rt-impact;--rt-cycle:2.4s;--rt-spark-ink:#ffc2ae}
+.rt-chickengun:is(.rt-growth-4,.rt-growth-5,.rt-growth-6) .rt-trim-meme{filter:url('#rt-weapon-ink') drop-shadow(0 1px 1px #c08b7870)}
+.rt-chickengun:is(.rt-growth-7,.rt-growth-8,.rt-growth-9,.rt-growth-10) .rt-trim-meme{filter:url('#rt-weapon-ink') saturate(1.6) hue-rotate(var(--cg-hue)) drop-shadow(0 0 2px #84c4ed)}
+html .rt-chickengun:is(.rt-growth-7,.rt-growth-8,.rt-growth-9,.rt-growth-10)>.rt-detail-meme{animation:cg-chroma 12s linear infinite}
+html .rt-chickengun.rt-growth-9>.rt-detail-meme{animation-duration:14s}html .rt-chickengun.rt-growth-10>.rt-detail-meme{animation-duration:12s}
+@keyframes cg-chroma{from{--cg-hue:0deg}to{--cg-hue:360deg}}
+html .cm-text.rt-anime.rt-chickengun:is(.rt-growth-7,.rt-growth-8,.rt-growth-9,.rt-growth-10){margin-block:4px}
+.rt-chickengun.rt-growth-1 .rt-detail,.rt-chickengun.rt-growth-1 .rt-detail *{animation:none!important}
+@keyframes rt-rim-awake{0%,15%,100%{opacity:0;clip-path:inset(0 100% 0 0)}35%{opacity:.45}70%{opacity:.1;clip-path:inset(0 0 0 0)}}
+@keyframes rt-dragon-scales{0%,100%{opacity:.05;clip-path:inset(0 100% 0 0)}40%{opacity:.7;clip-path:inset(0)}75%{opacity:.1;clip-path:inset(0 0 0 80%)}}
+@keyframes rt-tide-roll{0%,100%{opacity:0;clip-path:inset(90% 0 0)}50%{opacity:.55;clip-path:inset(0)}}
+@keyframes rt-petal-open{0%,100%{opacity:0;clip-path:circle(0 at 90% 90%)}55%{opacity:.5;clip-path:circle(100% at 90% 90%)}}
+@keyframes rt-power-punch{0%,40%,100%{opacity:0}45%,53%{opacity:.9;clip-path:inset(0 0 0 65%)}49%{opacity:.1}60%{opacity:.2;clip-path:inset(0)}}
+@keyframes rt-imp-wink{0%,35%,100%{opacity:0}42%,54%{opacity:.6;clip-path:inset(0 0 0 60%)}48%{opacity:0}65%{opacity:.2;clip-path:inset(0)}}
+@keyframes rt-silk-wave{0%,100%{opacity:.05;clip-path:polygon(0 0,18% 0,3% 100%,0 100%)}50%{opacity:.55;clip-path:polygon(82% 0,100% 0,100% 100%,65% 100%)}}
+@keyframes rt-cloud-dream{0%,100%{opacity:.05;clip-path:inset(55% 0 0)}50%{opacity:.5;clip-path:inset(0)}}
+@keyframes rt-frost-grow{0%,100%{opacity:.05;clip-path:inset(40% 45% 40% 45%)}55%{opacity:.7;clip-path:inset(0)}}
+@keyframes rt-charge-rail{0%,30%,100%{opacity:0;clip-path:inset(0 0 0 100%)}65%{opacity:.9;clip-path:inset(0)}76%{opacity:0}82%{opacity:.6}}
+@keyframes rt-blade-draw{0%,40%,100%{opacity:0;clip-path:inset(0 100% 0 0)}49%{opacity:1;clip-path:inset(0)}60%{opacity:0;clip-path:inset(0 0 0 100%)}}
+@keyframes rt-star-orbit{0%,100%{opacity:.05;clip-path:inset(0 75% 65% 0)}33%{opacity:.7;clip-path:inset(0 0 65% 75%)}66%{opacity:.45;clip-path:inset(65% 0 0 0)}}
+@keyframes rt-gold-peel{0%,100%{opacity:0;clip-path:inset(0 45%)}45%{opacity:.65;clip-path:inset(0)}}
+@keyframes rt-rim-stars{0%,35%,100%{opacity:0;transform:scale(.3) rotate(0)}55%{opacity:.9;transform:scale(1.25) rotate(45deg)}75%{opacity:0;transform:translateX(14px) scale(.3)}}
+@keyframes rt-dragon-breath{0%,25%,100%{opacity:0;transform:scale(.2)}45%{opacity:.8;transform:translateX(12px) scale(1.3,.7)}70%{opacity:0;transform:translateX(28px) scale(.3)}}
+@keyframes rt-water-bubbles{0%,100%{opacity:0;transform:translateY(3px) scale(.4)}45%{opacity:.85;transform:translateY(-2px) scale(1)}65%{opacity:0;transform:translateY(-4px) scale(1.5)}}
+@keyframes rt-petal-turn{0%,100%{opacity:0;transform:rotate(-30deg) translateX(-10px)}40%{opacity:.85}80%{opacity:0;transform:rotate(110deg) translateX(10px)}}
+@keyframes rt-impact{0%,35%,100%{opacity:0;transform:scale(.2)}45%{opacity:1;transform:scale(1.6,.5)}60%{opacity:0;transform:translateX(-16px) scale(.4)}}
+@keyframes rt-imp-bounce{0%,100%{opacity:0;transform:translateY(2px)}40%{opacity:.85;transform:translateY(-3px) rotate(-20deg)}65%{opacity:.4;transform:translateX(12px) rotate(30deg)}}
+@keyframes rt-feather-float{0%,100%{opacity:0;transform:rotate(0)}45%{opacity:.7;transform:translateX(11px) rotate(65deg)}80%{opacity:0;transform:translateX(24px) rotate(120deg)}}
+@keyframes rt-dream-puffs{0%,100%{opacity:0;transform:scale(.2)}55%{opacity:.65;transform:translateX(6px) scale(1.6)}80%{opacity:0;transform:translateX(10px) scale(2)}}
+@keyframes rt-snow-fall{0%,100%{opacity:0;transform:translateY(-4px) rotate(0)}45%{opacity:.9}85%{opacity:0;transform:translateY(3px) rotate(120deg)}}
+@keyframes rt-electric-hop{0%,36%,100%{opacity:0;transform:translateX(0) skew(-20deg)}42%,52%{opacity:.95;transform:translateX(8px) scale(1.8,.4)}47%,65%{opacity:0}}
+@keyframes rt-sword-firefly{0%,30%,100%{opacity:0;transform:translateX(-18px) scale(.3)}45%{opacity:1;transform:scale(2,.35)}65%{opacity:0;transform:translateX(25px) scale(.3)}}
+@keyframes rt-gold-jump{0%,100%{opacity:0;transform:scaleX(.3)}40%{opacity:.9;transform:translateY(-3px) scaleX(1)}75%{opacity:0;transform:translateX(10px) scaleX(.2)}}
+@keyframes rt-frame-kick{0%,100%{transform:translateX(0)}25%{transform:translateX(1.8px)}55%{transform:translateX(-.5px)}}
+@keyframes rt-muzzle{0%,100%{opacity:0;transform:scaleX(.2)}25%,45%{opacity:1;transform:translateX(-7px) scaleX(1.7)}}
+@keyframes rt-meme-recoil{0%,45%,100%{transform:translateX(0)}15%,65%{transform:translateX(1.5px)}25%,75%{transform:translateX(-.5px)}}
+@keyframes rt-cannon-kick{0%,100%{transform:translate(0,0) rotate(0)}20%{transform:translate(2px,-2px) rotate(-3deg)}55%{transform:translate(-1px,1px) rotate(1deg)}}
+@keyframes rt-meme-charge{0%,100%{border-color:#bf856f;box-shadow:inset 0 0 0 1px #fff4de}45%{border-color:#e4b17f;box-shadow:0 0 3px #e6b17188,inset 0 0 0 1px #fff4de}50%{border-color:#ad7368}60%{border-color:#e4b17f}}
+.rt-shot-layer{position:fixed;inset:0;pointer-events:none!important;z-index:1001;overflow:hidden;contain:strict}
+.rt-shot-drop,.rt-shot-splash{position:absolute;display:block;pointer-events:none;width:18px;height:6px;border-radius:3px;background:linear-gradient(90deg,#8ed8ff22,#fff 55%,#bde9ff);box-shadow:0 0 6px #8ed8ff99}
+.rt-shot-splash{width:9px;height:9px;clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);background:#e4f5ff}
+.rt-shot-hit{position:absolute;display:block;border-radius:50%;border:2px solid #d4f2ff;box-sizing:border-box;background:radial-gradient(circle at 30% 25%,#fff9,transparent 45%),linear-gradient(135deg,transparent 30%,#c6eeff77 48%,transparent 65%);box-shadow:0 0 9px #93d6ff88;pointer-events:none}
+.rt-shot-layer:is([data-stage='9'],[data-stage='10']) .rt-shot-drop{width:22px;height:7px;box-shadow:0 0 7px #b7e6ffaa}
+[data-theme=dark] .cm-text.rt-anime.rt-bubble[class]{--rt-paper:#25323a;--rt-paper-end:color-mix(in srgb,var(--rt-accent) 20%,#27313b);color:#edf1f3}
+[data-theme=dark] .cm-text.rt-chickengun.rt-bubble[class]::before{background:linear-gradient(115deg,#27313b,var(--rt-paper-end))}
+html:is([data-bubble-motion=pause],[data-page-hidden=true]) .rt-detail,html:is([data-bubble-motion=pause],[data-page-hidden=true]) .rt-detail *{animation-play-state:paused!important}
+html:is([data-bubble-motion=pause],[data-page-hidden=true]) .rt-chickengun .rt-trim-meme{background-image:url('/stickers/heartgif/thumbs/heartgif_013.webp')}
+@media(prefers-reduced-motion:reduce){.rt-detail,.rt-detail *{animation:none!important;transition:none!important}.rt-chickengun .rt-trim-meme[class]{background-image:url('/stickers/heartgif/thumbs/heartgif_013.webp')}.rt-shot-layer{display:none}}
+html .rt-chickengun[data-cg-motion=off]>.rt-detail,html .rt-chickengun[data-cg-motion=off]>.rt-detail *{animation:none!important;transition:none!important}
+html .rt-chickengun[data-cg-motion=off] .rt-trim-meme{background-image:url('/stickers/heartgif/thumbs/heartgif_013.webp')}
+
+.deco-display-level{display:grid;gap:8px;margin:12px 0;padding:12px 0;border-block:1px solid var(--line,#dfe5dc)}
+.deco-display-level[hidden]{display:none}.deco-level-fields{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.deco-level-fields input{width:98px}.deco-level-fields select{width:auto;max-width:100%}
+.deco-gun-size{display:grid;gap:10px;margin:12px 0;padding-bottom:14px;border-bottom:1px solid var(--line,#dfe5dc)}
+.deco-gun-size[hidden]{display:none}.deco-gun-slider{display:flex;align-items:center;gap:12px}.deco-gun-slider input{flex:1;min-width:0;accent-color:var(--primary)}.deco-gun-slider output{min-width:72px;text-align:end;font-variant-numeric:tabular-nums}.deco-gun-size .btn{justify-self:start}.deco-gun-size p{margin:0}
+.deco-gun-toggles{display:flex;gap:16px;flex-wrap:wrap}
+/* Only the visible tail viewport runs bubble decoration. Historical windows,
+   offscreen rows and old pages never reactivate merely on hover. */
+html .cm-row:not([data-bubble-live=true]) .rt-bubble,
+html .cm-row:not([data-bubble-live=true]) .rt-bubble::before,
+html .cm-row:not([data-bubble-live=true]) .rt-bubble::after,
+html .cm-row:not([data-bubble-live=true]) .rt-bubble *,
+html .cm-row:not([data-bubble-live=true]) .rt-bubble *::before,
+html .cm-row:not([data-bubble-live=true]) .rt-bubble *::after{animation:none!important;transition:none!important}
+html .cm-row:not([data-bubble-live=true]) .rt-chickengun .rt-trim-meme{background-image:url('/stickers/heartgif/thumbs/heartgif_013.webp')!important}
+html .cm-row:not([data-bubble-live=true]) .rt-whalebuddy{--cf-frame:url('/assets/raffle/whale-motion/body-still.webp')!important;--whale-person-current:url('/assets/raffle/whale-motion/person-still.webp')!important;--whale-body-loop:url('/assets/raffle/whale-motion/body-still.webp')!important}
+html .cm-row:not([data-bubble-live=true]) .rt-whalepunch{--cf-character:url('/assets/raffle/collection/whalepunch-tail-still.webp')!important}
+.deco-showcase{display:grid;gap:12px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--line)}.deco-showcase p{margin:0}.deco-showcase-heading{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.deco-showcase-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;max-height:280px;overflow-y:auto;overscroll-behavior:contain;padding:4px}.deco-showcase-choice{display:flex;align-items:center;gap:8px;min-width:0;padding:4px 0;cursor:pointer}.deco-showcase-choice input{flex:none;accent-color:var(--primary)}.deco-showcase-choice:has(input:disabled){opacity:.55;cursor:default}.ucard-badges:empty{display:none}
+.dp-bubble:has(.rt-chickengun){padding-left:48px;padding-bottom:calc(var(--cg-preview-size,54px) * 1.0862069)}
+
+.rt-shot-layer.is-chickengun .rt-shot-drop{background:linear-gradient(90deg,#a0d9ed22,#fff 55%,#d8edf4);box-shadow:0 0 5px #b8e6edaa}.rt-shot-layer.is-chickengun .rt-shot-splash{background:#f8fcff}
+
+/* Keep the original whale artwork and poses, while its frame no longer takes
+   space away from the message. The common text metrics also apply to previews. */
+html .cm-text.rt-bubble.rt-whalebuddy{
+ display:block;box-sizing:border-box;width:auto;min-width:0;max-width:min(640px,100%);min-height:0;
+ padding:7px 12px;margin:12px 0 4px;border:0;border-image:none;border-radius:4px 12px 12px 12px;
+ background:none;line-height:1.6;font-size:inherit;text-align:start;white-space:pre-wrap;overflow-wrap:normal;word-break:break-word;isolation:isolate;
+}
+html .cm-text.rt-bubble.rt-whalebuddy>.rt-copy{position:static;display:contents;overflow-wrap:inherit;word-break:inherit}
+html .cm-text.rt-bubble.rt-whalebuddy>.rt-copy a{overflow-wrap:normal;word-break:break-all}
+.rt-whale-frame{position:absolute;inset:-5px -10px -3px -4px;z-index:-2;pointer-events:none;border:solid transparent;border-width:16px 32px 6px 8px;border-image:var(--cf-frame) var(--cf-slice) / 16px 32px 6px 8px stretch}
+html .cm-text.rt-bubble.rt-whalebuddy::before{inset:-12px 0 auto 0;height:16.333px;background-size:28px 16.333px}
+html .cm-text.rt-bubble.rt-whalebuddy::after{inset:0;border-radius:inherit;z-index:-1}
+
+/* Readable energy and avatar impact on both pale and dark chat backgrounds. */
+.rt-shot-layer .rt-shot-drop,.rt-shot-layer.is-chickengun .rt-shot-drop{width:20px;height:7px;border:1px solid #427c9e;background:linear-gradient(90deg,#82b4cf,#fff 45%,#c9f0ff);box-shadow:0 0 0 1px #fff9,0 1px 3px #315578b3,0 0 7px #5fbce3cc}
+.rt-shot-layer:is([data-stage='9'],[data-stage='10']) .rt-shot-drop{width:27px;height:9px;box-shadow:0 0 0 1px #fff9,0 2px 4px #294c78cc,0 0 9px #48b9e3cc}
+.rt-shot-layer .rt-shot-splash,.rt-shot-layer.is-chickengun .rt-shot-splash{width:13px;height:13px;background:#eafbff;filter:drop-shadow(0 1px 1px #386b96) drop-shadow(0 0 2px #5a9fbd)}
+.rt-shot-layer .rt-shot-hit{border:3px solid #5a91b3;background:repeating-conic-gradient(from 10deg at 45% 45%,transparent 0deg 42deg,#edfaffb3 44deg 49deg,transparent 51deg 90deg),radial-gradient(circle at 38% 32%,#fff9 0 12%,#7dc9ec59 35%,transparent 65%);box-shadow:inset 0 0 0 2px #e6f9ff,inset 0 0 9px #81cdf091,0 0 0 1px #fff9,0 1px 5px #366188b3;}

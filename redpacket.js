@@ -1,5 +1,11 @@
+import {packetRecords,packetAmount} from '/packet-records.js?v=98ddcc7d'
+import {fundingState} from '/packet-funding.js?v=98ddcc7d'
+import {dcoinIcon} from '/dcoin.js?v=98ddcc7d'
+import {packetLuckRanks} from '/packet-luck.js?v=98ddcc7d'
+export {packetLuckRanks}
+import {avatarImage} from '/avatar-view.js?v=98ddcc7d'
 // 按需加载。所有 DOM 挂到入口所在文档，普通群聊 / 分屏 / 小窗共用。
-const MODES = { open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' }
+const MODES = { open: '直接开', phrase: '复读红包', cipher: '解个谜', image: '猜张图' }
 const GAMES = {
   rails: ['双轨密码', '上下两行交替取字，先上后下。上行从左往右，下行从右往左。'],
   stairs: ['回廊字阵', '从最下面一行的左边出发，读完往上一行，换个方向继续读。空格跳过。'],
@@ -119,11 +125,11 @@ export async function makePacketClue(url, bits, doc = document) {
   return new win.File([blob], 'redpack-clue.' + (blob.type === 'image/webp' ? 'webp' : 'png'), { type: blob.type })
 }
 
-export function openRedpacket({ anchor, group, archiveGroup, userId, message, accountOnly = false, autoOpen = false, claimOnOpen = false, onSent, onUpdate, onClose, h, icon, api, uploadCover, uploadClue }) {
+export function openRedpacket({ anchor, group, archiveGroup, userId, message, accountOnly = false, autoGuess = null, autoOpen = false, claimOnOpen = false, onSent, onUpdate, onClose, h, icon, api, uploadCover, uploadClue, bagReminderSettings }) {
   const initialArchive=!!archiveGroup, initialCreate=!!group
   group=group||archiveGroup
   archiveGroup=archiveGroup||group
-  let currentView=initialArchive?'archive':initialCreate?'create':'detail',createForm=null,navigationBusy=false
+  let currentView=initialArchive?'archive':initialCreate?'create':'detail',createForm=null,nativeForm=null,navigationBusy=false
   let autoInspect=autoOpen
   let externalInspected=false
   let defeatScene
@@ -154,7 +160,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
     e.stopPropagation()
     if (e.key === 'Escape') { e.preventDefault(); dialog.close(); return }
     if (e.key !== 'Tab') return
-    const items = [...dialog.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href]')].filter(el => el.getClientRects().length)
+    const items = [...dialog.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], summary')].filter(el => el.getClientRects().length)
     const first = items[0], last = items.at(-1)
     if (e.shiftKey && doc.activeElement === first) { e.preventDefault(); last?.focus() }
     else if (!e.shiftKey && doc.activeElement === last) { e.preventDefault(); first?.focus() }
@@ -217,7 +223,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
     else if(view==='archive')archive()
     else openExisting()
   }
-  if(accountOnly){title.textContent='我的 LDC 应用与记录';navigation.hidden=true;connectorButton.hidden=true;import('/redpacket-native.js?v=ba78b4e4').then(({nativeCreateForm})=>{if(dialog.isConnected)content.replaceChildren(nativeCreateForm({h,api,host:content,signal:lifetime.signal,accountOnly:true,onBack:()=>dialog.close()}))}).catch(e=>{if(dialog.isConnected)content.replaceChildren(h('p',{class:'rpk-status'},e.message))})}
+  if(accountOnly){title.textContent='红包账户与发放记录';navigation.hidden=true;connectorButton.hidden=true;import('/redpacket-native.js?v=98ddcc7d').then(({nativeCreateForm})=>{if(dialog.isConnected)content.replaceChildren(nativeCreateForm({h,api,host:content,signal:lifetime.signal,accountOnly:true,onBack:()=>dialog.close()}))}).catch(e=>{if(dialog.isConnected)content.replaceChildren(h('p',{class:'rpk-status'},e.message))})}
   else if (initialArchive) navigate('archive')
   else if (initialCreate) navigate('create')
   else load()
@@ -230,7 +236,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
     content.replaceChildren(h('form',{class:'rpk-form',onsubmit:async e=>{
       e.preventDefault();if(submit.disabled)return;submit.disabled=true;const seq=detailSeq
       try{
-        const {parsePacketReference,packetReferenceUrl}=await import('/redpacket-reference.js?v=efbfd115')
+        const {parsePacketReference,packetReferenceUrl}=await import('/redpacket-reference.js?v=98ddcc7d')
         const parsed=parsePacketReference(reference.value,provider.value)
         if(!dialog.isConnected||seq!==detailSeq)return
         message=null;back.hidden=false;externalInspected=false;claimOnOpen=true
@@ -248,8 +254,8 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
       const info=status()
       const check=btn('检测连接',async()=>{
         check.disabled=true;info.textContent='正在检测…'
-        try{const state=await bridge('ping');info.textContent=state.participationV2?'已连接 · '+state.version+'。领取时使用当前浏览器登录的 HB、Credit 或 Fish 账号。':'已连接旧版 '+state.version+'。请复制下方新版脚本，覆盖保存后刷新本站。'}
-        catch(e){info.textContent=e.message+'。已安装仍无法连接时，请更新到 1.4.0 并刷新本站。'}
+        try{const state=await bridge('ping');info.textContent=state.fishErrorsV1?'已连接 · '+state.version+'。领取时使用当前浏览器登录的 HB、Credit 或 Fish 账号。':'已连接旧版 '+state.version+'。请复制下方新版脚本，覆盖保存后刷新本站。'}
+        catch(e){info.textContent=e.message+'。已安装仍无法连接时，请更新到 1.5.2 并刷新本站。'}
         finally{check.disabled=false}
       },'rpk-primary')
       const copy=btn('复制连接器脚本',async()=>{
@@ -257,263 +263,29 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
         try{const r=await win.fetch('/meme-redpacket.user.js',{cache:'no-store',signal:lifetime.signal}),source=await r.text();if(!r.ok||!source.startsWith('// ==UserScript=='))throw Error('脚本获取失败，请重试');await win.navigator.clipboard.writeText(source);info.textContent='已复制。已安装的用户请打开原“尽欢红包连接器”，全选覆盖保存，再刷新本站；首次安装才需新建脚本。'}
         catch(e){info.textContent=e.message||'复制失败，请下载脚本文件'}finally{copy.disabled=false}
       })
-      connectorPanel.append(h('h3',null,'红包连接器 1.4.0'),h('p',{class:'rpk-help'},'查询、领取 HB / Credit / Fish 红包，并使用已绑定的平台账户创建红包。只在你打开红包或点击操作时请求，不自动抢包。'),check,info,
+      connectorPanel.append(h('h3',null,'红包连接器 1.5.2'),h('p',{class:'rpk-help'},'查询、领取 HB / Credit / Fish 红包，并使用已绑定的平台账户创建红包。只在你打开红包或点击操作时请求，不自动抢包。'),check,info,
         h('p',{class:'rpk-help'},'已安装：点击下方“复制连接器脚本”，覆盖原脚本后保存并刷新本站。无需重复安装扩展。'),
         h('h4',null,'首次安装'),h('a',{class:'rpk-secondary',href:'https://www.tampermonkey.net/index.php?browser=chrome',target:'_blank',rel:'noopener noreferrer'},'1. 安装 Tampermonkey'),
         h('p',{class:'rpk-help'},'2. Chrome → 扩展程序 → Tampermonkey → 详情，开启“允许用户脚本”，允许访问本站。'),copy,
         h('p',{class:'rpk-help'},'3. Tampermonkey → 添加新脚本，粘贴并保存；刷新本站，再点击“检测连接”。如果下载后只看到一页代码，使用上面的复制方式。'),
         h('div',{class:'rpk-actions'},h('a',{class:'rpk-secondary',href:'/meme-redpacket.user.js',download:'meme-redpacket.user.js'},'下载脚本'),h('a',{class:'rpk-secondary',href:'/meme-redpacket.user.js',target:'_blank',rel:'noopener'},'查看源码')),
         h('h4',null,'登录红包平台'),h('p',{class:'rpk-help'},'在同一个浏览器登录自己要使用的平台；连接器不会保存平台密码或密钥。'),
-        h('div',{class:'rpk-actions'},...Object.entries({HB:'https://hb.unsnow.org/',Credit:'https://credit.linux.do/',Fish:'https://meme.442224.xyz/'}).map(([name,url])=>h('a',{class:'rpk-secondary',href:url,target:'_blank',rel:'noopener noreferrer'},name))),
+        h('div',{class:'rpk-actions'},...Object.entries({HB:'https://hb.unsnow.org/',Credit:'https://credit.linux.do/',Fish:'https://hb.lafi.sh/'}).map(([name,url])=>h('a',{class:'rpk-secondary',href:url,target:'_blank',rel:'noopener noreferrer'},name))),
         btn('返回红包',()=>showConnector(false)))
     }
     connectorPanel.scrollTop=0
   }
 
-  function create() {
-    let mode = 'open', selected = null, selectedIndex = 0, maskBits = 1 << 4, searchSeq = 0, busy = false, cover=null, coverBusy=false, clueUpload=null, clueFor=''
-    const draftKey=`creditPacketDraft:${userId}:${group.id}`
-    let draft=null
-    try{draft=JSON.parse(win.localStorage.getItem(draftKey)||'null')}catch{}
-    if(!/^[a-f0-9-]{36}$/i.test(draft?.nonce||'') || draft?.id && !/^[1-9]\d{0,19}$/.test(draft.id))draft=null
-    let creditNonce=draft?.nonce || crypto.randomUUID()
-    const packetNonces=Object.fromEntries(Object.keys(PROVIDERS).map(key=>[key,crypto.randomUUID()]))
-    let createdId=draft?.id || null
-    const provider = h('input',{type:'hidden',value:'native'})
-    const platforms = h('div',{class:'rpk-platforms',role:'group','aria-label':'红包方式'},Object.entries(PROVIDERS).map(([key,name])=>btn(name,()=>{provider.value=key;sync()},'rpk-secondary')))
-    const nativeEntry=btn('本站 LDC · 猜词游戏',async()=>{
-      if(navigationBusy)return
-      const seq=++detailSeq
-      try{const {nativeCreateForm}=await import('/redpacket-native.js?v=ba78b4e4');if(!dialog.isConnected||seq!==detailSeq)return
-        title.textContent='本站 LDC 红包'
-        content.replaceChildren(nativeCreateForm({h,api,group,host:content,signal:lifetime.signal,uploadCover,onBusy:value=>{navigationBusy=value},onBack:()=>{title.textContent='发红包';content.replaceChildren(createForm)},onSent:msg=>{onSent?.(msg);dialog.close()}}))
-      }catch(e){content.replaceChildren(h('p',{class:'rpk-status'},e.message),btn('返回',()=>content.replaceChildren(createForm)))}
-    })
-    const externalHelp = h('div',{class:'rpk-help'})
-    const creditChoice=h('select',{class:'rpk-input','aria-label':'LDC 红包来源'},h('option',{value:'new'},'创建新红包'),h('option',{value:'existing'},'分享已有红包到群里'))
-    const platformSlot=h('div',{}),platformWidgets=new Map(),platformLoading=new Map()
-    async function ensurePlatform(key){
-      if(platformWidgets.has(key))return platformWidgets.get(key)
-      if(!platformLoading.has(key))platformLoading.set(key,(async()=>{
-        const {platformCreateForm}=await import('/redpacket-create-ui.js?v=334317f9')
-        const widget=platformCreateForm({provider:key,userId,groupId:group.id,h,bridge,win,onState:state=>{
-          if(provider.value===key&&creditChoice.value==='new'){hint.disabled=busy||state.locked;if(state.greeting!==undefined)hint.value=state.greeting}
-        }})
-        platformWidgets.set(key,widget);return widget
-      })().catch(e=>{platformLoading.delete(key);throw e}))
-      return platformLoading.get(key)
-    }
-    const creditKind=h('select',{class:'rpk-input','aria-label':'LDC 红包类型'},h('option',{value:'random'},'拼手气'),h('option',{value:'fixed'},'普通红包'))
-    const creditAmount=input('LDC 总额',{inputmode:'decimal',placeholder:'至少 1 LDC'})
-    const creditCount=input('红包份数',{type:'number',min:1,max:10000,step:1,placeholder:'发给几个人？'})
-    if(['fixed','random'].includes(draft?.params?.kind))creditKind.value=draft.params.kind
-    if(typeof draft?.params?.amount==='string')creditAmount.value=draft.params.amount
-    if(Number.isSafeInteger(draft?.params?.count))creditCount.value=String(draft.params.count)
-    const cancelCredit=btn('取消未提交的草稿，重新填写',async()=>{
-      if(busy||createdId||!draft)return
-      const popup=win.open('about:blank','jh-credit-cancel-'+creditNonce,'popup,width=500,height=540')
-      if(!popup){msg.textContent='请允许 Credit 确认窗口弹出';return}
-      try{
-        popup.opener=null;busy=true;sync(false)
-        const connected=await bridge('ping')
-        if(!connected.creationRecoveryV1)throw Error('取消草稿需要1.4.0连接器，请更新脚本')
-        popup.location.replace('https://credit.linux.do/home?jh-credit='+encodeURIComponent(creditNonce)+'&jh-cancel=1')
-        await bridge('awaitCancel',{provider:'credit',operation:creditNonce})
-        win.localStorage.removeItem(draftKey);draft=null;creditNonce=crypto.randomUUID()
-        msg.textContent='未提交的草稿已取消，原内容可重新编辑。'
-      }catch(e){msg.textContent=e.message}finally{busy=false;sync(false)}
-    })
-    const creditFields=h('div',{class:'rpk-credit'},field('类型',creditKind),field('总额 · LDC',creditAmount),field('份数',creditCount),h('p',{class:'rpk-help'},'支付口令只在 Credit 来源窗口输入。'),cancelCredit)
-    const externalRef = input('红包链接或口令',{placeholder:'粘贴完整分享内容或官方链接',maxlength:2000})
-    const externalField = field('分享已有红包到群里',externalRef,'整段分享文案也可以；链接用于定位红包，活动口令按平台规则填写。')
-    const notifyAt = input('到点提醒',{type:'datetime-local'})
-    const reminder = h('details',{class:'rpk-options'},h('summary',null,'加个到点提醒'),field('提醒时间',notifyAt))
-    const secret = input('红包谜底', { placeholder: '藏点什么？6–18 个字', maxlength: 72 })
-    const secretField = field('谜底',secret)
-    const count = h('span', { class: 'rpk-count' })
-    secret.addEventListener('input', () => { const n = [...secret.value.normalize('NFC').trim()].length; count.textContent = n ? `${n} / 18` : '' })
-    const hint = input('红包线索', { placeholder: '给个提示（可不填）', maxlength: 240 })
-    if(typeof draft?.params?.greeting==='string')hint.value=draft.params.greeting
-    const phrase = input('群聊口令', { placeholder: '在群里说哪句？', maxlength: 160 })
-    const game = h('select', { class: 'rpk-input', 'aria-label': '解密玩法' }, Object.entries(GAMES).map(([key, v]) => h('option', { value: key }, v[0])))
-    const gameHelp = h('p', { class: 'rpk-help' }, GAMES.rails[1])
-    game.addEventListener('change', () => { gameHelp.textContent = GAMES[game.value][1]; sync() })
-    const phraseField = field('暗号', phrase)
-    const gameField = h('div', null, field('玩法', game), gameHelp)
-    const results = h('div', { class: 'rpk-post-results' }), chosen = h('div', { class: 'rpk-chosen' })
-    const search = input('搜索帖子', { placeholder: '输入帖子编号或关键词', inputmode: 'search' })
-    const searchBtn = btn('找图', findPosts)
-    search.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); findPosts() } })
-    const sourceField = h('div', null, field('选张图', h('div', { class: 'rpk-search-row' }, search, searchBtn)), results, chosen)
-    const modes = h('div', { class: 'rpk-modes', role: 'group', 'aria-label': '开包方式' }, Object.entries(MODES).map(([key, v]) => btn(
-      [doodle(key), h('strong', null, v)], () => { mode = key; sync() }, 'rpk-mode')))
-    const msg = status()
-    const submit = h('button', { class: 'rpk-primary', type: 'submit' }, '塞好，发出去！')
-    const coverPreview=h('div',{class:'rpk-cover-preview'})
-    const coverInput=h('input',{type:'file',class:'sr-only',accept:'image/png,image/jpeg,image/gif,image/webp','aria-label':'选择红包封面',onchange:async()=>{
-      const file=coverInput.files?.[0];if(!file || coverBusy)return
-      coverBusy=true;submit.disabled=true;coverButton.disabled=true;msg.textContent='正在准备封面…'
-      try{
-        const {cropPacketCover}=await import('/redpacket-cover.js?v=910a70bc')
-        const cropped=await cropPacketCover(file,{host:content,form,doc,h,signal:lifetime.signal})
-        if(!cropped||!dialog.isConnected){msg.textContent='';return}
-        msg.textContent='正在上传裁剪后的封面…'
-        const uploaded=await uploadCover(cropped,lifetime.signal)
-        if(dialog.isConnected){cover=uploaded;coverPreview.replaceChildren(coverImage(cover.url),btn('移除封面',()=>{cover=null;coverPreview.replaceChildren()}));msg.textContent=''}
-      }
-      catch(e){msg.textContent=e.message}
-      finally{coverBusy=false;submit.disabled=busy;coverButton.disabled=false;coverInput.value='';if(dialog.isConnected)coverButton.focus({preventScroll:true})}
-    }})
-    const coverButton=btn('选择图片并裁剪封面',()=>coverInput.click())
-    const form = h('form', { class: 'rpk-form', onsubmit: async e => {
-      e.preventDefault(); if (busy || coverBusy) return
-      const packetMode=provider.value==='native'?mode:'open'
-      const value = secret.value.normalize('NFC').trim(), n = [...value].length
-      if (!secretField.hidden && (n < 6 || n > 18)) { msg.textContent = '谜底需要 6–18 个字符'; return }
-      if (packetMode === 'image' && !selected) { msg.textContent = '先选一张帖子的图片'; return }
-      const direct=provider.value==='credit' && creditChoice.value==='new'
-      const platformDirect=['hb','fish'].includes(provider.value)&&creditChoice.value==='new'
-      const packetProvider=provider.value
-      let nonce=direct?creditNonce:packetNonces[packetProvider],platformResult=null,platformWidget=null
-      // 未确认的 Credit 操作保留原参数和幂等标识，但不能锁住其他红包方式。
-      const createParams=direct?{...(draft?.params || {kind:creditKind.value,amount:creditAmount.value.trim(),count:Number(creditCount.value),greeting:hint.value.trim()}),provider:'credit',operation:creditNonce}:null
-      if(direct && !createdId){
-        const total=createParams.amount,pieces=createParams.count
-        if(!/^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/.test(total)||Number(total)<1||!Number.isSafeInteger(pieces)||pieces<1||pieces>10000||Math.round(Number(total)*100)<pieces){msg.textContent='填写至少 1 LDC 的总额，每份至少 0.01 LDC，最多 10000 份';return}
-        if([...hint.value.trim()].length>100){msg.textContent='祝福语最多 100 字';return}
-      }
-      // 保留用户手势打开窗口；先确认连接器收到了参数，再进入 Credit 扣款页。
-      const popup=direct && !createdId ? win.open('about:blank','jh-credit-'+nonce,'popup,width=500,height=720') : null
-      if(direct && !createdId && !popup){msg.textContent='Chrome 拦截了 Credit 确认窗口；允许本站弹窗后再试';return}
-      if(popup)try{
-        popup.opener=null
-        popup.document.title='正在连接 Credit 红包'
-        popup.document.body.textContent='正在连接红包脚本，请回群聊窗口查看进度…'
-      }catch{}
-      busy = true; navigationBusy=true; sync(false); msg.textContent = '正在封装…'
-      let creditNavigated=false
-      try {
-        if(platformDirect){
-          platformWidget=await ensurePlatform(packetProvider)
-          const connected=await bridge('ping')
-          if(!connected.creationRecoveryV1)throw Error('请更新到1.4.0红包连接器后创建HB/Fish红包')
-          platformResult=await platformWidget.execute(hint.value.trim())
-          nonce=platformResult.operation
-          if(!dialog.isConnected)return
-          msg.textContent=PROVIDERS[packetProvider]+'已创建，正在发到群里…'
-        }
-        if (packetMode === 'image') {
-          const source = `${selected.id}:${selectedIndex}:${maskBits}`
-          if (clueFor !== source || !clueUpload) {
-            msg.textContent = '正在制作图片线索…'
-            const file = await makePacketClue(selected.images[selectedIndex].u, maskBits, doc)
-            clueUpload = await uploadClue(file); clueFor = source
-          }
-        }
-        if(direct && !createdId){
-          const connected=await bridge('ping')
-          if(!connected.creditCreate)throw Error('请更新到 1.2.1 红包连接器，刷新本站后重试')
-          const pending={nonce:creditNonce,status:'pending',params:createParams}
-          try{win.localStorage.setItem(draftKey,JSON.stringify(pending))}catch{throw Error('此浏览器无法保存待发红包，请启用站点存储后再试')}
-          draft=pending;sync(false)
-          const prepared=await bridge('prepareCreate',createParams)
-          if(!prepared.id){
-            if(popup.closed)throw Error('Credit 确认窗口已关闭，请重新点击发红包')
-            popup.location.replace('https://credit.linux.do/home?jh-credit='+encodeURIComponent(nonce))
-            creditNavigated=true
-          }else popup.close()
-          const result=prepared.id?prepared:await bridge('awaitCreate',{provider:'credit',operation:nonce})
-          if(!/^[1-9]\d{0,19}$/.test(result?.id||''))throw Error('Credit 创建结果未确认，请到已发送记录核对')
-          createdId=result.id
-          draft={nonce:creditNonce,id:createdId,params:createParams}
-          win.localStorage.setItem(draftKey,JSON.stringify(draft))
-          sync(false)
-          if(!dialog.isConnected)return
-          msg.textContent='Credit 已创建，正在发到群聊…'
-        }
-        const d = await api(`/chat/groups/${group.id}/redpacks`, { method: 'POST', body: {
-          nonce, secret: packetProvider==='native'?value:undefined, mode:packetMode, prompt: hint.value, phrase: phrase.value, game: game.value,
-          post_id: selected?.id, image_index: selectedIndex, mask: Math.floor(Math.log2(maskBits & -maskBits)),
-          mask_bits: packetMode === 'image' ? maskBits : undefined, clue_key: packetMode === 'image' ? clueUpload?.key : undefined,
-          provider:packetProvider,external_ref:direct?createdId:platformDirect?(platformResult.shareUrl||platformResult.url):externalRef.value,external_code:platformDirect?platformResult.code:undefined,
-          draw_at:platformDirect?platformResult.draw_at:undefined,draw_kind:platformDirect?platformResult.kind:undefined,notify_at:notifyAt.value?Math.floor(new Date(notifyAt.value).getTime()/1000):null,
-          cover_key:cover?.key,
-        } })
-        if(direct && createdId)try{win.localStorage.removeItem(draftKey)}catch{}
-        if(platformDirect)platformWidget.published()
-        onSent?.(d.message); dialog.close()
-      } catch (e) { if(popup && !creditNavigated && !popup.closed)popup.close();msg.textContent = (direct && createdId?'LDC 已创建，编号 '+createdId+'；重试只发布群消息，不再扣款。':platformResult?'红包已创建；重试只发布群消息，不再创建。':'')+e.message }
-      finally { busy = false; navigationBusy=false; sync(false) }
-    } }, nativeEntry,platforms,externalHelp,creditChoice,creditFields,platformSlot,externalField,coverInput,coverButton,coverPreview,modes,secretField,count,field('祝福 / 提示', hint), phraseField, gameField, sourceField,reminder,msg,submit)
-    creditChoice.addEventListener('change',sync)
-    if(draft){provider.value='credit';creditChoice.value='new'}
-    createForm=form;content.replaceChildren(form); sync()
-    function sync(clearStatus=true) {
-      const native=provider.value==='native'
-      nativeEntry.disabled=busy||coverBusy
-      ;[...platforms.children].forEach((b,i)=>{b.setAttribute('aria-pressed',String(Object.keys(PROVIDERS)[i]===provider.value));b.disabled=busy||coverBusy})
-      modes.hidden=!native
-      ;[...modes.children].forEach((b, i) => b.setAttribute('aria-pressed', String(Object.keys(MODES)[i] === mode)))
-      phraseField.hidden = !native || mode !== 'phrase'; gameField.hidden = !native || mode !== 'cipher'; sourceField.hidden = !native || mode !== 'image'
-      const direct=provider.value==='credit'&&creditChoice.value==='new'
-      const platformDirect=['hb','fish'].includes(provider.value)&&creditChoice.value==='new'
-      creditChoice.disabled=busy
-      cancelCredit.hidden=!direct||!draft||!!createdId;cancelCredit.disabled=busy
-      ;[creditKind,creditAmount,creditCount].forEach(el=>el.disabled=busy||!!draft)
-      const widget=platformWidgets.get(provider.value)
-      if(widget)widget.setBusy(busy)
-      hint.disabled=busy||(direct&&!!draft)||(platformDirect&&!!widget?.draft)
-      if(platformDirect&&widget?.draft?.input?.greeting!==undefined)hint.value=widget.draft.input.greeting
-      if(direct&&draft)hint.value=draft.params?.greeting||''
-      submit.disabled=busy||coverBusy
-      creditChoice.hidden=native;creditFields.hidden=!direct||!!createdId
-      platformSlot.hidden=!platformDirect
-      if(platformDirect){const key=provider.value;ensurePlatform(key).then(w=>{if(provider.value===key&&creditChoice.value==='new')platformSlot.replaceChildren(w.node)}).catch(e=>{msg.textContent=e.message})}
-      externalField.hidden = native||direct||platformDirect
-      secretField.hidden = !native
-      count.hidden = secretField.hidden
-      externalHelp.hidden=native
-      externalHelp.replaceChildren(h('p',null,platformDirect?'使用已绑定的平台账户创建LDC红包，创建成功后发到当前群。':creditChoice.value==='existing'?'此处仅分享已有红包；领取请切到上方“开红包”。':'填写后由本人在Credit确认支付口令，完成后自动发到群里。'))
-      submit.textContent=direct&&createdId||platformDirect&&widget?.draft?.result?'将已创建的红包发到群里':direct?'到 Credit 确认扣款':platformDirect?'确认创建并发到群里':native?'塞好，发出去！':'分享这个红包到群里'
-      externalRef.placeholder = provider.value === 'credit' ? '粘贴 Credit 红包分享链接' : provider.value==='fish'?'活动链接 / UUID / 6–18字口令':'HB 分享链接 / 数字或文字口令'
-      const needed = native && (mode === 'image' || (mode === 'cipher' && game.value === 'tiles'))
-      hint.placeholder = needed ? '给个提示，让大家有迹可循' : native ? '给个提示（可不填）' : '写一句祝福（可不填）'
-      hint.setAttribute('aria-required', String(needed))
-      if(clearStatus)msg.textContent = direct&&createdId?'已创建 LDC 红包 '+createdId+'，等待发到群里；不会再次扣款。':direct&&draft?'有一笔待确认的 Credit 红包，继续时沿用原参数核对。也可以切换其他红包方式。':''
-    }
-    async function findPosts() {
-      const ticket = ++searchSeq, q = search.value.trim()
-      if (!q) { results.textContent = '输入帖子编号或关键词后找图'; return }
-      searchBtn.disabled = true; results.textContent = '正在找图…'
-      try {
-        const id = q.match(/^(?:No\.|#)?(\d+)$/i)
-        const d = await api(id ? `/memes/${id[1]}` : `/memes?q=${encodeURIComponent(q)}&limit=6&nsfw=0`)
-        if (ticket !== searchSeq || !dialog.isConnected) return
-        const items = d.meme ? [d.meme] : d.items
-        results.replaceChildren(...items.map(m => btn(`No.${m.id} · ${m.title || m.text?.slice(0, 38) || '未命名图片'}`, async () => {
-          const pickTicket = ++searchSeq
-          results.textContent = '加载帖子图片…'
-          try {
-            const full = d.meme || (await api(`/memes/${m.id}`)).meme
-            if (pickTicket !== searchSeq || !dialog.isConnected) return
-            if (!full.images?.some(im => im.u && im.k !== 'v' && im.k !== 'f')) { results.textContent = '这个帖子没有可用的图片'; return }
-            selected = full; selectedIndex = full.images.findIndex(im => im.u && im.k !== 'v' && im.k !== 'f'); results.replaceChildren(); drawChosen()
-          } catch (e) { if (pickTicket === searchSeq) results.textContent = e.message }
-        }, 'rpk-post')))
-        if (!items.length) results.textContent = '没找到帖子，试试编号或别的关键词'
-      } catch (e) { if (ticket === searchSeq) results.textContent = e.message }
-      finally { searchBtn.disabled = false }
-    }
-    function drawChosen() {
-      const images = h('select', { class: 'rpk-input', 'aria-label': '选择帖子图片', onchange: e => { selectedIndex = Number(e.target.value); drawChosen() } }, selected.images.map((im, i) => im.u && im.k !== 'v' && im.k !== 'f' ? h('option', { value: i, selected: i === selectedIndex }, `第 ${i + 1} 张图片`) : null))
-      const windows = h('div', { class: 'rpk-windows', role: 'group', 'aria-label': '选择清晰窗口' }, Array.from({ length: 9 }, (_, i) => {
-        const b = btn(String(i + 1), () => { const next = maskBits ^ (1 << i); if (next) { maskBits = next; drawChosen() } }); b.setAttribute('aria-pressed', String(!!(maskBits & (1 << i)))); b.setAttribute('aria-label', `清晰区域 ${i + 1}`); return b
-      }))
-      chosen.replaceChildren(h('strong', null, `已选 No.${selected.id}`), images,
-        preview({ u: selected.images[selectedIndex].u, nsfw: selected.sensitive || selected.spoiler, bits: maskBits, creator: true }),
-        h('div', { class: 'rpk-window-row' }, h('p', { class: 'rpk-help' }, '选择清晰区域，可多选'), windows),
-        h('p', { class: 'rpk-help' }, '公开帖子本身仍可查看原图；请勿用公开图藏保密答案。'))
-    }
+  async function create() {
+    const seq=detailSeq
+    content.replaceChildren(h('p',{class:'rpk-help'},'正在加载发包设置…'))
+    try{
+      const {createPacketComposer}=await import('/packet-composer.js?v=98ddcc7d')
+      if(!dialog.isConnected||seq!==detailSeq)return
+      createForm=createPacketComposer({h,api,group,userId,host:content,signal:lifetime.signal,uploadCover,uploadClue,preview,makeClue:makePacketClue,autoGuess,onBusy:v=>{navigationBusy=v},onSent:m=>{onSent?.(m);dialog.close()}})
+      autoGuess=null;content.replaceChildren(createForm)
+      try{const previous=JSON.parse(win.localStorage.getItem(`creditPacketDraft:${userId}:${group.id}`)||'null');if(previous)createForm.querySelector('.rpk-composer-scroll').append(h('details',{class:'rpk-options'},h('summary',null,'旧 Credit 待确认订单'),h('p',{class:'rpk-help'},'旧草稿仍保留。请到 Credit 已发红包列表核对，已有红包可从“开红包”入口继续。'),h('a',{href:'https://credit.linux.do/home',target:'_blank',rel:'noopener noreferrer'},'核对原订单')))}catch{}
+    }catch(e){if(dialog.isConnected)content.replaceChildren(h('p',{class:'rpk-status'},e.message),btn('重试',create))}
   }
 
   async function load() {
@@ -531,14 +303,19 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
     }
     catch (e) { if (dialog.isConnected && seq===detailSeq) content.replaceChildren(h('p', { class: 'rpk-status', role: 'alert' }, e.message), btn('重试', load)) }
   }
-  function render(p) {
+  function render(p,{celebrate=false}={}) {
+    if(p.coin52){
+      const seq=detailSeq,id=message.id;claimOnOpen=false;title.replaceChildren(dcoinIcon(h),' 红包')
+      import('/coin52-packets.js?v=98ddcc7d').then(({coin52Detail})=>{if(!dialog.isConnected||seq!==detailSeq)return;content.replaceChildren(coin52Detail({h,api,packet:p,messageId:id,celebrate,onRefresh:(next,options)=>{if(dialog.isConnected&&seq===detailSeq)render(next,options)},onUpdate,onBusy:v=>{navigationBusy=v}}))}).catch(e=>content.replaceChildren(h('p',{class:'rpk-status'},e.message),btn('重试',load)))
+      return
+    }
     if(p.ldc){
-      const seq=detailSeq,id=message.id,claimNow=claimOnOpen;claimOnOpen=false;title.textContent='本站 LDC 红包'
-      import('/redpacket-native.js?v=ba78b4e4').then(({nativePacketDetail})=>{
+      const seq=detailSeq,id=message.id,claimNow=claimOnOpen;claimOnOpen=false;title.textContent=p.ldc.draw?'红包抽奖':p.ldc.payment_provider==='coin52'?'D币红包':'LDC 红包'
+      import('/redpacket-native.js?v=98ddcc7d').then(({nativePacketDetail})=>{
         if(!dialog.isConnected||seq!==detailSeq)return
         const show=packet=>{if(dialog.isConnected&&seq===detailSeq)render(packet)}
-        content.replaceChildren(nativePacketDetail({h,api,messageId:id,packet:p,host:content,onRefresh:show,onBusy:value=>{navigationBusy=value}}))
-        if(claimNow&&!p.ldc.owner&&!p.ldc.mine&&['fixed','random'].includes(p.ldc.mode)&&p.ldc.state==='open'&&p.ldc.claimed_count<p.ldc.count){
+        content.replaceChildren(nativePacketDetail({h,api,messageId:id,packet:p,host:content,onRefresh:show,onBusy:value=>{navigationBusy=value},onPosted:()=>dialog.close()}))
+        if(claimNow&&p.ldc.can_play!==false&&!p.ldc.draw&&!p.ldc.owner&&!p.ldc.mine&&['fixed','random'].includes(p.ldc.mode)&&p.ldc.state==='open'&&p.ldc.claimed_count<p.ldc.count){
           navigationBusy=true;api(`/chat/messages/${id}/ldc/claim`,{method:'POST',body:{}}).then(d=>show({...p,ldc:d.ldc})).catch(e=>{if(dialog.isConnected&&seq===detailSeq)content.append(h('p',{class:'rpk-status',role:'status'},e.message))}).finally(()=>{navigationBusy=false})
         }
       }).catch(e=>{if(dialog.isConnected&&seq===detailSeq)content.replaceChildren(h('p',{class:'rpk-status'},e.message),btn('重试',load))})
@@ -548,9 +325,31 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
     const id=message.id, seq=detailSeq
     title.textContent = p.solved ? '拆到啦！' : MODES[p.mode]
     const tagline = p.prompt ? h('p', { class: 'rpk-tagline' }, p.prompt) : null
+    const reward=p.reward
+    const rewardStatus=h('p',{class:'rpk-status',role:'status'},p.reward_error||reward?.mine?.error||'')
+    const rewardSummary=reward&&h('div',{class:'rpk-credit'},
+      packetAmount(h,reward.total,reward.payment_provider,'rpk-hero-amount'),
+      h('p',{class:'rpk-help'},`奖励${reward.state==='open'?'进行中':'已结束'} · 截止 ${new Date(reward.ends_at*1000).toLocaleString('zh-CN')}`),
+      reward.mine&&h('p',{class:'rpk-help'},`我的奖励：${reward.mine.amount} ${reward.currency||'LDC'} · ${fundingState(reward.mine.state,reward.payment_provider)}`),
+      packetRecords({h,api,p:reward})
+    )
+    const claimReward=reward&&p.solved&&!reward.owner&&!reward.mine&&reward.state==='open'&&reward.claimed_count<reward.count&&btn('领取 '+(reward.currency||'LDC')+' 奖励',async()=>{
+      if(navigationBusy)return
+      navigationBusy=true;rewardStatus.textContent='正在核对解谜记录并锁定奖励…'
+      try{const d=await api(`/chat/messages/${id}/ldc/claim`,{method:'POST',body:{}});if(dialog.isConnected&&seq===detailSeq)render({...p,reward:d.ldc,reward_error:''})}
+      catch(e){rewardStatus.textContent=e.message}finally{navigationBusy=false}
+    },'rpk-primary')
+    const reconcileReward=(retry=false)=>async()=>{
+      if(navigationBusy)return
+      navigationBusy=true;rewardStatus.textContent='正在核对原单…'
+      try{const d=await api(`/chat/messages/${id}/ldc/reconcile`,{method:'POST',body:{retry}});if(dialog.isConnected&&seq===detailSeq)render({...p,reward:d.ldc,reward_error:''})}
+      catch(e){rewardStatus.textContent=e.message}finally{navigationBusy=false}
+    }
+    const rewardPending=reward?.mine&&['reserved','sent','unknown','rejected'].includes(reward.mine.state)||reward?.owner&&reward.recipients?.some(r=>['reserved','sent','unknown','rejected'].includes(r.state))
     if (p.solved) {
       content.replaceChildren(...[coverImage(p.cover),medal(p),h('div', { class: 'rpk-win' }, doodle('happy', 'rpk-celebrate'),
-        h('div', { class: 'rpk-secret' }, p.secret), h('p', null, `${p.opened} 人拆过`)),
+        p.secret&&h('div', { class: 'rpk-secret' }, p.secret), h('p', null, `${p.opened} 人拆过`)),
+        rewardSummary,claimReward,rewardPending&&btn('核对发放结果',reconcileReward()),reward?.owner&&reward.recipients?.some(r=>r.state==='rejected')&&btn('重试明确失败的原单',reconcileReward(true)),reward&&btn('刷新奖励状态',async()=>{try{const d=await api(`/chat/messages/${id}/redpack`);if(dialog.isConnected&&seq===detailSeq)render(d.packet)}catch(e){rewardStatus.textContent=e.message}}),reward&&rewardStatus,
         p.image && preview(p.image, true), p.post_id && h('a', { class: 'rpk-secondary rpk-source', href: `/m/${p.post_id}`, target: '_blank', rel: 'noopener' }, `查看原帖 No.${p.post_id}`), btn('收好红包', () => dialog.close(), 'rpk-primary')].filter(Boolean))
       return
     }
@@ -559,8 +358,8 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
     const submit = h('button', { type: 'submit', class: 'rpk-primary' }, p.mode === 'open' ? '拆！' : p.mode === 'phrase' ? '说好了，开！' : '就这个！')
     const extras = []
     if (p.mode === 'open') extras.push(doodle('open', 'rpk-waiting'))
-    if (p.mode === 'phrase') extras.push(h('p', { class: 'rpk-help' }, '先在群里说出这句暗号：'),
-      h('blockquote', { class: 'rpk-cipher' }, p.phrase), btn('回群里说口令', () => dialog.close()))
+    if (p.mode === 'phrase') extras.push(h('p', { class: 'rpk-help' }, '先在群里说出这段复读内容：'),
+      h('blockquote', { class: 'rpk-cipher' }, p.phrase), btn('回群里复读', () => dialog.close()))
     if (p.mode === 'cipher') {
       extras.push(h('h3', { class: 'rpk-game-title' }, GAMES[p.game]?.[0] || '解个谜'), h('p', { class: 'rpk-help' }, GAMES[p.game]?.[1] || '根据提示输入谜底。'))
       if (p.clue.text) extras.push(h('div', { class: 'rpk-cipher' }, p.clue.text))
@@ -584,7 +383,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
         onUpdate?.(d.message); if (dialog.isConnected && seq===detailSeq) render(d.packet)
       } catch (e) { if(seq===detailSeq)info.textContent = e.message }
       finally { busy = false; submit.disabled = false }
-    } }, coverImage(p.cover),tagline, extras, !['open', 'phrase'].includes(p.mode) && p.game !== 'tiles' && field('谜底', answer), info, submit)
+    } }, coverImage(p.cover),tagline,rewardSummary, extras, !['open', 'phrase'].includes(p.mode) && p.game !== 'tiles' && field('谜底', answer), info, submit)
     content.replaceChildren(form)
   }
 
@@ -625,20 +424,21 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
     const connectorHint=btn('安装 / 检测红包连接器',()=>showConnector(true));connectorHint.hidden=true
     const roster=(label,list)=>{
       if(!Array.isArray(list)||!list.length)return null
-      const rows=list.map(person=>h('li',null,h('span',null,person.name||person.username||'匿名用户'),h('span',null,
-        [person.amount!=null?person.amount+' LDC':null,person.payout==='paid'?'已发放':person.payout==='pending'?'发放中':({won:'中奖',not_won:'未中奖',registered:'已报名',drawing:'开奖中'})[person.result]].filter(Boolean).join(' · '))))
+      const ranks=label==='领取记录'?packetLuckRanks(list,['exhausted','expired','drawn'].includes(snapshot?.state)&&!snapshot?.roster_more&&!snapshot?.roster_error):[]
+      const rows=list.map((person,index)=>{const rank=label==='领取记录'&&p.provider==='fish'&&['king','last'].includes(person.luck)?person.luck:ranks[index];return h('li',null,h('span',null,person.name||person.username||'匿名用户',rank&&h('b',{class:'rpk-luck '+rank},rank==='king'?'手气王':'手气亡')),h('span',null,
+        [person.amount!=null?person.amount+' LDC':null,person.payout==='paid'?'已发放':person.payout==='pending'?'发放中':({won:'中奖',not_won:'未中奖',registered:'已报名',drawing:'开奖中'})[person.result]].filter(Boolean).join(' · ')))})
       return h('details',{class:'rpk-roster'},h('summary',null,label+'（'+list.length+'）'),h('ul',null,rows))
     }
     content.replaceChildren(...[coverImage(p.cover),p.prompt&&h('p',{class:'rpk-tagline'},p.prompt),won&&medal(p),visual,queried,passwordField,claim,unsupported,
       roster('中奖名单',snapshot?.winners||draw?.winners),roster('参与名单',snapshot?.participants),roster('领取记录',snapshot?.recipients),
-      snapshot?.roster_more&&h('p',{class:'rpk-help'},'当前显示前100条，完整名单可在 '+platform+' 查看。'),snapshot?.roster_error&&h('p',{class:'rpk-help'},'名单暂未读取成功，可刷新重试。'),
+      snapshot?.roster_more&&h('p',{class:'rpk-help'},'当前显示 '+Math.max(snapshot?.recipients?.length||0,snapshot?.winners?.length||0,snapshot?.participants?.length||0)+' 条，完整名单可在 '+platform+' 查看。'),snapshot?.roster_error&&h('p',{class:'rpk-help'},'名单暂未读取成功，可刷新重试。'),
       h('div',{class:'rpk-actions'},query,link),...(['hb','fish'].includes(p.provider)&&p.external.ref_kind!=='id'?[h('blockquote',{class:'rpk-cipher'},p.external.ref),copy]:[]),info,connectorHint].filter(Boolean))
     let busy=false
     async function connect(action) {
       if(busy)return;busy=true;query.disabled=claim.disabled=true;info.textContent=action==='claim'?(p.provider==='fish'&&p.external.ref_kind==='text'?'正在向 fish 核对口令与领取结果…':'正在核对并领取…'):'正在查询…'
       try {
         const connected=await bridge('ping')
-        if(!connected.participationV2)throw Error('请打开顶部“连接器”，复制并更新脚本，再刷新本站')
+        if(!connected.participationV2 || p.provider==='fish'&&!connected.fishV2)throw Error('请打开顶部“连接器”，复制并更新脚本，再刷新本站')
         const result=await bridge(action,{...p.external,password:passwordField?packetPassword.value:undefined})
         const saved=id?await api(`/chat/messages/${id}/redpack/sync`,{method:'POST',body:result}):{packet:{...p,snapshot:result,synced_at:Math.floor(Date.now()/1000)}}
         if(saved.message)onUpdate?.(saved.message)
@@ -657,49 +457,81 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
     title.textContent='群红包袋'
     dialog.classList.add('rpk-archive')
     back.hidden=true
-    let view='all',scope='today',before=null,loading=false,ticket=0,scanBefore=null
-    const list=h('div',{class:'rpk-archive-list'}),info=status()
-    const pending=btn('今天',()=>change('today')),history=btn('历史',()=>change('all')),refresh=btn('刷新',()=>change(scope)),more=btn('再翻一页',()=>draw(false))
-    const filter=h('select',{class:'rpk-input','aria-label':'红包状态',onchange:e=>{view=e.target.value;change(scope)}},[['all','全部状态'],['pending','待拆'],['history','已领 / 已结束']].map(([k,v])=>h('option',{value:k},v)))
-    const scan=btn('继续整理旧分享',()=>draw(true))
-    scan.hidden=true
-    const tabs=h('div',{class:'rpk-actions'},pending,history,refresh,scan)
-    content.replaceChildren(tabs,filter,list,info,more)
-    function change(next){if(loading)return;scope=next;before=null;scanBefore=null;draw(true)}
+    let view='pending',before=null,loading=false,ticket=0,scanBefore=null,scanned=false
+    const list=h('div',{class:'rpk-archive-list'}),info=status(),scopeNote=h('p',{class:'rpk-hint'})
+    const categories=[['pending','待拆'],['check','待确认'],['puzzle','猜谜'],['mine','我发的'],['history','历史']]
+    const tabs=categories.map(([key,label])=>btn(label,()=>change(key)))
+    const refresh=btn('刷新',()=>change(view)),more=btn('再翻一页',()=>draw(false))
+    const scan=btn('整理旧分享',async()=>{
+      if(loading)return
+      try{await importShares();await draw(true)}catch(e){info.textContent='旧分享暂未整理：'+e.message}
+    })
+    const controls=h('div',{class:'rpk-archive-tabs','aria-label':'群红包袋分类'},...tabs)
+    content.replaceChildren(...[bagReminderSettings?.(archiveGroup.id),controls,scopeNote,h('div',{class:'rpk-actions'},btn('发包榜',senderBoard),refresh,scan),list,info,more].filter(Boolean))
+    function change(next){if(loading)return;view=next;before=null;draw(true)}
     async function importShares(){
       scan.disabled=true
       try {
-        const d=await api(`/chat/groups/${archiveGroup.id}/redpacks/import`,{method:'POST',body:{scope,before:scanBefore}})
-        scanBefore=d.next;scan.hidden=!d.next
-      } finally {scan.disabled=false}
+        const d=await api(`/chat/groups/${archiveGroup.id}/redpacks/import`,{method:'POST',body:{scope:'all',before:scanBefore}})
+        scanBefore=d.next;scanned=true;scan.textContent=d.next?'继续整理旧分享':'旧分享已整理至此'
+      } finally {scan.disabled=scanned&&!scanBefore}
     }
     async function draw(reset){
       if(loading)return;loading=true;const mine=++ticket;info.textContent='正在装进红包袋…';more.disabled=true
-      pending.setAttribute('aria-pressed',String(scope==='today'));history.setAttribute('aria-pressed',String(scope==='all'))
+      tabs.forEach((button,index)=>button.setAttribute('aria-pressed',String(categories[index][0]===view)))
+      scopeNote.textContent=view==='history'?'往日红包与今日已结束的记录。归档不影响原红包领取。':'仅显示北京时间今天发布的红包，往日红包请到“历史”查看。'
       if(reset){clearClocks();list.replaceChildren()}
       try {
-        let importError=''
-        if(reset){before=null;try{await importShares()}catch(e){importError='旧分享暂未整理：'+e.message}}
-        const d=await api(`/chat/groups/${archiveGroup.id}/redpacks?view=${view}&scope=${scope}${before?'&before='+before:''}`)
+        if(reset)before=null
+        const d=await api(`/chat/groups/${archiveGroup.id}/redpacks?view=${view}${before?'&before='+before:''}`)
         if(mine!==ticket || !dialog.isConnected)return
         list.append(...d.items.map(m=>{
-          const p=m.redpack,s=p?.snapshot,label=m.deleted?'已撤回':p?.game==='ldc'?'点击查看领取结果':s?.claimed?'已领取':STATES[s?.state] || (p?.provider==='native' ? p.solved?'已拆':'待拆' : '状态待同步')
-          return btn([p?.cover?h('img',{class:'rpk-archive-cover',src:p.cover,alt:'',loading:'lazy'}):h('span',{class:'rpk-archive-icon'},icon('redpack')),h('span',{class:'rpk-archive-copy'},h('strong',null,p?.prompt || `${m.user.name || m.user.username}的红包`),
-            h('span',null,`${p?.game==='ldc'?'本站 LDC':PROVIDERS[p?.provider] || '红包'} · ${label}`),p?.notify_at && h('time',null,'到点提醒 '+new Date(p.notify_at*1000).toLocaleString('zh-CN',{hour12:false})),
+          const p=m.redpack,s=p?.snapshot,label=m.deleted?'已撤回':view==='check'?'状态待确认，点开查询':p?.game==='free_guess'?'点击查看猜词结果':p?.game==='ldc'?view==='pending'?'有 LDC 待领':'点击查看领取结果':s?.claimed?'已领取':s?.state==='expired'?'已过期':s?.remaining===0||s?.total!=null&&s?.claimed_count>=s.total?'已领完':STATES[s?.state] || (p?.provider==='native' ? p.solved?'已拆':'待拆' : '状态待确认')
+          return btn([p?.cover?h('img',{class:'rpk-archive-cover',src:p.cover,alt:'',loading:'lazy'}):h('span',{class:'rpk-archive-icon'},p?.provider==='coin52'?dcoinIcon(h):icon('redpack')),h('span',{class:'rpk-archive-copy'},h('strong',null,p?.prompt || `${m.user.name || m.user.username}的红包`),
+            h('span',null,`${p?.game==='free_guess'?'无奖励猜词':p?.game==='ldc'?'本站 LDC':p?.provider==='coin52'?'红包':PROVIDERS[p?.provider] || '红包'} · ${label}`),view==='history'&&h('time',null,'发布于 '+new Date(m.created_at*1000).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false})+'（北京时间）'),p?.notify_at && h('time',null,'到点提醒 '+new Date(p.notify_at*1000).toLocaleString('zh-CN',{hour12:false})),
             countdown(p?.draw||s),s?.expires_at&&!['lottery','timed_draw'].includes(s.kind) && h('time',null,'截止 '+new Date(s.expires_at*1000).toLocaleString('zh-CN',{hour12:false})))],()=>{
               if(m.deleted)return
               message=m
-              externalInspected=false;claimOnOpen=true
+              externalInspected=false;claimOnOpen=view==='pending'
               back.hidden=false
               dialog.classList.remove('rpk-archive')
               load()
             },'rpk-archive-item'+(m.deleted?' is-gone':''))
         }))
         list.querySelectorAll('.is-gone').forEach(b=>b.disabled=true)
-        before=d.next;more.hidden=!d.more;info.textContent=importError || (list.children.length?'':'红包袋还是空的')
+        before=d.next;more.hidden=!d.more;info.textContent=list.children.length?'':'这一类暂时没有红包'
       }catch(e){if(mine===ticket)info.textContent=e.message}
       finally{if(mine===ticket){loading=false;more.disabled=false}}
     }
     draw(true)
+  }
+
+  function senderBoard(){
+    clearClocks();title.textContent='本群发包榜';back.hidden=false
+    let period='today',metric='count',ticket=0,request=null
+    const list=h('ol',{class:'rpk-rank-list'}),info=status(),mine=h('p',{class:'rpk-rank-mine'}),note=h('p',{class:'rpk-hint'})
+    info.classList.add('rpk-rank-status')
+    const periods=[['today','今日'],['all','总榜']],metrics=[['count','发包次数'],['paid','确认发放'],['declared','创建奖池']]
+    const periodButtons=periods.map(([key,label])=>btn(label,()=>{period=key;draw()}))
+    const metricButtons=metrics.map(([key,label])=>btn(label,()=>{metric=key;draw()}))
+    const refresh=btn('更新榜单',draw)
+    content.replaceChildren(h('div',{class:'rpk-rank-tabs','aria-label':'发包榜周期'},...periodButtons),h('div',{class:'rpk-rank-tabs','aria-label':'发包榜口径'},...metricButtons),note,mine,list,info,refresh)
+    async function draw(){
+      request?.abort();request=new AbortController();const current=request,seq=++ticket
+      periodButtons.forEach((b,i)=>b.setAttribute('aria-pressed',String(periods[i][0]===period)))
+      metricButtons.forEach((b,i)=>b.setAttribute('aria-pressed',String(metrics[i][0]===metric)))
+      info.classList.remove('is-error');info.textContent='正在读取榜单…';mine.textContent='';list.replaceChildren();refresh.disabled=true
+      note.textContent='仅统计本站原生 LDC 红包；转发的 HB / Fish / Credit 链接不计。'+(metric==='paid'?'金额按平台确认发放的日期累计，待核对或失败订单不计。此榜每日结算前三奖励；到账以 Credit 为准。':metric==='declared'?'奖池是创建时承诺的额度，包含尚未领取部分，不代表实际发出，不参与额度奖励。':'按成功创建的日期累计次数，包含尚未领完的红包；无奖励猜词不计。此榜每日结算前三奖励。')
+      try{
+        const data=await api(`/chat/groups/${archiveGroup.id}/sender-stats?period=${period}&metric=${metric}`,{signal:current.signal})
+        if(seq!==ticket||!list.isConnected)return
+        const value=n=>metric==='count'?n+' 次':(n/100).toFixed(2)+' LDC'
+        mine.textContent='我：'+value(data.mine.value)+(data.mineRank?' · 第 '+data.mineRank+' 名':' · 暂未上榜')
+        list.replaceChildren(...(data.leaders.length?data.leaders.map((p,i)=>h('li',{class:i<3?'is-podium':''},h('span',{class:'rpk-rank-place'},i+1),p.avatar?avatarImage(h,p.avatar,'',28):h('span',{class:'rpk-rank-avatar','aria-hidden':'true'},(p.name||'群')[0]),h('span',{class:'rpk-rank-name'},p.name||'群成员'),h('strong',null,value(p.value)))):[h('li',null,'这段时间还没有对应记录')]))
+        info.textContent=(period==='today'?'北京时间 '+data.today:'本站累计记录')+' · 前20名 · 同分按较早达成、用户编号排序'
+      }catch(error){if(error.name!=='AbortError'&&seq===ticket&&list.isConnected){info.classList.add('is-error');info.textContent='榜单读取失败：'+error.message+'；可以更新重试。'}}
+      finally{if(seq===ticket)refresh.disabled=false}
+    }
+    draw()
   }
 }

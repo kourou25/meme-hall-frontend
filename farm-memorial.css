@@ -1,0 +1,13 @@
+.rt-oldfarmer{--rt-color:#9b7334;--rt-accent:#b8cf91;--rt-frame:url('/assets/farm-memorial/frame.png');--rt-slice:190 300 430 680;--rt-paper:#fff9e9;--rt-paper-end:#f3f6e7}
+html .rt-oldfarmer.rt-badge .rt-art{background-image:url('/assets/farm-memorial/atlas.png');background-size:213.333% 320%;background-position:50% 55%;background-repeat:no-repeat}
+html .rt-oldfarmer.rt-badge .rt-art img{visibility:hidden}
+html .cm-text.rt-anime.rt-bubble.rt-oldfarmer{--rt-paper:#fff9e9;--rt-paper-end:#f3f6e7}
+.rt-oldfarmer .rt-trim-frame,.rt-oldfarmer .rt-trim-finish{inset:-5px -5px -12px -25px;border-width:10px 16px 23px 36px;border-image-width:10px 16px 23px 36px}
+.rt-oldfarmer.rt-growth-10 .rt-trim-finish{animation:oldfarmer-sunset 12s ease-in-out infinite;filter:brightness(1.25);mix-blend-mode:screen}
+.rt-oldfarmer .rt-trim-spark{width:3px;height:3px;border-radius:50%;background:#fff2a5;box-shadow:0 0 4px #d9ab43;left:calc(12% + var(--rt-i)*34%);bottom:-1px;top:auto;animation:oldfarmer-firefly 8s ease-in-out infinite;animation-delay:calc(var(--rt-i)*-2.2s)}
+html .rt-oldfarmer.rt-title.u-title[class]{background:linear-gradient(112deg,#faf0d4,#fffdf6 55%,#e1edcb);border-color:#b5924d;color:#795625;box-shadow:inset 0 0 0 1px #fff9,0 1px 2px #7c5f2120}
+html .rt-oldfarmer.rt-title .rt-level{background:#9b7334}
+@keyframes oldfarmer-sunset{0%,65%,100%{opacity:0}78%{opacity:.22}90%{opacity:0}}
+@keyframes oldfarmer-firefly{0%,24%,100%{opacity:0;transform:translate(0,0)}45%{opacity:.7}70%{opacity:0;transform:translate(9px,-6px)}}
+.cm-row:not([data-bubble-live=true]) .rt-oldfarmer .rt-detail *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.rt-oldfarmer .rt-detail *{animation:none!important}}

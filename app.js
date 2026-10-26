@@ -1,7 +1,23 @@
+import {TITLE_COLLECTION,titleStage,TITLE_MAX_LEVEL,TITLE_STAGES,TITLE_STAGE_NAMES,CHICKENGUN_MIN_SIZE,CHICKENGUN_MAX_SIZE,chickengunSizeLimit,chickengunSize} from '/title-collection.js?v=98ddcc7d'
+import {titleVisualClass,titleBadgeSource,attachTitleMotion,initializeTitleEffects} from '/title-visuals.js?v=98ddcc7d'
+import {createChatBubbleVisibility} from '/bubble-visibility.js?v=98ddcc7d'
+import {titleSymbol} from '/title-symbols.js?v=98ddcc7d'
 // 尽欢前端：无构建、无框架
-import { onRemoval, windowContent } from '/resource-memory.js?v=9ea25050'
-import { PERSONAL_TITLES as LEGACY_PERSONAL_TITLES } from '/personal-catalog.js?v=762c7219'
-import { PERSONAL_V2_TITLES } from '/personal-v2-catalog.js?v=b58331cc'
+import { settingsSections } from '/settings-sections.js?v=98ddcc7d'
+import {dcoinIcon} from '/dcoin.js?v=98ddcc7d'
+import {seenCoverage,seenIntersects,seenPostCoverage} from '/seen-visibility.js?v=98ddcc7d'
+import {badgeArt} from '/badge-art.js?v=98ddcc7d'
+import { normalizeAnimationFile } from '/animation-loop.js?v=98ddcc7d'
+import {avatarImage,refreshAvatar} from '/avatar-view.js?v=98ddcc7d'
+import { stickerPreviews } from '/sticker-preview.js?v=98ddcc7d'
+import { onRemoval, windowContent, wakeWindowContent, observeResourceDocument } from '/resource-memory.js?v=98ddcc7d'
+import {focusChatMessage} from '/chat-scroll-anchor.js?v=98ddcc7d'
+import {refreshMessageReference} from '/message-reference.js?v=98ddcc7d'
+import { socialCards } from '/social-preview.js?v=98ddcc7d'
+import { socialLink,socialLinks,socialMessageText,canSocialPost,isOfficialEmbed } from '/social-links.js?v=98ddcc7d'
+import { PERSONAL_TITLES as LEGACY_PERSONAL_TITLES } from '/personal-catalog.js?v=98ddcc7d'
+import { PERSONAL_V2_TITLES } from '/personal-v2-catalog.js?v=98ddcc7d'
+import {mediaUrl,deferChatImage,beginChatMessageFetch} from '/chat-media-load.js?v=98ddcc7d'
 const PERSONAL_TITLES = { ...LEGACY_PERSONAL_TITLES, ...PERSONAL_V2_TITLES }
 const S = { me: null, emojis: [], minPostTL: 1, bgKey: null, modal: null, wall: null, meSt: null, folders: null, viewer: null }
 const main = document.getElementById('main')
@@ -20,6 +36,7 @@ function h(tag, attrs, ...kids) {
       else if (k === 'value') el.value = v
       // 只写 muted 属性不会真的静音（浏览器只在解析 HTML 时读它），不静音的视频会被拦下自动播放
       else if (k === 'muted') { el.muted = !!v; el.defaultMuted = !!v; if (v) el.setAttribute('muted', '') }
+      else if (tag === 'img' && k === 'src') { const source = mediaUrl(v); if (source !== v) el.crossOrigin = 'anonymous'; el.setAttribute(k, source) }
       else el.setAttribute(k, v === true ? '' : v)
     }
   }
@@ -27,12 +44,15 @@ function h(tag, attrs, ...kids) {
     if (kid == null || kid === false) continue
     el.append(kid instanceof Node ? kid : String(kid))
   }
+  if(typeof attrs?.class==='string'&&attrs.class.includes('rt-bubble'))attachTitleMotion(el)
   return el
 }
 // 原生 append / replaceChildren 会把 null、false 当文字插进去，先按 h() 的规则过滤
 const nodes = (...kids) => kids.flat(Infinity).filter((k) => k != null && k !== false)
 
 const ICON = {
+ music:'<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 8l12-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="18" cy="16" rx="3" ry="2"/></svg>',
+  sprout: '<svg viewBox="0 0 24 24"><path d="M12 21V11M12 13C4 14 3 8 3 5c6-1 9 3 9 8ZM12 10c0-6 4-8 9-7 0 6-3 9-9 9M6 21h12"/></svg>',
   swap: '<svg viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>',
   zoom: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/></svg>',
   at: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg>',
@@ -98,26 +118,33 @@ const ICON = {
   trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   redpack: '<svg viewBox="0 0 24 24"><path d="M4 8 5 3l4 4h6l4-4 1 5v11c0 2-3 3-8 3s-8-1-8-3Z"/><path d="m4 14 8 5 8-5M9 10v1m6-1v1m-4 2q1 1 2 0"/></svg>',
   packetBag: '<svg viewBox="0 0 24 24"><path d="M6 4h12l-3 5c5 3 7 7 5 10-2 3-14 3-16 0-2-3 0-7 5-10ZM8 9h8M10 14v1m4-1v1m-4 3q2 2 4 0"/></svg>',
+  book: '<svg viewBox="0 0 24 24"><path d="M12 5C9 3 5 3 2 4v15c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Zm0 0v15M5 8c1.5-.3 3-.1 4 .5M15 8.5c1-.6 2.5-.8 4-.5"/></svg>',
   raffle: '<svg viewBox="0 0 24 24"><path d="M3 4h18v4c-2 0-3 1-3 3s1 3 3 3v6H3v-6c2 0 3-1 3-3s-1-3-3-3V4Z"/><path d="M12 6v3m0 5v4m-2-6 2-2 2 2-2 2Z"/></svg>',
 }
 const icon = (name, cls = 'i') => h('span', { class: cls, html: ICON[name], 'aria-hidden': 'true' })
 
 async function api(path, opts = {}) {
   const init = { method: opts.method || 'GET', headers: {}, credentials: 'same-origin' }
+  const messages = init.method === 'GET' && /^\/chat\/groups\/\d+\/messages(?:\?|$)/.test(path)
+  if (messages) init.priority = 'high'
   if(opts.signal)init.signal=opts.signal
   if (opts.body instanceof FormData) init.body = opts.body
   else if (opts.body !== undefined) {
     init.headers['content-type'] = 'application/json'
     init.body = JSON.stringify(opts.body)
   }
+  const releaseImages = messages ? beginChatMessageFetch() : null
+  try {
   const res = await fetch(path.startsWith('/auth/') ? path : '/api' + path, init)
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
     const err = new Error(data.error || `请求失败（${res.status}）`)
     err.status = res.status
+    err.code = data.code
     throw err
   }
   return data
+  } finally { releaseImages?.() }
 }
 
 let toastTimer
@@ -161,13 +188,13 @@ const fmtN = (n) => (n >= 10000 ? (n / 10000).toFixed(1).replace(/\.0$/, '') + '
 
 // ---------- 平台表情 ----------
 // 形如 [bb:doge]，图片放在 /stickers/{pack}/{name}.{ext}
-const STICKER_EXT = { bb: 'png', bm: 'png', tieba: 'png', weibo: 'png', qq: 'gif', alu: 'png', ld: 'png', muscle: 'webp', nga: 'png' }
+const STICKER_EXT = { bb: 'png', bm: 'png', tieba: 'png', weibo: 'png', qq: 'gif', alu: 'png', ld: 'png', muscle: 'webp', heartgif: 'webp', nga: 'png' }
 const STICKER_RE = /\[([a-z]+):([a-z0-9_]+)\]/g
 // 首次渲染不依赖打开表情面板；自建混合格式最多尝试三个受支持后缀。
 const sticker = (pack, name, cls = 'stk') => {
   const ext = STICKER_EXT[pack] || 'png'
   return h('img', {
-    class: cls, src: `/stickers/${pack}/${name}.${ext}`, alt: `[${pack}:${name}]`, title: name, loading: 'lazy',
+    class: cls, src: `/stickers/${pack}/${name}.${ext}${pack === 'heartgif' ? '?v=20261017loop' : pack==='qq'&&['1','3','taiji_boy'].includes(name)?'?v=20261018loop':''}`, alt: `[${pack}:${name}]`, title: name, loading: 'lazy',
     onerror: (e) => {
       const alternatives=['png','gif','webp'].filter(x=>x!==ext),attempt=Number(e.target.dataset.retry||0)
       if(attempt<alternatives.length){e.target.dataset.retry=attempt+1;e.target.src=`/stickers/${pack}/${name}.${alternatives[attempt]}`}
@@ -178,7 +205,13 @@ const sticker = (pack, name, cls = 'stk') => {
 // 精选里的 Unicode 表情用和 linux.do 一样的 Fluent 图，和 L站表情风格、大小一致
 const EMO_IMG = { '❤️': 'heart', '👍': 'thumbsup', '😆': 'laughing', '😮': 'open_mouth', '👏': 'clap', '🎊': 'confetti_ball', '🤗': 'hugs' }
 // 回应表情的 key：带冒号是平台表情，否则是 Unicode
-function emo(key) {
+function emo(key, preview = false) {
+  // 小动画由面板按可见区域自动播放，手机无需悬停。
+  if (preview && /^heartgif:heartgif_\d{3}$/.test(key)) {
+    const name=key.split(':')[1],thumb=`/stickers/heartgif/thumbs/${name}.webp`
+    return h('img',{class:'stk emo',src:thumb,alt:`[${key}]`,title:name,loading:'lazy',decoding:'async',
+      'data-poster':thumb,'data-animation':`/stickers/heartgif/previews/${name}.webp?v=20261017loop`})
+  }
   if (key === '+1') return h('span', { class: 'emo emo-plus1' }, '+1')
   const i = key.indexOf(':')
   if (i > 0) return sticker(key.slice(0, i), key.slice(i + 1), 'stk emo')
@@ -234,7 +267,7 @@ let packsP
 // dupes.json 由 scripts/sticker-dupes.mjs 生成：{ 重复的代码: 保留的代码 }；只在选择器里隐藏，文件不删，老消息照常显示
 let STICKER_DUPES = {}
 const loadPacks = () => (packsP ||= Promise.all([
-  fetch('/stickers/packs.json').then((r) => r.json()),
+  fetch('/stickers/packs.json?v=20261017heartfast').then((r) => r.json()),
   fetch('/stickers/dupes.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
 ]).then(([ps, dupes]) => {
   ps.forEach((p) => { STICKER_EXT[p.key] ||= p.ext })
@@ -248,7 +281,7 @@ const recentEmos = () => { try { return JSON.parse(localStorage.getItem('emo-rec
 const pushRecent = (k) => localStorage.setItem('emo-recent', JSON.stringify([k, ...recentEmos().filter((x) => x !== k)].slice(0, 24)))
 
 let emojiWordsP
-const loadEmojiWords = () => emojiWordsP ||= fetch('/emoji-search.json?v=fbfc7101').then(r => {
+const loadEmojiWords = () => emojiWordsP ||= fetch('/emoji-search.json?v=ca8246e7').then(r => {
   if (!r.ok) throw Error('词库加载失败')
   return r.json()
 }).catch(e => { emojiWordsP = null; throw e })
@@ -262,6 +295,9 @@ function emojiBoard(onPick, { mine = new Set(), counts = {}, foot = null, onMedi
   const clear = h('button', { type: 'button', class: 'btn-icon', 'aria-label': '清空表情搜索', hidden: true, onclick: () => { search.value = ''; search.dispatchEvent(new Event('input')); search.focus() } }, icon('close'))
   const notice = h('div', { class: 'eb-notice', role: 'status', hidden: true })
   const board = h('div', { class: 'eb' }, h('div', { class: 'eb-search-row' }, icon('search'), search, clear), notice, tabs, grid, foot)
+  const previews = stickerPreviews(grid)
+  let removed = false
+  onRemoval(board, () => { removed = true; previews.dispose() })
   board.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || e.isComposing) return
     e.preventDefault(); e.stopPropagation()
@@ -270,6 +306,7 @@ function emojiBoard(onPick, { mine = new Set(), counts = {}, foot = null, onMedi
   })
   async function load() {
     const [packResult, wordResult] = await Promise.allSettled([loadPacks(), loadEmojiWords()])
+    if (removed) return
     const packs = packResult.status === 'fulfilled' ? packResult.value : []
     const words = wordResult.status === 'fulfilled' ? wordResult.value : {}
     notice.hidden = packResult.status === 'fulfilled' && wordResult.status === 'fulfilled'
@@ -303,7 +340,7 @@ function emojiBoard(onPick, { mine = new Set(), counts = {}, foot = null, onMedi
       const keys = tokens.length ? matches.slice(0, limit) : matches
       grid.className = 'eb-grid' + (tokens.length ? ' searching' : pg.big ? ' big' : '')
       grid.replaceChildren(...keys.map((k) => h('button', { type: 'button', class: 'eb-btn' + (mine.has(k) ? ' on' : ''), title: all.get(k)?.label || emoLabel(k), 'aria-label': emoLabel(k), 'data-emoji': k,
-        onclick: () => { pushRecent(k); onPick(k) } }, emo(k), counts[k] ? h('span', { class: 'n' }, counts[k]) : null)))
+        onclick: () => { pushRecent(k); onPick(k) } }, emo(k, true), counts[k] ? h('span', { class: 'n' }, counts[k]) : null)))
       if(!tokens.length&&pg.key==='p:💗'&&onMediaPick&&S.me){
         grid.append(h('p',{class:'eb-empty'},'右键或长按群聊图片可添加表情，最多 100 张。来源撤回后不再显示。'))
         if(favorites===null&&!favoritesLoading&&!favoritesError){
@@ -333,6 +370,7 @@ function emojiBoard(onPick, { mine = new Set(), counts = {}, foot = null, onMedi
       if (!matches.length) grid.append(h('p', { class: 'eb-empty', role: 'status' }, '没找到，换个词试试'))
       if (tokens.length && keys.length < matches.length) grid.append(h('button', { class: 'eb-more', type: 'button', onclick: () => { const top = grid.scrollTop; limit += 80; show(); grid.scrollTop = top } }, `更多表情（${matches.length - keys.length}）`))
       grid.scrollTop = 0
+      previews.reset()
     }
     search.oninput = () => { limit = 80; show() }
     show()
@@ -541,7 +579,7 @@ function memeImg(src, attrs = {}) {
 
 function avatar(url, name, size = 28) {
   return url
-    ? h('img', { class: 'avatar', src: url, alt: name || '', width: size, height: size, referrerpolicy: 'no-referrer', loading: 'lazy' })
+    ? avatarImage(h,url,name||'',size)
     : h('span', { class: 'avatar avatar-ph', style: { width: size + 'px', height: size + 'px', fontSize: Math.round(size * 0.44) + 'px', '--h': hueOf(name) } },
       [...(name || '?')][0].toUpperCase())
 }
@@ -595,6 +633,38 @@ async function copyText(text) {
   } catch {
     toast('复制失败，请手动选择')
   }
+}
+async function copyImage(url, doc = document) {
+  const win = doc.defaultView || window
+  if (!win.ClipboardItem || !win.navigator.clipboard?.write) return toast('当前浏览器不支持复制图片，可使用复制图片链接', 'err')
+  const png = (async () => {
+    const response = await fetch(url, { signal: AbortSignal.timeout(20000) })
+    if (!response.ok) throw Error('图片加载失败，请重试')
+    const reader = response.body.getReader(), parts = []; let size = 0
+    try {
+      while (true) {
+        const { done, value } = await reader.read(); if (done) break
+        size += value.byteLength
+        if (size > 20 * 1024 * 1024) throw Error('图片过大，请使用原图链接或下载')
+        parts.push(value)
+      }
+    } finally { await reader.cancel().catch(() => {}) }
+    const blob = new Blob(parts, { type: response.headers.get('content-type') || '' })
+    if (blob.type === 'image/png') return blob
+    const bitmap = await createImageBitmap(blob)
+    try {
+      if (bitmap.width * bitmap.height > 16000000) throw Error('图片尺寸过大，请使用原图链接或下载')
+      const canvas = doc.createElement('canvas'); canvas.width = bitmap.width; canvas.height = bitmap.height
+      try {
+        canvas.getContext('2d').drawImage(bitmap, 0, 0)
+        return await new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(Error('图片转换失败')), 'image/png'))
+      } finally { canvas.width = canvas.height = 0 }
+    } finally { bitmap.close() }
+  })()
+  // Promise 交给 ClipboardItem，写入仍发生在本次点击的用户手势内。
+  png.catch(() => {})
+  try { await win.navigator.clipboard.write([new win.ClipboardItem({ 'image/png': png })]); toast('图片已复制', 'ok') }
+  catch (error) { toast(error.name === 'NotAllowedError' ? '复制被浏览器阻止，请允许剪贴板访问或使用图片链接' : error.message || '复制失败，可使用图片链接', 'err') }
 }
 
 const REWARD = {
@@ -746,7 +816,7 @@ const seenAccount = restorePendingSeen
 const isSeen = (m) => {
   if (!S.me) return SEEN.local.has(m.id)
   restorePendingSeen()
-  return !!m.seen_at || SEEN.known.has(m.id)
+  return !!m.seen_at || SEEN.known.has(m.id) || SEEN.daily.has(m.id)
 }
 const shouldObserveSeen = (m) => !isSeen(m) || (S.me && !SEEN.daily.has(m.id))
 function markSeen(m) {
@@ -839,26 +909,74 @@ function scheduleSeenDay() {
 }
 scheduleSeenDay()
 
-const seenIO = new IntersectionObserver((entries) => {
+function seenMediaReady(el) {
+  const boxes = [...el.querySelectorAll('.media, .im-media')]
+  return boxes.every(box => {
+    const broken=box.querySelector('.img-broken')
+    if(broken&&seenIntersects(broken))return false
+    return [...box.querySelectorAll('img')].every(img => {
+    // 轮播的离屏图片还未展示，不要求提前下载整套图片。
+    const cell = img.closest('.car-cell'), track = cell?.parentElement
+    if (cell && track && (cell.offsetLeft >= track.scrollLeft + track.clientWidth || cell.offsetLeft + cell.clientWidth <= track.scrollLeft)) return true
+    // Stacked long posts may contain lazy images far below the viewport. Only
+    // media actually being read may block read confirmation of the visible part.
+    if(img.getBoundingClientRect&&!seenIntersects(img))return true
+    return img.complete && img.naturalWidth > 0
+  })})
+}
+function reobserveSeen(el) {
+  if (!el) return
+  clearTimeout(SEEN.timers.get(el)); SEEN.timers.delete(el)
+  seenIO.unobserve(el); seenIO.observe(el)
+  S.wall?.hzSeen?.(el)
+}
+document.addEventListener('load', e => {
+  if (e.target.matches?.('.media img, .im-media img')) reobserveSeen(e.target.closest('.card[data-id],.im-msg[data-id],.ld-post[data-id]'))
+}, true)
+const seenVisible = new Set()
+function checkSeen(el) {
+  if (seenPostCoverage(el) && seenMediaReady(el)) {
+    if (!SEEN.timers.has(el)) SEEN.timers.set(el, setTimeout(() => {
+      SEEN.timers.delete(el)
+      const m = ITEMS.get(Number(el.dataset.id))
+      if (!document.hidden && m && seenPostCoverage(el) && seenMediaReady(el) && !(wantBlur(m) && el.querySelector('[data-blur].blur'))) {
+        markSeen(m)
+        seenIO.unobserve(el)
+      }
+    }, 800))
+  } else {
+    clearTimeout(SEEN.timers.get(el)); SEEN.timers.delete(el)
+  }
+}
+const seenObserver = new IntersectionObserver((entries) => {
   for (const en of entries) {
     const el = en.target
-    // 整张都在视野里才算看过；比屏幕还高的长图，占满大半屏也算
-    const full = en.isIntersecting && (en.intersectionRatio >= 0.97 || en.intersectionRect.height >= (en.rootBounds?.height || innerHeight) * 0.85)
-    if (full) {
-      if (!SEEN.timers.has(el)) SEEN.timers.set(el, setTimeout(() => {
-        SEEN.timers.delete(el)
-        const m = ITEMS.get(Number(el.dataset.id))
-        if (el.isConnected && !document.hidden && m && !(wantBlur(m) && el.querySelector('[data-blur].blur'))) {
-          markSeen(m)
-          seenIO.unobserve(el)
-        }
-      }, 800))
-    } else {
-      clearTimeout(SEEN.timers.get(el))
-      SEEN.timers.delete(el)
-    }
+    en.isIntersecting ? seenVisible.add(el) : seenVisible.delete(el)
+    checkSeen(el)
   }
 }, { threshold: [0, 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.7, 0.85, 0.97, 1] })
+const seenIO = {
+  observe: el => seenObserver.observe(el),
+  unobserve(el) { seenObserver.unobserve(el); seenVisible.delete(el); clearTimeout(SEEN.timers.get(el)); SEEN.timers.delete(el) },
+  disconnect() {
+    seenObserver.disconnect()
+    seenVisible.clear()
+    SEEN.timers.forEach(t => clearTimeout(t)); SEEN.timers.clear()
+    if (seenFrame) cancelAnimationFrame(seenFrame)
+    seenFrame = 0
+  }
+}
+let seenFrame = 0
+function checkVisibleSeen() {
+  if (seenFrame || document.hidden || !seenVisible.size) return
+  seenFrame = requestAnimationFrame(() => {
+    seenFrame = 0
+    for (const el of seenVisible) { if (!el.isConnected) seenIO.unobserve(el); else checkSeen(el) }
+  })
+}
+// Extremely tall images may never cross the next area-ratio threshold.
+document.addEventListener('scroll', checkVisibleSeen, {capture:true,passive:true})
+addEventListener('resize', checkVisibleSeen, {passive:true})
 
 // ---------- 同一张图的多处展示保持同步 ----------
 const ITEMS = new Map()   // id -> 最新数据
@@ -964,14 +1082,14 @@ function memeCard(m, { stack = false, priority = false } = {}) {
     h('div', { class: 'card-head' },
       avatar(m.author_avatar, m.author_name, 34),
       compactIdentity(authorUser(m), 'post', authorLink(m), status),
-      isText && h('span', { class: 'badge text-badge' }, '文字'),
+      isText && !isOfficialEmbed(socialLink(m.source_url||'')?.provider) && h('span', { class: 'badge text-badge' }, '文字'),
       h('span', { class: 'grow' }),
       h('span', { class: 'serial', title: '全站编号' }, h('span', { class: 'no' }, 'No.'), m.id),
       h('span', { class: 'anchor-badge', title: '我的锚点' }, icon('anchor', 'i tiny')),
       h('button', { class: 'btn-icon ghost sm', 'aria-label': '更多操作', 'data-pop': slot + 'm', onclick: (e) => moreMenu(m, e.currentTarget, slot + 'm') }, icon('more'))),
     cardText(m),
     m.tags?.length > 0 && h('nav', { class: 'card-tags', 'aria-label': '帖子标签' }, m.tags.map(t => h('a', { href: '/t/' + encodeURIComponent(t) + location.search, 'data-link': '' }, '#' + t))),
-    isText ? textMedia(m) : cardMedia(m, { stack, priority }),
+    cardMedia(m, { stack, priority }),
     h('div', { class: 'card-bottom' }, actions, rpBtn,
       h('button', { class: 'btn-icon ghost sm card-share', 'aria-label': '分享帖子', type: 'button', onclick: () => copyText(location.origin + memeHref(m)) }, icon('send'))),
     replies,
@@ -991,7 +1109,7 @@ function memeCard(m, { stack = false, priority = false } = {}) {
   // 点卡片空白处（不是图、按钮、链接、输入框）进详情；选中文字时不跳
   card.addEventListener('click', (e) => {
     if (e.defaultPrevented || e.button !== 0) return
-    if (e.target.closest('a, button, input, textarea, select, label, video, [contenteditable], .media, .card-comments, .pop')) return
+    if (e.target.closest('a, button, input, textarea, select, label, video, [contenteditable], .media, .cm-social, .card-comments, .pop')) return
     if (String(getSelection()).trim()) return
     navigate(memeHref(m))
   })
@@ -1083,12 +1201,7 @@ function galleryCell(m, im, i, { cls = '', src, imgOpts = {}, style = null, labe
     shell.classList.add('playing')
     thumb.replaceWith(player)
     const video = player.querySelector('video')
-    video.addEventListener('error', () => {
-      shell.classList.remove('playing')
-      player.replaceWith(thumb)
-      toast('视频加载失败，请尝试完整预览')
-    }, { once: true })
-    video.play().catch(() => {})
+    video.play().catch(error => video._playFailure?.(error))
   } }, cover, cellMark(im), more)
   const expand = h('button', { class: 'gallery-video-expand', type: 'button', 'aria-label': `完整预览第 ${i + 1} 个视频`, onclick: () => {
     shell.querySelector('video')?.pause()
@@ -1147,7 +1260,14 @@ function textMedia(m) {
   applyBlur(box)
   return box
 }
+function officialPostContent(source, id = 1) {
+  const link=socialLink(source||'')
+  if(!link||!isOfficialEmbed(link.provider))return null
+  return socialCards({id,body:link.url},{h,api,onRemoval,onOpenMedia:openSocialMedia,renderVideo:im=>mediaVideo(im),post:true})[0]||null
+}
+function openSocialMedia(images,index,doc){openViewer({id:-1,image:images[0]?.u,images,image_count:images.length,title:'',seen_at:1},index,{doc})}
 function cardMedia(m, { stack = false, priority = false } = {}) {
+  if(!m.images?.length){const embed=officialPostContent(m.source_url,m.id);if(embed){embed.dataset.blur=m.id;applyBlur(embed);return embed}}
   if (m.kind === 'text') return textMedia(m)
   const imgs = m.images?.length ? m.images : [{ u: m.image, t: m.thumb, w: m.width, h: m.height }]
   let box
@@ -1167,10 +1287,10 @@ function cardMedia(m, { stack = false, priority = false } = {}) {
         more: i === show.length - 1 && m.image_count > show.length && h('span', { class: 'more-n' }, '+' + (m.image_count - show.length)) })))
   } else {
     const im = imgs[0]
-    const tall = im.w && im.h && im.h / im.w > LONG_RATIO
+    const tall = !im.v && im.w && im.h && im.h / im.w > LONG_RATIO
     // 单张：按原比例缩进一个限高的框里，小图不放大；动图 / 视频 / 实况再矮一截，免得一刷出来满屏在动
     const anim = !!im.k || /\.gif(\?|$)/i.test(im.u || m.image || '')
-    box = h('div', { class: 'media single' + (tall ? ' tall' : ' fit') + (anim ? ' anim' : ''),
+    box = h('div', { class: 'media single' + (tall ? ' tall' : ' fit') + (anim ? ' anim' : '') + (im.v ? ' video-fit' : ''),
       style: !tall && im.w && im.h ? { '--ar': (im.w / im.h).toFixed(4), '--nw': im.w + 'px' } : null },
       galleryCell(m, im, 0, { src: im.u || m.image,
         imgOpts: { loading: priority ? 'eager' : 'lazy', fetchpriority: priority ? 'high' : null,
@@ -1187,6 +1307,7 @@ function cardMedia(m, { stack = false, priority = false } = {}) {
           btn.replaceChildren(open ? '展开完整图片' : '收起', icon(open ? 'chevD' : 'chevU', 'i tiny'))
           // 收起时把卡片顶部拉回视野，不然人会被留在下面一大截空白里
           if (open) { const card = box.closest('.card'); if (card && card.getBoundingClientRect().top < 0) card.scrollIntoView({ block: 'start' }) }
+          reobserveSeen(box.closest('.card[data-id],.im-msg[data-id],.ld-post[data-id]'))
         } },
         '展开完整图片', icon('chevD', 'i tiny')))
     }
@@ -1226,21 +1347,24 @@ function applyBlur(box) {
   const m = ITEMS.get(Number(box.dataset.blur))
   box.querySelectorAll(':scope > .veil, :scope > .recover').forEach((e) => e.remove())
   box._open = false
-  if (!m || !wantBlur(m)) return box.classList.remove('blur')
+  if (!m || !wantBlur(m)) { const wasMasked=box.classList.contains('blur'); box.classList.remove('blur'); if(wasMasked)box._onReveal?.(); return }
+  box._onMask?.()
   box.querySelectorAll('video').forEach((video) => video.pause())
   const risky = isRisky(m)
   const veil = h('button', { class: 'veil', type: 'button', onclick: (e) => {
     e.stopPropagation()
     // 设置成「点开看大图」：页面上一直盖着，只在大图里看
-    if (maskTap() === 'view') { const i = Number(e.target.closest('[data-i]')?.dataset.i) || 0; return openViewer(ITEMS.get(m.id) || m, i) }
-    box.classList.remove('blur'); veil.replaceWith(cover); box._open = true; markSeen(ITEMS.get(m.id) || m)
+    if (maskTap() === 'view' && !box.classList.contains('social-post')) { const i = Number(e.target.closest('[data-i]')?.dataset.i) || 0; return openViewer(ITEMS.get(m.id) || m, i) }
+    box.classList.remove('blur'); veil.replaceWith(cover); box._open = true; box._onReveal?.()
+    const card = box.closest('.card[data-id],.im-msg[data-id],.ld-post[data-id]')
+    if (card) reobserveSeen(card)
   } },
     h('strong', null, risky ? 'NSFW' : '一键模糊'),
     h('span', { class: 'veil-why' }, !risky ? '一键模糊已开，所有图都先模糊（按 B 关闭）'
       : m.spoiler ? '发布者标了「慎点」' : `带有 ${(m.tags || []).filter((t) => S.nsfwTags.includes(t)).map((t) => '#' + t).join(' ') || '敏感'} 标签`),
-    h('span', null, maskTap() === 'view' ? '点一下打开大图看（页面上一直盖着）' : '点一下只看这张，再点一下盖回去'))
+    h('span', null, maskTap() === 'view' && !box.classList.contains('social-post') ? '点一下打开大图看（页面上一直盖着）' : '点一下查看，再点遮住恢复'))
   const cover = h('button', { class: 'recover', type: 'button', title: '重新遮住（直接点图也行）', onclick: (e) => {
-    e.stopPropagation(); box.querySelectorAll('video').forEach((video) => video.pause()); box.classList.add('blur'); cover.replaceWith(veil); box._open = false
+    e.stopPropagation(); box.querySelectorAll('video').forEach((video) => video.pause()); box._onMask?.(); box.classList.add('blur'); cover.replaceWith(veil); box._open = false
   } }, icon('eyeOff', 'i tiny'), '遮住')
   box._cover = cover
   // 揭开后再点图 = 盖回去；想看大图用右键菜单
@@ -1569,6 +1693,9 @@ function saveDecoView(p) {
 const bubblePartHidden = p => bubbleBlocked(p.key) || (!p.own && (!!decoHide().bubble || (p.key === 'custom' && !!decoHide().css)))
 document.documentElement.dataset.bubbleLegacy = decoHide().bubbleLegacy ? '1' : '0'
 document.documentElement.dataset.bubbleMotion = bubbleMotion()
+const syncPageMotion=doc=>{doc.documentElement.dataset.pageHidden=String(doc.hidden)}
+syncPageMotion(document)
+document.addEventListener('visibilitychange',()=>syncPageMotion(document))
 // 这个人的装扮在这里（chat 群聊 / post 帖子和评论 / card 名片）生不生效
 function decoAt(u, where) {
   const d = u?.deco
@@ -1638,30 +1765,11 @@ const OFFICIAL_ART = {
   diver: '<path d="M5 13h22v9a7 7 0 0 1-7 7h-8a7 7 0 0 1-7-7ZM20 13V5h7v5h-3v3M4 8l3-2m-5 6 3-1"/><rect x="8" y="16" width="16" height="7" rx="3"/><path d="M12 19h1m6 0h1"/>',
   reborn: '<path d="M5 11l5 4 6-10 6 10 5-4-2 15H7ZM8 22h16M12 18h1m6 0h1M3 5l2 2m22-2 2-2"/>',
 }
-const RAFFLE_TITLES = {
-  maid: { name:'鲸眠女仆', mood:'深蓝裙摆里的温柔陪伴', collection:true },
-  whalepunch: { name:'鲸拳出击', mood:'蓝色电光里的元气一拳', collection:true },
-  nightdevil: { name:'夜宴小恶魔', mood:'玫瑰与夜色里的俏皮心动', collection:true },
-  whalebuddy: { name:'鲸伴', mood:'今天也要开心呀', collection:true },
-  gpt: { name:'GPT龙姬', mood:'紫星白龙的灵感相伴', collection:true },
-  claude: { name:'Claude花姬', mood:'橘花盛开的温暖时刻', collection:true },
-  gemini: { name:'Gemini星喵', mood:'星光与双眸里的小宇宙', collection:true },
-  whitedragon: { name:'白龙绮姬', mood:'银发与绮花的优雅相逢', collection:true },
-  deepseek: { name:'鲸鱼娘', mood:'深海里的蓝色心动', art:OFFICIAL_ART.whale },
-  mona: { name: '莫奈之王', mood: '睡莲色的画中主角', art: '<path d="M4 21q6-8 12 0 6-8 12 0M6 25q10 5 20 0M16 4v7m-5-3 5-4 5 4M9 15q7-5 14 0"/>' },
-  lace: { enabled:false, name: '摸蕾丝紫奈', mood: '紫色蕾丝与小恶魔的心动', art: '<path d="M5 9q4-6 11 0 7-6 11 0v15H5Z M5 12l4 3 4-3 3 3 3-3 4 3 4-3M12 21q4-5 8 0m-4-3v8m-3-3 3 3 3-3"/>' },
-  giant: { enabled:false, name: '一根巨物', mood: '气泡也装不下的大场面', art: '<path d="M8 10a4 4 0 1 1 5 4l6 6a4 4 0 1 1 4 5 4 4 0 1 1-5-4l-6-6a4 4 0 1 1-4-5Z"/>' },
-  worship: { bubbleEnabled:false, name: '寄吧几拜', mood: '一边吐槽，一边认真参拜', art: '<path d="M16 4l10 7-3 16H9L6 11ZM7 11h18M11 16l5 4 5-4M12 25h8m-10-5-3 3m15-3 3 3"/>' },
-  muscle: { name: '筋肉欢欢', mood: '一拳打出今日份快乐', art: '<path d="M8 13q-5-4-5 4 0 8 9 10h9q8-2 8-10 0-8-5-4l-4 3-4-5-4 5ZM9 20h2m10 0h2m-12 3q5 4 10 0M8 7l-3-3m20 3 3-3"/>' },
-}
-const SSR_RAFFLES = new Set(['maid','whalepunch','nightdevil','gpt','claude','gemini','whitedragon'])
-for (const [id,t] of Object.entries(RAFFLE_TITLES)) t.rarity = SSR_RAFFLES.has(id) ? 'SSR' : 'normal'
-const raffleOf = u => RAFFLE_TITLES[u?.deco?.ft] && RAFFLE_TITLES[u.deco.ft].enabled !== false ? { ...RAFFLE_TITLES[u.deco.ft], id: u.deco.ft, n: Math.max(1, Number(u.deco.fn) || 1) } : null
-const raffleArt = id => h('span', { class: 'rt-art', 'aria-hidden': 'true' },
-  RAFFLE_TITLES[id]
-    ? h('img', { src: RAFFLE_TITLES[id].collection ? `/assets/raffle/collection/${id}-badge.webp` : ['lace','deepseek'].includes(id) ? `/assets/raffle/v2/${id}-badge.webp` : id === 'muscle' ? '/assets/raffle/muscle-tail-still.webp' : `/assets/raffle/${id}-badge.webp`, alt: '', width: 32, height: 32, loading: 'lazy' })
-    : h('span', { html: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${RAFFLE_TITLES[id]?.art || ''}</svg>` }))
-const raffleChip = (t, mini) => h('span', { class: 'rt-badge rt-' + t.id, title: `群聊抽奖 · ${t.name} · Lv${t.n}`, 'aria-label': `${t.name} 徽章，等级 ${t.n}` }, raffleArt(t.id), !mini && h('span', null, t.name), !mini && t.n > 1 && h('small', { class: 'rt-level' }, `×${t.n}`))
+const RAFFLE_TITLES=Object.fromEntries(TITLE_COLLECTION.map(t=>[t.id,t]))
+const raffleOf=u=>{const d=u?.deco,t=RAFFLE_TITLES[d?.ft];if(!t)return null;const owner=u.cosmetic_access==='all',expired=!owner&&d.fxp&&d.fxp<=Date.now()/1000,earned=owner?TITLE_MAX_LEVEL:expired?d.fp:d.fn;if(expired&&!earned)return null;const n=Math.min(TITLE_MAX_LEVEL,Math.max(1,Number(earned)||1));return {...t,n,displayLevel:Math.min(n,Math.max(1,Number(d.fl)||n))}}
+const raffleArt=id=>RAFFLE_TITLES[id]?h('span',{class:'rt-art','aria-hidden':'true'},h('img',{src:titleBadgeSource(id),width:32,height:32,alt:'',loading:'lazy'})):null
+const raffleTier=titleStage
+const raffleChip=(t,mini)=>h('span',{class:'rt-badge '+titleVisualClass(t.id,titleStage(t.n)),title:t.name+' · Lv'+t.n,'aria-label':t.name+'徽章，等级'+t.n},raffleArt(t.id),!mini&&h('span',null,t.name),!mini&&h('small',{class:'rt-level'},'Lv'+t.n))
 const officialById = id => (S.officialTitles || []).find(t => t.id === id && OFFICIAL_ART[id])
 const officialOf = (u, where) => officialById(decoAt(u, where)?.ot)
 const officialArt = id => h('span', { class: 'ot-art', 'aria-hidden': 'true', html: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${OFFICIAL_ART[id] || ''}</svg>` })
@@ -1669,12 +1777,21 @@ const officialFrame = (u, where) => bubbleParts(u, where, true).filter(p => !bub
 const officialChip = (t, mini = false) => h('span', { class: 'ot-badge ot-' + t.id, title: `站长授予 · ${t.name}`, 'aria-label': '官方徽章：' + t.name }, officialArt(t.id), !mini && h('span', null, t.name))
 const personalOf=(u,where)=>{const id=decoAt(u,where)?.pt;return PERSONAL_TITLES[id]?{id,...PERSONAL_TITLES[id]}:null}
 const personalBadge=t=>h('span',{class:'pt-badge pt-'+t.id,title:'专属徽章 · '+t.name,'aria-label':t.name+'专属徽章'},h('img',{src:t.art==='v2'?'/assets/personal-v2/'+t.id+'-badge.webp':'/assets/personal/'+t.id+'.svg',alt:'',width:24,height:24,loading:'lazy'}))
+const growthRewards=()=>[...(S.guessRewards||[]),...(S.luckRewards||[]),...(S.rankRewards||[]),...(S.activityRewards||[])]
+const guessOf=(u,where)=>growthRewards().find(r=>r.id===decoAt(u,where)?.gr)
+const growthName=r=>r.label|| (r.series==='luck_king'?'手气王':r.series==='luck_last'?'手气亡':'猜词成长')
+const growthUnit=r=>r.unit||(r.board?'经验':'次')
+const growthFrame=r=>'guess-frame gr-'+r.level+(r.board?' luck-frame rank-frame rank-'+r.board+' rank-'+(r.period==='all'?'all':'day'):r.series?' luck-frame '+r.series:'')
+const guessTitle=r=>h('span',{class:'u-title guess-title '+growthFrame(r),title:growthName(r)+' · Lv'+r.level+' · 累计 '+r.wins+(' '+growthUnit(r))},h('span',{class:'guess-title-name'},r.name),h('small',null,'Lv'+r.level))
+const guessBadge=(r,full=false,n)=>h('span',{class:'guess-badge-wrap',title:growthName(r)+' · Lv'+r.level+(n?' · 累计 '+n+(' '+growthUnit(r)):''),'aria-label':growthName(r)+'徽章，等级 '+r.level},badgeArt(h,r.series||'guess',r.level),full&&h('span',null,r.name+' · Lv'+r.level))
 function titleEl(u, where) {
+  const guess=guessOf(u,where)
+  if(guess)return guessTitle(guess)
   const personal=personalOf(u,where)
   if(personal)return h('span',{class:'u-title pt-title pt-'+personal.id+(personal.art==='v2'?' pt-v2':''),title:(personal.rarity==='SSR'?'SSR':'普通')+' · 专属 · '+personal.mood},personal.art==='v2'?[h('span',{class:'pt-title-size','aria-hidden':'true'},personal.name),h('span',{class:'pt-title-name'},personal.name)]:personal.name)
   const forced = raffleOf(u)
-  if (forced) return h('span', { class: 'u-title rt-title rt-' + forced.id, title: `${forced.rarity==='SSR'?'SSR':'普通'} · ${forced.mood}`,
-    style:forced.n>1?{'--rt-level-space':(String(forced.n).length*6+20)+'px'}:null }, h('span', { class: 'rt-title-size', 'aria-hidden': 'true' }, forced.name), h('span', { class: 'rt-title-name' }, forced.name), forced.n > 1 && h('small', { class: 'rt-level' }, `Lv${forced.n}`))
+  if (forced) return h('span', { class: 'u-title rt-title '+titleVisualClass(forced.id,titleStage(forced.n)), title: `${forced.rarity==='SSR'?'SSR':'普通'} · ${forced.mood}`,
+    'data-growth':raffleTier(forced.n),style:forced.n>1?{'--rt-level-space':(String(forced.n).length*6+20)+'px'}:null }, titleSymbol(forced.id), h('span', { class: 'rt-title-size', 'aria-hidden': 'true' }, forced.name), h('span', { class: 'rt-title-name' }, forced.name), forced.n > 1 && h('small', { class: 'rt-level' }, `Lv${forced.n}`))
   const d = decoAt(u, where)
   const official = officialOf(u, where)
   if (official && !decoHidden(u, 'title')) return h('span', { class: 'u-title ot-title ot-' + official.id, title: '站长授予 · ' + official.mood }, official.name)
@@ -1686,6 +1803,9 @@ function titleEl(u, where) {
 // ---------- 徽章 ----------
 // tier 决定底色：legend 传说（金色流光）/ epic 史诗（紫）/ rare 稀有（蓝）/ fun 趣味（粉）。每日徽章次日结算，可以反复拿
 const BADGES = {
+  luck_king:{name:'手气王',tier:'fun',g:'♛',desc:'本站拼手气红包确认结束后金额最多；并列同奖，1 / 3 / 10 / 30 / 100 次升级'},
+  luck_last:{name:'手气亡',tier:'epic',g:'☾',desc:'本站拼手气红包确认结束后金额最少；至少两人且金额有高低，1 / 3 / 10 / 30 / 100 次升级'},
+  guess: {name:'猜词星章',tier:'legend',g:'✧',desc:'累计猜中 1 / 3 / 10 / 30 / 100 轮，解锁五级称号、徽章与鎏金气泡'},
   guide: {name:'引路人',tier:'rare',g:'🧭',desc:'邀请好友满 7 天并活跃互动；1 / 3 / 10 / 30 人升级'},
   newbie: { name: '初来乍到', tier: 'fun', g: '🌱', desc: '通过好友邀请加入尽欢' },
   elder: { name: '太上长老', tier: 'legend', g: '☯', desc: '2026-10-01 开站当天进站的元老' },
@@ -1703,10 +1823,18 @@ const BADGE_ORDER = Object.keys(BADGES)
 // 渐进等级：按拿过几次分 Lv1～Lv5，边框从铜 → 银 → 金 → 彩虹 → 传说。元老徽章只发一次，直接算传说
 const BADGE_LV = [1, 3, 7, 15, 30]
 const BADGE_LV_NAME = ['', '铜', '银', '金', '彩虹', '传说']
-const badgeLv = (id, n) => id === 'elder' ? 5 : n > 0 ? (id==='guide'?[1,3,10,30]:BADGE_LV).filter((x) => n >= x).length : 0
+const growthForBadge=id=>id==='guess'?(S.guessRewards||[]):[...(S.luckRewards||[]),...(S.rankRewards||[]),...(S.activityRewards||[])].filter(r=>r.series===id)
+const farmBadgeFor=id=>(S.farmBadges||[]).find(b=>b.id===id)
+const badgeThresholds=id=>farmBadgeFor(id)?.levels|| (growthForBadge(id).length?growthForBadge(id).map(r=>r.wins):id==='guide'?[1,3,10,30]:BADGE_LV)
+const badgeCountText=(id,n)=>farmBadgeFor(id)?`${n} ${farmBadgeFor(id).unit}`:id==='guide'?'合格邀请 '+n+' 人':id.startsWith('rank_')?n+' 经验':'拿过 '+n+' 次'
+const badgeLv = (id, n) => id === 'elder' ? 5 : n > 0 ? badgeThresholds(id).filter((x) => n >= x).length : 0
 const badgeLvText = (id, lv) => id === 'elder' ? '唯一' : lv ? `Lv${lv} ${BADGE_LV_NAME[lv]}` : '未获得'
 // 佩戴的徽章：群聊里只显示小图标（不挤消息），别处图标 + 名字；鼠标悬停 / 长按看说明。等级用 deco.bn（服务端同步的次数）
 function badgeEl(u, where, full) {
+  if(decoHidden(u,'badge')||u?.deco?.badge_mode==='none')return null
+  if(u?.deco?.badge_mode==='custom'){const d=u.deco;if(d.bs&&d.bs!=='all'&&d.bs!==where&&where!=='card')return null;return d.bd?badgeChip(d.bd,where!=='card'&&!full,d.bn||0,d.bl):null}
+  const guess=guessOf(u,where)
+  if(guess&&!decoHidden(u,'badge'))return guessBadge(guess)
   const personal=personalOf(u,where)
   if(personal&&!decoHidden(u,'badge'))return personalBadge(personal)
   const forced = raffleOf(u)
@@ -1717,43 +1845,44 @@ function badgeEl(u, where, full) {
   const b = d?.bd && BADGES[d.bd]
   if (!b || decoHidden(u, 'badge')) return null
   if (where !== 'card' && d.bs && d.bs !== 'all' && d.bs !== where) return null
-  return badgeChip(d.bd, where !== 'card' && !full, d.bn || 1)
+  return badgeChip(d.bd, where !== 'card' && !full, d.bn || 0, d.bl)
 }
 // 贴纸徽章：圆形贴纸（白描边 + 高光）+ 名字 + 等级角标；mini 只露贴纸
-const badgeChip = (id, mini, n) => {
+const badgeChip = (id, mini, n, displayLevel) => {
   const b = BADGES[id]
   if (!b) return null
-  const lv = badgeLv(id, n || 1)
-  return h('span', { class: `u-badge bt-${b.tier} lv-${lv}${mini ? ' mini' : ''}`, title: `${b.name} · ${badgeLvText(id, lv)}${n > 1 ? ` · ${id==='guide'?'合格邀请 '+n+' 人':'拿过 '+n+' 次'}` : ''}\n${b.desc}`,
+  const lv = displayLevel || badgeLv(id, n || 1)
+  if(growthForBadge(id).length){const reward=growthForBadge(id)[Math.max(0,lv-1)];return reward&&guessBadge(reward,!mini,n)}
+  return h('span', { class: `u-badge badge-modern bt-${b.tier} lv-${lv}${mini ? ' mini' : ''}`, title: `${b.name} · ${badgeLvText(id, lv)}${n > 0 ? ' · '+badgeCountText(id,n) : ''}\n${b.desc}`,
     'aria-label': `徽章 ${b.name}，${badgeLvText(id, lv)}` },
-  h('span', { class: 'ub-g', 'aria-hidden': 'true' }, b.g),
+  badgeArt(h,id,lv),
   !mini && h('span', { class: 'ub-n' }, b.name),
   !mini && h('span', { class: 'ub-lv', 'aria-hidden': 'true' }, id === 'elder' ? '★' : 'Lv' + lv))
 }
 // 徽章墙：卡片网格。大贴纸 + 名字 + 等级 + 次数 + 升级进度 + 获得方法 + 最近获得；没拿到的灰着
 // 签名不变：list = [{ id, n, last_day }]，pick(id) 传了就能点选佩戴，cur 是当前戴着的
-function badgeWall(list, pick, cur) {
+function badgeWall(list, pick, cur, allCosmetics=false, progress={}) {
   const own = new Map((list || []).map((x) => [x.id, x]))
   const got = BADGE_ORDER.filter((id) => own.has(id)).length
   const cards = BADGE_ORDER.map((id) => {
-    const b = BADGES[id], o = own.get(id), n = o?.n || (o ? 1 : 0)
-    const lv = badgeLv(id, n), on = !!o && cur === id
-    const levels=id==='guide'?[1,3,10,30]:BADGE_LV
+    const b = BADGES[id], o = own.get(id), farm=farmBadgeFor(id), n = Math.max(o?.n || (o ? 1 : 0),farm?progress[id]||0:0)
+    const lv = allCosmetics?(id==='guide'?4:5):badgeLv(id, n), on = (allCosmetics||!!o) && cur === id
+    const levels=badgeThresholds(id)
     const nextAt = id === 'elder' ? 0 : levels[lv] || 0 // 0 = 满级
     const prevAt = levels[lv - 1] || 0
-    const pct = !o ? 0 : !nextAt ? 100 : Math.round(((n - prevAt) / (nextAt - prevAt)) * 100)
-    const can = !!(pick && o)
-    return h(can ? 'button' : 'div', { class: `bw-card${id==='guide'?' bw-guide':''} bt-${b.tier} lv-${lv}${o ? '' : ' off'}${on ? ' on' : ''}`, type: can ? 'button' : null,
+    const pct = Math.max(0,Math.min(100,(!o&&!farm) ? 0 : !nextAt ? 100 : Math.round(((n - prevAt) / (nextAt - prevAt)) * 100)))
+    const can = !!(pick && (allCosmetics||o))
+    return h(can ? 'button' : 'div', { class: `bw-card${id==='guide'?' bw-guide':''} bt-${b.tier} lv-${lv}${allCosmetics||o ? '' : ' off'}${on ? ' on' : ''}`, type: can ? 'button' : null,
       'aria-pressed': can ? String(on) : null, title: can ? (on ? '点一下摘下' : '点一下戴上') : b.desc, onclick: can ? () => pick(id) : null },
     on && h('span', { class: 'bw-wear' }, '佩戴中'),
-    h('span', { class: 'bw-art', 'aria-hidden': 'true' }, h('span', { class: 'bw-g' }, b.g), lv >= 3 && h('span', { class: 'bw-spark' }, '✦')),
+    h('span', { class: 'bw-art bw-art-modern', 'aria-hidden': 'true' },badgeArt(h,id,lv)),
     h('span', { class: 'bw-name' }, b.name),
-    h('span', { class: 'bw-lv' }, badgeLvText(id, lv), o && h('small', null, ` · ${id==='guide'?'合格邀请 '+n+' 人':'拿过 '+n+' 次'}`)),
-    o && id !== 'elder' && h('span', { class: 'bw-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(pct),
+    h('span', { class: 'bw-lv' }, badgeLvText(id, lv), (o||farm) && h('small', null, ' · '+badgeCountText(id,n))),
+    !allCosmetics && (o||farm) && id !== 'elder' && h('span', { class: 'bw-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(pct),
       'aria-label': nextAt ? `升到 Lv${lv + 1} 的进度` : '已满级' }, h('i', { style: { width: pct + '%' } })),
-    o && id !== 'elder' && h('span', { class: 'bw-next' }, nextAt ? id==='guide'?`再邀请 ${nextAt-n} 位合格好友升 Lv${lv+1}`:`再拿 ${nextAt - n} 次升 Lv${lv + 1}` : '已满级'),
+    allCosmetics?h('span',{class:'bw-next'},'站长使用权 · 最高级外观'):(o||farm) && id !== 'elder' && h('span', { class: 'bw-next' }, nextAt ? farm?`还差 ${Math.max(0,nextAt-n)} ${farm.unit}${lv?'升':'解锁'} Lv${lv+1}`:id==='guide'?`再邀请 ${nextAt-n} 位合格好友升 Lv${lv+1}`:id.startsWith('rank_')?`再获 ${nextAt-n} 经验升 Lv${lv+1}`:`再拿 ${nextAt - n} 次升 Lv${lv + 1}` : '已满级'),
     h('span', { class: 'bw-how' }, b.desc),
-    h('span', { class: 'bw-date' }, o ? (o.last_day ? `最近 ${o.last_day}` : '已获得') : '还没拿到'))
+    h('span', { class: 'bw-date' }, o ? (farm&&o.first_at?`首次授予 ${new Date(o.first_at*1000).toLocaleDateString('zh-CN')}`:o.last_day ? `最近 ${o.last_day}` : '已获得') : allCosmetics?'尚无获奖记录':'还没拿到'))
   })
   return h('div', { class: 'badge-wall-box' },
     h('div', { class: 'bw-sum' }, `已点亮 ${got} / ${BADGE_ORDER.length}`, h('span', { class: 'muted' }, ' · 日常徽章：1 次 Lv1 铜 · 3 次银 · 7 次金 · 15 次彩虹 · 30 次传说')),
@@ -1777,10 +1906,12 @@ function compactIdentity(u, where, name, ...meta) {
 // 气泡类名：预设气泡 + 自己写的气泡样式（只作用在这个人自己的 .cm-text 上）
 function bubbleParts(u, where = 'chat', frame = false) {
   const own = !!S.me && u?.username === S.me.username
+  const guess=guessOf(u,where)
+  if(guess)return [{key:(guess.series||'guess')+':'+guess.level,own,classes:' '+growthFrame(guess)+(frame?' guess-boost':' guess-bubble')}]
   const personal=personalOf(u,where)
   if(personal)return [{key:'personal:'+personal.id,own,classes:' pt-'+(frame?'frame':'bubble')+' pt-'+personal.id+(personal.art==='v2'?' pt-v2':'')}]
   const forced = raffleOf(u)
-  if (forced) return forced.bubbleEnabled === false ? [] : [{ key:'raffle:' + forced.id, own, classes: (frame ? ' ot-frame rt-frame rt-' : ' ot-bubble rt-bubble rt-') + forced.id + (forced.collection && !frame ? ' rt-collection' : '') }]
+  if (forced) return [{key:'raffle:'+forced.id,own,classes:' '+(frame?'ot-frame rt-frame':'ot-bubble rt-bubble')+' '+titleVisualClass(forced.id,titleStage(forced.displayLevel))}]
   const official = officialOf(u, where)
   if (official) return [{ key:'official:' + official.id, own, classes: frame ? ' ot-frame ot-' + official.id : ' ot-bubble ot-' + official.id }]
   if (frame) return []
@@ -1790,9 +1921,11 @@ function bubbleParts(u, where = 'chat', frame = false) {
   return parts
 }
 const bubbleCls = u => bubbleParts(u).filter(p => !bubblePartHidden(p)).map(p => p.classes).join('')
-function bubbleView(u, base, where = 'chat', frame = false) {
+function bubbleView(u, base, where = 'chat', frame = false, messageId = 'preview') {
   const parts = bubbleParts(u, where, frame)
-  return { class:base + parts.filter(p => !bubblePartHidden(p)).map(p => p.classes).join(''), 'data-bubble-parts':JSON.stringify(parts) }
+  const title=raffleOf(u),gun=!frame&&title?.id==='chickengun'
+  return { class:base + parts.filter(p => !bubblePartHidden(p)).map(p => p.classes).join(''), 'data-bubble-parts':JSON.stringify(parts),
+    ...(gun?{'data-cg-motion':u.deco?.cg_motion===false?'off':'on','data-cg-fire':u.deco?.cg_fire===false?'off':'on',style:{'--cg-size':chickengunSize(title.displayLevel,u.deco?.cg_size,title.n===TITLE_MAX_LEVEL&&u.deco?.cg_random===true,String(u.id||u.username)+':'+messageId)+'px'}}:{}) }
 }
 function openBubbleSettings(anchor) {
   const doc = anchor.ownerDocument
@@ -1800,10 +1933,12 @@ function openBubbleSettings(anchor) {
   const close = () => dialog.close()
   const body = h('div', { class:'bubble-options' })
   const groups = [
+    ['猜词成长奖励',(S.guessRewards||[]).map(r=>['guess:'+r.level,`Lv${r.level} ${r.name}`])],
+    ['红包手气奖励',(S.luckRewards||[]).map(r=>[r.series+':'+r.level,`${growthName(r)} Lv${r.level} ${r.name}`])],
     ...['normal','SSR'].map(rarity=>[rarity==='SSR'?'SSR · 群友专属':'普通 · 群友专属',Object.entries(PERSONAL_TITLES).filter(([,t])=>(t.rarity||'normal')===rarity).map(([id,t])=>['personal:'+id,t.name])]),
     ...['normal','SSR'].map(rarity=>[rarity==='SSR'?'SSR · 角色套装':'普通 · 抽奖套装', Object.entries(RAFFLE_TITLES).filter(([,t]) => t.rarity===rarity && t.enabled !== false && t.bubbleEnabled !== false).map(([id,t]) => ['raffle:' + id,t.name])]),
     ['普通 · 官方气泡', (S.officialTitles || []).map(t => ['official:' + t.id,t.name])],
-    ['普通 · 日常气泡', DECO_BUBBLE.filter(([id]) => id).map(([id,name]) => ['preset:' + id,name]).concat([['preset:yinlu','引路人'],['custom','自定义气泡样式']])],
+
   ]
   const syncChoices = () => { for (const input of body.querySelectorAll('[data-bubble-choice]')) input.checked = bubbleBlocked(input.dataset.bubbleChoice) || !!decoHide().bubble }
   const paint = () => body.replaceChildren(...groups.map(([name,items]) => h('fieldset', null,
@@ -1843,24 +1978,33 @@ function openBubbleSettings(anchor) {
 }
 function decoHideSettings() {
   const p = decoHide()
-  const box = (k, l) => h('label', { class: 'set-check' }, h('input', { type: 'checkbox', checked: !!p[k], onchange: (e) => {
-    if (saveDecoView({ ...decoHide(), [k]: e.target.checked })) toast('已保存', 'ok')
-    else e.target.checked = !e.target.checked
-  } }), l)
+  const box = (k, l) => {
+    const state=h('span',{class:'deco-pref-state'},p[k]?'已隐藏':'显示中')
+    return h('label',{class:'deco-pref-toggle'},h('input',{type:'checkbox',checked:!!p[k],onchange:e=>{
+      if(saveDecoView({...decoHide(),[k]:e.target.checked})){state.textContent=e.target.checked?'已隐藏':'显示中';toast('已保存','ok')}
+      else e.target.checked=!e.target.checked
+    }}),h('span',null,l),state)
+  }
   return h('div', { class: 'deco-hide' }, h('button', { class:'btn btn-ghost sm', type:'button', onclick:e => openBubbleSettings(e.currentTarget) }, icon('chat'), '气泡显示设置'),
     box('fancy', '不看别人的炫彩昵称'), box('badge', '不看别人的徽章'), box('css', '不看别人的自定义样式'))
 }
 // 装扮编辑：称号文字 + 颜色 / 字体 / 形状 / 填充 / 动效，炫彩名配色，气泡，生效范围；边改边预览
-function decoEditor() {
+function decoEditor(initialTrial=null) {
+  const allCosmetics=S.me.cosmetic_access==='all'
   const d = { sh: 'pill', fill: 'solid', fx: 'none', sc: 'all', bs: 'all', c: '#ffffff', c2: '#16a34a', bc: '#16a34a', ...(S.me.deco || {}) }
   const preview = h('div', { class: 'deco-preview' })
+  const snapshot=value=>JSON.stringify(Object.fromEntries(Object.entries({...value,t:(value.t||'').trim()}).filter(([,v])=>v!==undefined).sort(([a],[b])=>a.localeCompare(b))))
+  let savedSnapshot=snapshot(d),saveBusy=false,syncSaved=()=>{}
+  let refreshGuess=()=>{},refreshDisplay=()=>{}
   const draw = () => {
+    refreshGuess();refreshDisplay();syncSaved()
     const bn = d.bd ? S.me.badges?.find((x) => x.id === d.bd)?.n || 1 : undefined
-    const u = { ...S.me, deco: { ...d, bn }, fancy: S.me.fancy }
+    const u = { ...S.me, deco: { ...d, bn,bl:allCosmetics&&d.bd?(d.bd==='guide'?4:5):undefined }, fancy: S.me.fancy }
+    const previewBubble=bubbleView(u,'cm-text')
     preview.replaceChildren(
       h('div', { class: 'dp-row' }, avatar(S.me.avatar, S.me.name || S.me.username, 28), uName('strong', u, {}, S.me.name || S.me.username, 'card')),
       h('div', { class: 'dp-row dp-chat cm-head' }, h('span', { class: 'cm-name' }, S.me.name || S.me.username), titleEl(u, 'chat'), badgeEl(u, 'chat')),
-      h('div', { class: 'dp-row' }, h('div', { class: 'cm-text' + bubbleCls(u) }, h('span',{class:'rt-copy'},'来看看我的气泡 No.1 #梗图'))),
+      h('div', { class:'dp-row dp-bubble',style:{'--cg-preview-size':previewBubble.style?.['--cg-size']||'84px'} }, h('div', previewBubble, h('span',{class:'rt-copy'},'来看看我的气泡 No.1 #梗图'))),
       h('div', { class: 'rp-form' + officialFrame(u, 'post') }, icon('rocket'), h('input', { class: 'rp-input', placeholder: '回应框预览', 'aria-label': '回应框预览' })))
   }
   const seg = (k, opts) => {
@@ -1871,7 +2015,7 @@ function decoEditor() {
     return box
   }
   const color = (k, label) => h('label', { class: 'deco-color' }, h('input', { type: 'color', value: d[k] || '#16a34a', 'aria-label': label, oninput: (e) => { d[k] = e.target.value; draw() } }), label)
-  const t = h('input', { class: 'input', maxlength: 8, value: d.t || '', placeholder: '比如：摸鱼大师（8 个字以内，留空不显示）', oninput: () => { d.t = t.value; draw() } })
+  const t = h('input', { class: 'input', maxlength: 8, 'aria-label':'自定义称号', value: d.t || '', placeholder: '比如：摸鱼大师（8 个字以内，留空不显示）', oninput: () => { d.t = t.value; draw() } })
   const font = h('select', { class: 'input sm', 'aria-label': '字体', onchange: (e) => { d.f = e.target.value; draw() } }, DECO_FONT.map(([v, l]) => h('option', { value: v, selected: (d.f || '') === v }, l)))
   const fancyBox = h('div', { class: 'deco-fancy' })
   const drawFancy = () => fancyBox.replaceChildren(
@@ -1881,107 +2025,159 @@ function decoEditor() {
     h('span', { class: 'deco-own' }, '自定义', [0, 1, 2].map((i) => h('input', { type: 'color', value: d.fc?.[i] || ['#ff4d8d', '#ffb238', '#4b9bff'][i], 'aria-label': `第 ${i + 1} 个颜色`,
       oninput: (e) => { const fc = [...(d.fc?.length === 3 ? d.fc : ['#ff4d8d', '#ffb238', '#4b9bff'])]; fc[i] = e.target.value; d.fc = fc; draw() } }))))
   drawFancy()
-  const bubbles = h('div', { class: 'deco-bubbles-box' })
-  const bbBtn = ([v, l]) => h('button', { class: 'deco-bb' + ((d.bb || '') === v ? ' on' : ''), type: 'button', 'aria-pressed': String((d.bb || '') === v),
-    onclick: () => { d.bb = v || undefined; delete d.ft; delete d.fn; delete d.pt; delete d.ot; drawOwned(); drawOfficial(); drawB(); draw() } }, h('span', { class: 'cm-text' + (v ? ' bb bb-' + v : '') }, l))
-  const oldOn = DECO_BUBBLE_OLD.some(([v]) => v === d.bb)
-  const drawB = () => {
-    const open = bubbles.querySelector('details')?.open ?? oldOn
-    bubbles.replaceChildren(
-      h('div', { class: 'deco-bubbles' }, bbBtn(['', '默认']), DECO_BUBBLE_NEW.map(bbBtn), (S.me.unlocks||[]).includes('bubble:yinlu')&&bbBtn(['yinlu','引路 · 同行'])),
-      h('details', { class: 'deco-bb-old', open }, h('summary', null, '经典款'), h('div', { class: 'deco-bubbles' }, DECO_BUBBLE_OLD.map(bbBtn))))
-  }
-  drawB()
-  // 自定义样式：只写「属性: 值;」，实时预览；下面显示清洗后真正生效的部分
-  const cssBox = (k, ph) => {
-    const out = h('code', { class: 'deco-css-out' })
-    const sync = () => { const c = cleanCss(d[k] || ''); out.textContent = c ? '生效：' + c : (d[k] || '').trim() ? '没有能生效的声明（看看下面的说明）' : '' }
-    const ta = h('textarea', { class: 'input deco-css', rows: 3, maxlength: 600, spellcheck: 'false', placeholder: ph, value: d[k] || '',
-      'aria-label': k === 'cssb' ? '气泡自定义样式' : '称号自定义样式', oninput: () => { d[k] = ta.value.slice(0, 600) || undefined; sync(); draw() } })
-    sync()
-    return h('div', { class: 'deco-css-wrap' }, ta, out)
-  }
-  const cssHelp = h('details', { class: 'deco-css-help' }, h('summary', null, '能写什么'),
-    h('p', null, '只写声明，一条一条用分号隔开，比如 background: linear-gradient(135deg, #fde68a, #f9a8d4); color: #7c2d12; border-radius: 16px'),
-    h('p', null, '可用：color、background / background-color、background-image（只能是 linear- / radial- / conic-gradient 渐变）、border 系列、border-radius、box-shadow、text-shadow、font-weight、font-style、letter-spacing、padding、opacity（0.6～1）、filter（只能 hue-rotate / saturate / brightness）'),
-    h('p', null, '不行：选择器和花括号、url / 图片、定位、z-index、动画、calc / var、vw / vh 之类单位；尺寸最大 24px（或 2em）。最多 600 字，不认识的那条会被丢掉。'),
-    h('p', null, '字色和底色请拉开对比度，别人看不清的话他们可以一键关掉你的自定义样式。'))
   const wall = h('div')
-  const drawW = () => wall.replaceChildren(badgeWall(S.me.badges, (id) => { d.bd = d.bd === id ? undefined : id; drawW(); draw() }, d.bd))
+  const showcaseBox=h('div',{class:'deco-showcase'}),showcaseChoices=h('div',{class:'deco-showcase-choices'}),showcaseCount=h('span',{class:'muted sm',role:'status'}),showcasePreview=h('div',{class:'ucard-badges'})
+  const showcaseSearch=h('input',{class:'input',type:'search',placeholder:'查找徽章或称号','aria-label':'查找可展示的徽章或称号',oninput:()=>drawShowcase()})
+  const drawShowcase=()=>{
+    const items=profileShowcaseItems(S.me),selected=profileShowcaseKeys({...S.me,deco:d},items),query=showcaseSearch.value.trim().toLowerCase()
+    showcaseCount.textContent='已选 '+selected.length+' / 6'+(Array.isArray(d.showcase)?'':' · 默认展示')
+    showcasePreview.replaceChildren(...items.filter(x=>selected.includes(x.key)).map(profileShowcaseChip))
+    showcaseChoices.replaceChildren(...items.filter(x=>!query||x.name.toLowerCase().includes(query)).map(item=>h('label',{class:'deco-showcase-choice'},
+      h('input',{type:'checkbox','data-showcase-key':item.key,'aria-label':item.name,checked:selected.includes(item.key),disabled:selected.length>=6&&!selected.includes(item.key),
+        onchange:e=>{d.showcase=e.target.checked?[...selected,item.key]:selected.filter(k=>k!==item.key);drawShowcase();draw()}}),profileShowcaseChip(item))))
+    if(!items.length)showcaseChoices.append(h('p',{class:'muted sm'},'获得徽章或官方称号后，可在这里选择展示。'))
+  }
+  showcaseBox.append(h('div',{class:'deco-showcase-heading'},h('strong',null,'资料卡展示柜'),showcaseCount),h('p',{class:'muted sm'},'选择已获得的徽章或官方称号，合计最多 6 项。只影响点击头像后的展示。'),showcasePreview,h('div',{class:'row'},h('button',{class:'btn btn-ghost sm',type:'button',onclick:()=>{delete d.showcase;drawShowcase();draw()}},'恢复默认展示'),h('button',{class:'btn btn-ghost sm',type:'button',onclick:()=>{d.showcase=[];drawShowcase();draw()}},'全部隐藏')),showcaseSearch,showcaseChoices)
+  const drawW = () => {wall.replaceChildren(badgeWall(S.me.badges, (id) => { d.bd = d.bd === id ? undefined : id; d.badge_mode='custom'; drawW(); draw() }, d.bd,allCosmetics,S.me.farm_badge_progress));drawShowcase()}
   drawW()
   const officialOptions = h('div', { class: 'ot-options' })
   const drawOfficial = () => officialOptions.replaceChildren(...nodes(
     h('button', { type: 'button', class: 'btn btn-ghost sm', 'aria-pressed': String(!d.ot), onclick: () => { delete d.ot; drawOfficial(); draw() } }, '不佩戴'),
-    (S.me.official_titles || []).map(o => { const t = officialById(o.id); return t && h('button', { type: 'button', class: 'ot-option' + (d.ot === t.id && !d.ft && !d.pt ? ' on' : ''), 'aria-pressed': String(d.ot === t.id && !d.ft && !d.pt), onclick: () => { d.ot = t.id; delete d.rt; delete d.ft; delete d.fn; delete d.pt; drawOwned(); drawReward(); drawOfficial(); draw() } }, officialChip(t)) })))
+    (allCosmetics?S.officialTitles||[]:S.me.official_titles || []).map(o => { const t = officialById(o.id); return t && h('button', { type: 'button', class: 'ot-option' + (d.ot === t.id && !d.ft && !d.pt ? ' on' : ''), 'aria-pressed': String(d.ot === t.id && !d.ft && !d.pt), onclick: () => { d.ot = t.id; delete d.gr; delete d.rt; delete d.ft; delete d.fn;delete d.fl;delete d.fp;delete d.fxp; delete d.pt; drawOwned(); drawReward(); drawOfficial(); draw() } }, officialChip(t)) })))
   const rewardOptions = h('div', { class: 'ot-options' })
   const drawReward = () => rewardOptions.replaceChildren(h('button', {
     type: 'button', class: 'btn btn-ghost sm invite-title-toggle', 'aria-pressed': String(d.rt === 'guangjie'),
-    onclick: () => { if (d.rt) delete d.rt; else { d.rt = 'guangjie'; delete d.ot; delete d.ft; delete d.fn; delete d.pt } drawOwned(); drawReward(); drawOfficial(); draw() },
+    onclick: () => { if (d.rt) delete d.rt; else { d.rt = 'guangjie'; delete d.ot; delete d.gr; delete d.ft; delete d.fn;delete d.fl;delete d.fp;delete d.fxp; delete d.pt } drawOwned(); drawReward(); drawOfficial(); draw() },
   }, '✿ 广结善缘' + (d.rt ? ' · 佩戴中' : '')))
   drawReward()
   drawOfficial()
   const ownedBox=h('div',{class:'deco-owned',role:'status'})
   let ownedItems=null, personalItems=[], ownedError=''
+  const selectOwned=(item,level)=>{
+    if(d.ft===item.id&&(d.fl||item.level)===level){delete d.gr;delete d.ft;delete d.fn;delete d.fl;delete d.fp;delete d.fxp}
+    else{d.ft=item.id;d.fn=item.level;d.fl=level;d.fp=item.permanent_level||0;d.fxp=item.expires_at||0;delete d.pt;delete d.ot;delete d.gr;delete d.rt}
+    drawOwned();drawOfficial();drawReward();draw()
+  }
   const drawOwned=()=>{
     if(!ownedItems){ownedBox.replaceChildren(h('span',{class:'muted'},ownedError||'正在读取已拥有的套装…'),ownedError&&h('button',{class:'btn btn-ghost sm',type:'button',onclick:loadOwned},'重试'));return}
-    ownedBox.replaceChildren(...nodes(h('button',{class:'btn btn-ghost sm',type:'button','data-owned-raffle':'','aria-pressed':String(!d.ft&&!d.pt),onclick:()=>{delete d.ft;delete d.fn;delete d.pt;drawOwned();draw()}},'不佩戴套装'),
+    ownedBox.replaceChildren(...nodes(h('button',{class:'btn btn-ghost sm',type:'button','data-owned-raffle':'','aria-pressed':String(!d.ft&&!d.pt&&!d.gr),onclick:()=>{delete d.gr; delete d.ft;delete d.fn;delete d.fl;delete d.fp;delete d.fxp;delete d.pt;drawOwned();draw()}},'不佩戴套装'),
       ...['normal','SSR'].map(rarity=>{
         const items=personalItems.filter(x=>(x.rarity||'normal')===rarity)
         return items.length>0&&h('fieldset',{class:'personal-options'},h('legend',null,rarity==='SSR'?'SSR · 我的专属套装':'普通 · 我的专属套装'),h('div',{class:'ot-options'},items.map(item=>h('button',{
           class:'ot-option'+(d.pt===item.id?' on':''),type:'button','data-personal-title':item.id,'aria-pressed':String(d.pt===item.id),onclick:()=>{
-            if(d.pt===item.id)delete d.pt;else{d.pt=item.id;delete d.ft;delete d.fn;delete d.ot;delete d.rt}
+            if(d.pt===item.id)delete d.pt;else{d.pt=item.id;delete d.gr; delete d.ft;delete d.fn;delete d.fl;delete d.fp;delete d.fxp;delete d.ot;delete d.rt}
             drawOwned();drawOfficial();drawReward();draw()
           }},personalBadge(item),h('span',null,item.name)))),h('p',{class:'muted sm'},'为你设计的独立主题，可自行佩戴或摘下，不参加公共抽奖。'))
       }),
       ...['normal','SSR'].map(rarity=>{
-        const items=ownedItems.filter(x=>x.rarity===rarity&&x.enabled)
+        const items=ownedItems.filter(x=>x.rarity===rarity&&x.enabled&&x.permanent_level>0)
         return items.length>0&&h('fieldset',null,h('legend',null,rarity==='SSR'?'SSR · 角色套装':'普通 · 轻量套装'),h('div',{class:'ot-options'},items.map(item=>h('button',{
-          class:'ot-option'+(d.ft===item.id?' on':''),type:'button','data-owned-raffle':item.id,'aria-pressed':String(d.ft===item.id),onclick:()=>{
-            if(d.ft===item.id){delete d.ft;delete d.fn}else{d.ft=item.id;d.fn=item.level;delete d.pt;delete d.ot;delete d.rt}
-            drawOwned();drawOfficial();drawReward();draw()
-          }},raffleChip({...item,n:item.level},true),h('span',null,item.name),item.level>1&&h('small',null,'Lv'+item.level)))))
-      }),!ownedItems.some(x=>x.enabled)&&!personalItems.length&&h('p',{class:'muted'},'获得抽奖或站长授予的套装后，可在这里自由切换。')))
+          class:'ot-option'+(d.ft===item.id&&(d.fl||item.level)===item.permanent_level?' on':''),type:'button','data-owned-raffle':item.id,'aria-pressed':String(d.ft===item.id&&(d.fl||item.level)===item.permanent_level),onclick:()=>selectOwned(item,item.permanent_level)
+          },raffleChip({...item,n:item.permanent_level},true),h('span',null,item.name),h('small',null,'永久 Lv'+item.permanent_level)))))
+      }),h('fieldset',{class:'deco-trials'},h('legend',null,'体验卡'),h('div',{class:'ot-options'},ownedItems.filter(x=>x.enabled&&x.trial_level>0&&x.expires_at>Date.now()/1000).sort((a,b)=>a.expires_at-b.expires_at).map(item=>h('button',{class:'ot-option'+(d.ft===item.id&&(d.fl||item.level)===item.trial_level?' on':''),type:'button','data-trial-title':item.id,'aria-pressed':String(d.ft===item.id&&(d.fl||item.level)===item.trial_level),onclick:()=>selectOwned(item,item.trial_level)},raffleChip({...item,n:item.trial_level},true),h('span',null,item.name),h('small',null,'体验 Lv'+item.trial_level+' · 至'+new Date(item.expires_at*1000).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}))))),!ownedItems.some(x=>x.enabled&&x.trial_level>0&&x.expires_at>Date.now()/1000)&&h('p',{class:'muted sm'},'暂无有效体验卡')),!ownedItems.some(x=>x.enabled)&&!personalItems.length&&h('p',{class:'muted'},'获得抽奖或站长授予的套装后，可在这里自由切换。')))
   }
-  const loadOwned=async()=>{ownedError='';drawOwned();try{const [raffle,personal]=await Promise.all([api('/me/raffle-titles'),api('/me/personal-titles')]);ownedItems=raffle.titles;personalItems=personal.titles}catch(e){ownedError=e.message}if(ownedBox.isConnected)drawOwned()}
+  const loadOwned=async()=>{ownedError='';drawOwned();try{const [raffle,personal,me]=await Promise.all([api('/me/raffle-titles'),api('/me/personal-titles'),api('/me')]);ownedItems=raffle.titles;personalItems=personal.titles;if(me.user?.id===S.me?.id){S.me.badges=me.user.badges;S.me.unlocks=me.user.unlocks;S.me.farm_badge_progress=me.user.farm_badge_progress}const trial=initialTrial&&ownedItems.find(x=>x.id===initialTrial&&x.trial_level>0&&x.expires_at>Date.now()/1000);initialTrial=null;if(trial){d.ft=trial.id;d.fn=trial.level;d.fl=trial.trial_level;d.fp=trial.permanent_level||0;d.fxp=trial.expires_at;delete d.pt;delete d.ot;delete d.gr;delete d.rt;draw()}}catch(e){ownedError=e.message}drawOwned();refreshGuess();drawW()}
+  const displayInput=h('input',{class:'input sm',type:'number',min:1,max:TITLE_MAX_LEVEL,step:1,inputmode:'numeric','aria-label':'气泡展示等级'})
+  const displayStage=h('select',{class:'input sm','aria-label':'选择气泡成长阶段'})
+  const displayNote=h('span',{class:'muted sm',role:'status'})
+  const gunSize=h('input',{type:'range',min:CHICKENGUN_MIN_SIZE,max:CHICKENGUN_MAX_SIZE,step:1,'aria-label':'鸡关枪装饰大小',oninput:e=>{d.cg_size=Number(e.target.value);draw()}})
+  const gunSizeValue=h('output',{'aria-live':'off'})
+  const gunRandom=h('input',{type:'checkbox','aria-label':'每条消息随机大小',onchange:e=>{d.cg_random=e.target.checked;draw()}})
+  const gunMotion=h('input',{type:'checkbox','aria-label':'鸡关枪武器动效',onchange:e=>{d.cg_motion=e.target.checked;draw()}})
+  const gunFire=h('input',{type:'checkbox','aria-label':'鸡关枪发射效果',onchange:e=>{d.cg_fire=e.target.checked;draw()}})
+  const gunNote=h('p',{class:'muted sm'})
+  const gunControl=h('section',{class:'deco-gun-size',hidden:true},h('strong',null,'鸡关枪大小与效果'),h('div',{class:'deco-gun-slider'},gunSize,gunSizeValue),h('label',{class:'set-check'},gunRandom,'每条消息随机大小'),h('div',{class:'deco-gun-toggles'},h('label',{class:'set-check'},gunMotion,'武器动效'),h('label',{class:'set-check'},gunFire,'发射效果')),gunNote,h('button',{type:'button',class:'btn btn-ghost sm',onclick:()=>{delete d.cg_size;draw()}},'跟随等级大小'))
+  const displayControl=h('section',{class:'deco-display-level',hidden:true},h('strong',null,'气泡展示等级'),h('div',{class:'deco-level-fields'},displayInput,displayStage,h('button',{type:'button',class:'btn btn-ghost sm',onclick:()=>{delete d.fl;draw()}},'跟随最高等级')),displayNote)
+  const setDisplay=value=>{const title=raffleOf({...S.me,deco:d});if(!title||!Number.isFinite(Number(value))||value==='')return;d.fl=Math.min(title.n,Math.max(1,Math.trunc(Number(value))));draw()}
+  displayInput.oninput=()=>setDisplay(displayInput.value)
+  displayInput.onchange=()=>{setDisplay(displayInput.value||1);displayInput.value=String(d.fl||raffleOf({...S.me,deco:d})?.n||1)}
+  displayStage.onchange=()=>setDisplay(displayStage.value)
+  refreshDisplay=()=>{
+    const title=raffleOf({...S.me,deco:d});displayControl.hidden=!title;gunControl.hidden=title?.id!=='chickengun';if(!title)return
+    if(title.id==='chickengun'){
+      const cap=chickengunSizeLimit(title.displayLevel),size=chickengunSize(title.displayLevel,d.cg_size),random=title.n===TITLE_MAX_LEVEL&&d.cg_random===true
+      gunSize.max=String(cap);gunSize.value=String(size);gunRandom.disabled=title.n<TITLE_MAX_LEVEL;gunRandom.checked=random
+      gunMotion.checked=d.cg_motion!==false;gunFire.checked=d.cg_fire!==false
+      gunSizeValue.textContent=(random?CHICKENGUN_MIN_SIZE+'–':'')+size+' px'
+      gunNote.textContent='当前阶段 '+CHICKENGUN_MIN_SIZE+'–'+cap+' px。'+(title.n<TITLE_MAX_LEVEL?'Lv5200 解锁逐条随机大小。':random?'每条消息在此范围内取值，刷新保持不变。':'已解锁随机大小。')+'首阶保持静态且不发射；各项保存后生效。'
+    }
+    displayInput.max=String(title.n);if(document.activeElement!==displayInput)displayInput.value=String(title.displayLevel)
+    displayStage.replaceChildren(...TITLE_STAGES.map((n,i)=>n<=title.n&&h('option',{value:n,selected:titleStage(title.displayLevel)===i+1},'Lv'+n+' · '+TITLE_STAGE_NAMES[i])).filter(Boolean))
+    displayNote.textContent='已解锁 Lv'+title.n+' · 当前展示 Lv'+title.displayLevel+(d.fl?' · 固定展示':' · 跟随成长')+'，保存后生效。'
+  }
   drawOwned()
   loadOwned()
   draw()
-  return h('section', { class: 'set-sec deco-sec' }, h('h3', null, '装扮'),
-    preview,
-    field('已拥有的套装',ownedBox,'中奖只增加收藏，不自动换装。选择后点击保存；重复获得的等级永久保留。'),
-    S.me.official_titles?.length > 0 && field('官方称号', officialOptions, '称号、徽章、气泡与回应框一起佩戴'),
-    (S.me.unlocks||[]).includes('title:guangjie')&&field('邀请奖励称号',rewardOptions,'固定称号，点击佩戴或摘下'),
-    field('称号', t, '显示在昵称后面'),
-    field('徽章', wall, S.me.badges?.length ? '点亮着的戴上，再点一次摘下；群聊里只显示小图标' : '还没有徽章。每天看图、发图、水群够多，第二天就会发'),
-    S.me.badges?.length > 0 && field('徽章在哪儿显示', seg('bs', [['all', '全站'], ['chat', '只在群聊'], ['post', '只在帖子和评论']])),
-    h('div', { class: 'deco-grid' },
-      h('div', { class: 'field' }, h('span', { class: 'field-label' }, '颜色'), h('div', { class: 'deco-colors' }, color('c', '字'), color('c2', '底'), color('bc', '边框'))),
-      h('div', { class: 'field' }, h('span', { class: 'field-label' }, '字体'), font)),
-    field('形状', seg('sh', DECO_SHAPE)),
-    field('填充', seg('fill', DECO_FILL)),
-    field('动效', seg('fx', DECO_FX)),
-    field('炫彩昵称配色', fancyBox, S.me.fancy ? '只换颜色，流动效果不变' : '你现在没有炫彩昵称（TL3 以上或管理员授予后才有），配色先存着，有了就生效'),
-    field('普通 · 日常气泡', bubbles, '选择日常气泡会摘下当前整套装扮；已有套装仍保留在收藏中'),
-    field('自定义气泡样式', cssBox('cssb', 'background: linear-gradient(135deg, #e0f2fe, #fce7f3); color: #1e3a8a; border: 2px solid #93c5fd; border-radius: 18px'),
-      '只作用在你自己发的群聊消息上，可以叠在预设气泡上面'),
-    field('自定义称号样式', cssBox('csst', 'background: linear-gradient(90deg, #f472b6, #a78bfa); color: #fff; box-shadow: 0 0 0 2px #fff'), '只作用在你的称号上'),
-    cssHelp,
-    field('在哪儿生效', seg('sc', [['all', '全站'], ['chat', '只在群聊'], ['post', '只在帖子和评论']])),
-    h('div', { class: 'row-end' },
-      h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: async () => {
-        if (!confirm('清掉所有装扮？')) return
-        try { const r = await api('/me/profile', { method: 'PATCH', body: { deco: null } }); S.me.deco = r.deco; USERS.delete(S.me.username); toast('已清掉', 'ok'); meSettings() } catch (e) { toast(e.message, 'err') }
-      } }, '全部清掉'),
-      h('button', { class: 'btn btn-primary sm', type: 'button', onclick: async () => {
-        try {
-          const r = await api('/me/profile', { method: 'PATCH', body: { deco: { ...d, t: (d.t || '').trim() } } })
-          S.me.deco = r.deco
-          USERS.delete(S.me.username)
-          toast('装扮已保存，新加载的内容会用上', 'ok')
-        } catch (e) { toast(e.message, 'err') }
-      } }, '保存装扮')),
-    h('h3', { class: 'deco-h2' }, '别人的装扮'),
-    decoHideSettings())
+  const growthHub=h('div',{class:'growth-hub'}),growthNav=h('nav',{class:'growth-tabs','aria-label':'成长奖励分类'}),growthSeries=h('nav',{class:'growth-series','aria-label':'奖励系列'}),growthIntro=h('p',{class:'growth-intro'}),growthCards=h('div',{class:'guess-options growth-cards'})
+  let growthKind='day';const chosenSeries={}
+  const growthCategories=[['day','日榜'],['all','总榜'],['guess','猜词'],['luck','红包'],['farm','农牧'],['fishing','钓鱼'],['fortune','抽奖'],['wealth','财富'],['conflict','攻防'],['community','社区']]
+  growthHub.append(growthNav,growthSeries,growthIntro,growthCards)
+  const drawGrowth=(box,rewards)=>box.replaceChildren(...rewards.map(r=>{
+    const owned=allCosmetics||(S.me.unlocks||[]).includes((r.series||'guess')+':'+r.level)
+    return h('button',{type:'button',class:'guess-option growth-option'+(d.gr===r.id?' on':''),'data-guess-reward':r.id,'aria-pressed':String(d.gr===r.id),disabled:!owned,onclick:()=>{
+      if(d.gr===r.id)delete d.gr;else{d.gr=r.id;delete d.ft;delete d.fn;delete d.fl;delete d.fp;delete d.fxp;delete d.pt;delete d.ot;delete d.rt}
+      drawOwned();drawOfficial();drawReward();draw();refreshGuess()
+    }},h('span',{class:'growth-option-head'},guessBadge(r),guessTitle(r)),h('span',{class:'cm-text guess-bubble '+growthFrame(r)},r.series==='luck_king'?'好运入袋，分享快乐。':r.series==='luck_last'?'一点小收获，也值得收藏。':r.board?'每一次参与，都留下光芒。':'灵感来了，答案是…'),h('small',null,allCosmetics?'站长使用权':owned?'已解锁':r.series?'累计 '+r.wins+' '+growthUnit(r)+'解锁':'累计猜中 '+r.wins+' 轮解锁'),h('span',{class:'growth-option-state'},d.gr===r.id?'已选中':owned?'可佩戴':'待解锁'))
+  }))
+  refreshGuess=()=>{
+    const activity=S.activityRewards||[],rewards=growthKind==='day'||growthKind==='all'?(S.rankRewards||[]).filter(r=>r.period===growthKind):growthKind==='farm'?activity.filter(r=>/^(farm_|ranch_|guardian_)/.test(r.series)):growthKind==='fishing'?activity.filter(r=>r.series.startsWith('fishing_')):growthKind==='fortune'?activity.filter(r=>/^(card_|scratch_|lotto_)/.test(r.series)):growthKind==='wealth'?activity.filter(r=>/^(coins_|market_)/.test(r.series)):growthKind==='conflict'?activity.filter(r=>/^(raid_|defend_|uprising_)/.test(r.series)):growthKind==='community'?activity.filter(r=>r.series.startsWith('resource_')):growthKind==='luck'?S.luckRewards||[]:[...(S.guessRewards||[]),...activity.filter(r=>r.series.startsWith('guess_'))]
+    const groups=[...new Set(rewards.map(r=>r.series||'guess'))]
+    if(!groups.includes(chosenSeries[growthKind]))chosenSeries[growthKind]=groups.find(id=>rewards.some(r=>(r.series||'guess')===id&&r.id===d.gr))||groups[0]
+    growthHub.dataset.kind=growthKind
+    growthNav.replaceChildren(...growthCategories.map(([id,label])=>h('button',{type:'button','aria-pressed':String(id===growthKind),onclick:()=>{growthKind=id;refreshGuess()}},label)))
+    growthSeries.replaceChildren(...groups.map(id=>{const r=rewards.find(r=>(r.series||'guess')===id),n=S.me.badges?.find(b=>b.id===id)?.n||0;return h('button',{type:'button','aria-pressed':String(id===chosenSeries[growthKind]),onclick:()=>{chosenSeries[growthKind]=id;refreshGuess()}},h('span',null,growthName(r).replace(/日榜|总榜/g,'')),h('small',null,n+' '+growthUnit(r)))}))
+    const selected=rewards.filter(r=>(r.series||'guess')===chosenSeries[growthKind]),r=selected[0]
+    growthIntro.textContent=!r?'暂无奖励系列':r.board?(growthKind==='all'?'总榜长期荣誉':'日榜每日荣誉')+' · 每天结算前三名，分别 +3 / +2 / +1 经验。累计 1 / 3 / 10 / 30 / 100 经验升级。':r.desc|| (growthKind==='luck'?'手气王与手气亡分别累计，确认结束后结算，重复获得可升级。':'累计累计猜中 '+(S.me.badges?.find(b=>b.id==='guess')?.n||0)+' 轮。获得与升级不会自动替换当前装扮。')
+    drawGrowth(growthCards,selected)
+  }
+  refreshGuess()
+  const categories=settingsSections({h,label:'装扮分类',sections:[
+    {id:'outfits',label:'我的套装',keywords:'已拥有 收藏 普通 SSR 官方 邀请 佩戴 摘下',nodes:[
+      field(allCosmetics?'全部可用套装':'已拥有的套装',ownedBox,allCosmetics?'站长可自由使用当前启用的套装，不增加获奖记录。选择后点击保存。':'中奖只增加收藏，不自动换装。选择后点击保存；重复获得的等级永久保留。'),displayControl,gunControl,
+      (allCosmetics||S.me.official_titles?.length>0)&&field('官方称号',officialOptions,'称号、徽章、气泡与回应框一起佩戴'),
+      (allCosmetics||(S.me.unlocks||[]).includes('title:guangjie'))&&field('邀请奖励称号',rewardOptions,'固定称号，点击佩戴或摘下'),
+    ]},
+    {id:'title',label:'称号与昵称',keywords:'文字 颜色 字体 形状 填充 动效 炫彩 配色',nodes:[
+      field('称号',t,'显示在昵称后面'),
+      h('div',{class:'deco-grid'},h('div',{class:'field'},h('span',{class:'field-label'},'颜色'),h('div',{class:'deco-colors'},color('c','字'),color('c2','底'),color('bc','边框'))),h('div',{class:'field'},h('span',{class:'field-label'},'字体'),font)),
+      field('形状',seg('sh',DECO_SHAPE)),field('填充',seg('fill',DECO_FILL)),field('动效',seg('fx',DECO_FX)),
+      field('炫彩昵称配色',fancyBox,S.me.fancy?'只换颜色，流动效果不变':'你现在没有炫彩昵称（TL3以上或管理员授予后才有），配色先存着，有了就生效'),
+    ]},
+    {id:'badges',label:'徽章',keywords:'成就 图标 佩戴 位置 范围',nodes:[
+      showcaseBox,
+      field('搭配方式',seg('badge_mode',[['set','套装原配'],['custom','自选徽章'],['none','不显示徽章']])),
+      field('徽章',wall,allCosmetics?'站长可使用全部徽章最高级外观；实际获奖次数独立统计。':S.me.badges?.length?'点亮着的戴上，再点一次摘下；群聊里只显示小图标':'还没有徽章。每天看图、发图、水群够多，第二天就会发'),
+      S.me.badges?.length>0&&field('徽章在哪儿显示',seg('bs',[['all','全站'],['chat','只在群聊'],['post','只在帖子和评论']])),
+    ]},
+
+    {id:'growth',label:'成长奖励',keywords:'猜词 红包 手气王 手气亡 日榜 总榜 农场 升级 解锁',nodes:[growthHub,h('p',{class:'hint'},'选择套装后点击保存装扮。称号、徽章与气泡成套佩戴；已有等级和获奖记录永久保留。')]},
+    {id:'visibility',label:'显示偏好',keywords:'范围 全站 群聊 帖子 别人 隐藏 屏蔽 动图 暂停',nodes:[
+      field('我的装扮在哪儿生效',seg('sc',[['all','全站'],['chat','只在群聊'],['post','只在帖子和评论']]),'点击保存装扮后生效。'),
+      h('h4',null,'别人的装扮'),h('p',{class:'muted sm'},'以下设置立即生效，仅保存在本浏览器；不改变自己的佩戴。'),decoHideSettings(),
+    ]},
+  ]})
+  const saveState=h('span',{class:'deco-save-state',role:'status'})
+  const saveButton=h('button',{class:'btn btn-primary sm',type:'button',onclick:async()=>{
+    if(saveBusy)return
+    const submitted={...d,t:(d.t||'').trim()};saveBusy=true;syncSaved()
+    try{
+      const r=await api('/me/profile',{method:'PATCH',body:{deco:submitted}})
+      S.me.deco=r.deco;savedSnapshot=snapshot(submitted);USERS.delete(S.me.username);toast('装扮已保存，新加载的内容会用上','ok')
+    }catch(e){toast(e.message,'err')}
+    finally{saveBusy=false;syncSaved()}
+  }},'保存装扮')
+  const clearButton=h('button',{class:'btn btn-ghost sm',type:'button',onclick:async()=>{
+    if(saveBusy||!confirm('清掉所有装扮？'))return
+    saveBusy=true;syncSaved()
+    try{const r=await api('/me/profile',{method:'PATCH',body:{deco:null}});S.me.deco=r.deco;USERS.delete(S.me.username);toast('已清掉','ok');meSettings('deco')}
+    catch(e){toast(e.message,'err')}
+    finally{saveBusy=false;syncSaved()}
+  }},'全部清掉')
+  syncSaved=()=>{const dirty=snapshot(d)!==savedSnapshot;saveState.textContent=saveBusy?'正在保存…':dirty?'有未保存的装扮修改':'装扮已保存';saveButton.disabled=saveBusy||!dirty;clearButton.disabled=saveBusy}
+  syncSaved()
+  return h('section',{class:'set-sec deco-sec deco-categories'},h('h3',null,'装扮'),
+    h('details',{class:'deco-preview-panel',open:!matchMedia('(max-width:640px)').matches},h('summary',null,'预览当前选择'),preview),
+    categories.element,h('div',{class:'row-end'},saveState,clearButton,saveButton))
 }
 // @ 显示「昵称(@用户名)」：从已加载的群成员、资料卡缓存里找昵称
 const NICKS = new Map()
@@ -1989,18 +2185,29 @@ const nickOf = (u) => NICKS.get(u.toLowerCase()) || USERS.get(u)?.name || ''
 const rememberNicks = (list) => (list || []).forEach((x) => { if (x?.username && x.name && x.name !== x.username) NICKS.set(x.username.toLowerCase(), x.name) })
 const COARSE = matchMedia('(pointer: coarse)').matches
 const fmtBytes = (n) => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'
+function profileShowcaseItems(u){
+  return [...(u.badges||[]).filter(b=>BADGES[b.id]).map(b=>({key:'badge:'+b.id,name:BADGES[b.id].name,badge:b})),
+    ...(u.official_titles||[]).map(o=>officialById(o.id)).filter(Boolean).map(t=>({key:'official:'+t.id,name:t.name,official:t}))]
+}
+function profileShowcaseKeys(u,items=profileShowcaseItems(u)){
+  const available=new Set(items.map(x=>x.key))
+  return (Array.isArray(u.deco?.showcase)?u.deco.showcase:[...available]).filter(k=>available.has(k)).slice(0,6)
+}
+const profileShowcaseChip=item=>item.badge?badgeChip(item.badge.id,false,item.badge.n):officialChip(item.official)
 async function userCard(username, anchor) {
   const key = 'u' + username
   if (POP?.key === key) return closePop()
   const box = h('div', { class: 'ucard' }, h('div', { class: 'muted' }, '加载中…'))
-  openPop(anchor, box, { key, cls: 'pop-user' })
+  const popup=openPop(anchor, box, { key, cls: 'pop-user' })
+  popup.setAttribute('aria-label','用户资料');popup.tabIndex=0
   try {
     if (!USERS.has(username)) USERS.set(username, (await api('/users/' + encodeURIComponent(username))).user)
   } catch (e) {
     return box.replaceChildren(h('div', { class: 'muted' }, e.message))
   }
-  if (POP?.key !== key) return
+  if (POP?.el !== popup) return
   const u = USERS.get(username)
+  const showcaseItems=profileShowcaseItems(u),showcaseKeys=profileShowcaseKeys(u,showcaseItems)
   const stat = (n, l) => h('div', { class: 'ucard-stat' }, h('strong', null, fmtN(n)), h('span', null, l))
   box.replaceChildren(...nodes(
     h('div', { class: 'ucard-head' }, avatar(u.avatar, u.name || u.username, 44),
@@ -2011,8 +2218,7 @@ async function userCard(username, anchor) {
           ))),
     h('div', { class: 'ucard-stats' }, stat(u.posts, '发布'), stat(u.replies, '回应'), stat(u.comments, '评论')),
     u.bio && h('div', { class: 'ucard-bio' }, u.bio),
-    u.badges?.length > 0 && h('div', { class: 'ucard-badges' }, u.badges.map((b) => badgeChip(b.id, false, b.n))),
-    u.official_titles?.length > 0 && h('div', { class: 'ucard-badges' }, u.official_titles.map(o => { const t = officialById(o.id); return t && officialChip(t) })),
+    h('div', { class:'ucard-badges' }, showcaseItems.filter(item=>showcaseKeys.includes(item.key)).map(profileShowcaseChip)),
     (u.joined_at || u.last_seen) && h('div', { class: 'muted ucard-join' }, u.joined_at && `${fmtTime(u.joined_at)} 加入尽欢`,
       u.last_seen && seenText(u.last_seen, Date.now() / 1000)[0] && ` · ${seenText(u.last_seen, Date.now() / 1000)[0]}`),
     h('div', { class: 'ucard-acts' },
@@ -2020,7 +2226,7 @@ async function userCard(username, anchor) {
       S.me?.owner && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); officialTitleManager(u.username) } }, '授予称号'),
       u.posts > 0 && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); saveWallPrefs({ author: u.username }); navigate('/?author=' + encodeURIComponent(u.username)) } }, '看 TA 的图'),
       S.me?.is_admin && !u.is_admin && u.username !== S.me.username && h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { closePop(); memberAdmin(u.username) } }, '管理'),
-      u.linuxdo_username && h('a', { class: 'btn btn-ghost sm', href: `https://linux.do/u/${encodeURIComponent(u.linuxdo_username)}`, target: '_blank', rel: 'noopener' },
+      u.linuxdo_username && h('a', { class: 'btn btn-ghost sm', href: `https://linux.do/u/${encodeURIComponent(u.linuxdo_username)}/activity`, target: '_blank', rel: 'noopener' },
         'linux.do 主页', icon('ext', 'i tiny')))))
   placePop(anchor, POP.el, 'left')
 }
@@ -2074,6 +2280,12 @@ async function deleteMeme(m) {
   }
   return true
 }
+function postSourceInfo(url) {
+  const social = socialLink(url || '')
+  if (social) return { label: social.label, mark: social.provider === 'x' ? 'X' : social.label.slice(0, 1), linuxdo: false }
+  try { if (new URL(url).hostname === 'linux.do') return { label: 'linux.do', mark: 'L', linuxdo: true } } catch {}
+  return { label: '原站', mark: '↗', linuxdo: false }
+}
 function moreMenu(m, anchor, key) {
   const url = location.origin + memeHref(m)
   const item = (label, ic, fn) => h('button', { class: 'menu-item', onclick: () => { closePop(); fn() } }, icon(ic), label)
@@ -2095,7 +2307,7 @@ function moreMenu(m, anchor, key) {
         toast('已取消慎点', 'ok')
       } catch (e) { toast(e.message, 'err') }
     }),
-    m.source_url && h('a', { class: 'menu-item', href: m.source_url, target: '_blank', rel: 'noopener', onclick: closePop }, icon('ext'), '去 linux.do 原楼层'),
+    m.source_url && !socialLink(m.source_url) && h('a', { class: 'menu-item', href: m.source_url, target: '_blank', rel: 'noopener', onclick: closePop }, icon('ext'), `查看${postSourceInfo(m.source_url).label}原帖`),
     m.can_manage && [h('hr', { class: 'menu-sep' }), item('编辑', 'pen', () => openEdit(m)),
       h('button', { class: 'menu-item danger', onclick: () => { closePop(); deleteMeme(m) } }, icon('trash'), '删除这张')]),
   { key, align: 'right' })
@@ -2107,7 +2319,7 @@ function moreMenu(m, anchor, key) {
 const vidIO = new IntersectionObserver((es) => es.forEach(({ target: v, isIntersecting: on }) => {
   if (!v.isConnected) return vidIO.unobserve(v)
   if (!on) { if (!v.paused) { v._resume = true; v.pause() } }
-  else if (v._resume || (v.autoplay && v.paused && v.dataset.live && !v._done)) { v._resume = false; v.play().catch(() => {}) }
+  else if (v._resume || (v.autoplay && v.paused && v.dataset.live && !v._done)) { v._resume = false; v.play().catch(error => v._playFailure?.(error)) }
 }), { threshold: 0.2 })
 // 实况只放一遍，放完回到封面；想再看就点一下
 function liveOnce(v) {
@@ -2119,15 +2331,49 @@ function liveOnce(v) {
 function mediaVideo(im, { auto = false, onOpen = null } = {}) {
   const live = im.k === 'l'
   const v = h('video', { src: im.v, poster: im.u || null, playsinline: true, preload: 'metadata', width: im.w || null, height: im.h || null,
-    controls: !live, muted: live, autoplay: auto || live })
+    style: im.w && im.h ? { aspectRatio: `${im.w} / ${im.h}` } : null, controls: !live, muted: live, autoplay: auto || live })
+  let disposed = false, waitingTimer
+  const label = h('span', {}, '')
+  const retry = h('button', { type: 'button', class: 'btn sm', onclick: async (e) => {
+    e.stopPropagation()
+    if (disposed || retry.disabled) return
+    clearTimeout(waitingTimer)
+    retry.disabled = true
+    label.textContent = '正在重新加载…'
+    v.load()
+    waitForPlayback()
+    try { await v.play() } catch (error) { v._playFailure?.(error) }
+  } }, '重试播放')
+  const status = h('div', { class: 'video-recovery', role: 'status', hidden: true }, label, retry)
+  const show = (message) => {
+    if (disposed) return
+    clearTimeout(waitingTimer)
+    label.textContent = message
+    retry.disabled = false
+    status.hidden = false
+  }
+  const waitForPlayback = () => {
+    clearTimeout(waitingTimer)
+    waitingTimer = setTimeout(() => show('视频等待较久，可重试播放'), 15000)
+  }
+  v._playFailure = (error) => {
+    if (error?.name === 'AbortError') return
+    show(error?.name === 'NotAllowedError' ? '浏览器未开始播放，请点击重试' : '视频未能播放，请重试')
+  }
+  v.addEventListener('error', () => show(v.error?.code === 2 ? '视频网络加载失败，请重试' : v.error?.code === 3 ? '视频解码失败，请重试或更换浏览器' : '视频暂不可用，请重试'))
+  for (const event of ['waiting', 'stalled']) v.addEventListener(event, () => { if (!disposed && !v.paused) waitForPlayback() })
+  v.addEventListener('pause', () => { if (v.paused) { clearTimeout(waitingTimer); retry.disabled = false } })
+  v.addEventListener('playing', () => { clearTimeout(waitingTimer); status.hidden = true; retry.disabled = false })
   if (live) {
     liveOnce(v)
     // 详情里点实况：去看大图；看大图里点：从头再放一遍
-    v.addEventListener('click', (e) => { e.stopPropagation(); if (onOpen) return onOpen(); v.currentTime = 0; v.play().catch(() => {}) })
+    v.addEventListener('click', (e) => { e.stopPropagation(); if (onOpen) return onOpen(); v.currentTime = 0; v.play().catch(error => v._playFailure?.(error)) })
   }
-  vidIO.observe(v)
-  onRemoval(v, () => { vidIO.unobserve(v); v.pause(); v.removeAttribute('src'); v.load() })
-  return h('div', { class: 'vid' + (live ? ' live' : '') }, v, live && h('span', { class: 'kind-badge' }, '实况'))
+  // 完整视频和主动打开的查看器持续播放；仅列表实况跟随主页面视口。
+  // 查看器可能位于独立小窗，不能交给主窗口观察器判断可见性。
+  if (live && !auto) vidIO.observe(v)
+  onRemoval(v, () => { disposed = true; clearTimeout(waitingTimer); v._playFailure = null; vidIO.unobserve(v); v.pause(); v.removeAttribute('src'); v.load() })
+  return h('div', { class: 'vid' + (live ? ' live' : '') }, v, live && h('span', { class: 'kind-badge' }, '实况'), status)
 }
 // doc：弹出的聊天小窗里看图时传小窗的 document
 function openViewer(m, start = 0, { doc = document } = {}) {
@@ -2316,15 +2562,16 @@ function renderDetail(panel, meme) {
   const m = syncItem(meme)
   const slot = 'd' + m.id
   const side = h('aside', { class: 'side' })
-  panel.classList.toggle('text-only', !m.images.length)
+  const embed = !m.images.length && officialPostContent(m.source_url,m.id)
+  panel.classList.toggle('text-only', !m.images.length && !embed)
   // 单张超长图（高宽比 > 2.6）：不硬缩进框里（字会小到看不清），按宽度铺开、上下滚
   const im0 = m.images.length === 1 && !m.images[0].v ? m.images[0] : null
   const long = im0 && im0.w && im0.h / im0.w > 2.6
-  const stage = !m.images.length ? null : m.layout === 'carousel' && m.images.length > 1 ? carousel(m, m.images, { detail: true }) : h('div', { class: 'stage' + (m.images.length > 1 ? ' multi' : long ? ' long' : ''), 'data-blur': m.id, style: long ? { '--lw': im0.w + 'px' } : null },
+  const stage = embed || (!m.images.length ? null : m.layout === 'carousel' && m.images.length > 1 ? carousel(m, m.images, { detail: true }) : h('div', { class: 'stage' + (m.images.length > 1 ? ' multi' : long ? ' long' : ''), 'data-blur': m.id, style: long ? { '--lw': im0.w + 'px' } : null },
     m.images.map((im, i) => h('figure', null,
       im.v ? mediaVideo(im, { onOpen: () => openViewer(m, i) })
         : h('button', { class: 'stage-img', type: 'button', onclick: (e) => peekOrig(e, im) || openViewer(m, i), 'aria-label': im.o ? '已打码，点一下看原图' : '看大图' },
-          memeImg(im.u, { loading: 'lazy', width: im.w, height: im.h }), cellMark(im)))))
+          memeImg(im.u, { loading: 'lazy', width: im.w, height: im.h }), cellMark(im))))))
   if (stage) { stage.dataset.blur = m.id; applyBlur(stage) }
   panel.replaceChildren(...nodes(stage, side))
 
@@ -2341,6 +2588,7 @@ function renderDetail(panel, meme) {
   }))
 
   const author = m.author_name
+  const source = postSourceInfo(m.source_url)
   side.append(...nodes(
     h('header', { class: 'side-head' },
       avatar(m.author_avatar, author, 36),
@@ -2350,11 +2598,11 @@ function renderDetail(panel, meme) {
     m.content && h('div', { class: 'detail-content md' }, richText(m.content, { md: true })),
     m.tags.length > 0 && h('div', { class: 'detail-tags' },
       m.tags.map((t) => h('a', { class: 'chip', href: `/t/${encodeURIComponent(t)}`, 'data-link': '' }, '#' + t))),
-    m.source_url && h('a', { class: 'origin', href: m.source_url, target: '_blank', rel: 'noopener' },
-      h('span', { class: 'origin-mark' }, 'L'),
+    m.source_url && !socialLink(m.source_url) && h('a', { class: 'origin', href: m.source_url, target: '_blank', rel: 'noopener' },
+      h('span', { class: 'origin-mark' }, source.mark),
       h('span', { class: 'origin-text' },
-        h('strong', null, m.series || 'linux.do 原帖'),
-        h('span', null, m.ld_likes > 0 ? `在 linux.do 获得 ${m.ld_likes} 个赞 · 去原楼层` : '去 linux.do 原楼层')),
+        h('strong', null, m.series || `${source.label}原帖`),
+        h('span', null, source.linuxdo && m.ld_likes > 0 ? `在 linux.do 获得 ${m.ld_likes} 个赞 · 去原楼层` : `前往${source.label}查看`)),
       icon('ext')),
     actions,
     replies,
@@ -2370,6 +2618,7 @@ function renderDetail(panel, meme) {
 
 function renderActions() {
   const nav = document.getElementById('actions')
+  document.querySelectorAll('[data-nav="series"], [data-nav="road"]').forEach((el) => { el.hidden = !S.me; el.style.display = S.me ? '' : 'none' })
   const mode = themeMode(), themeLabel = '主题：' + THEME_LABELS[mode] + '；点击切换'
   const themeBtn = h('button', { class: 'btn-icon theme-btn', title: themeLabel, 'aria-label': themeLabel, onclick: toggleTheme },
     icon(THEME_ICONS[mode]))
@@ -2390,7 +2639,7 @@ function renderActions() {
   }
   kids.push(h('button',{class:'btn-icon mobile-action',type:'button','aria-label':'更多功能','data-pop':'mobilemore',onclick:e=>mobileMore(e.currentTarget)},icon('more')))
   nav.replaceChildren(...kids)
-  document.querySelectorAll('.mobile-nav [data-nav]').forEach(a=>a.querySelector('span').replaceChildren(icon(({wall:'image',series:'apps',chat:'chat',road:'pen',me:'contacts'})[a.dataset.nav])))
+  document.querySelectorAll('.mobile-nav [data-nav]').forEach(a=>a.querySelector('span').replaceChildren(icon(({wall:'image',series:'apps',chat:'chat',road:'pen',farm:'sprout',me:'contacts'})[a.dataset.nav])))
   document.getElementById('mobile-page-title').onclick = e => mobilePages(e.currentTarget)
   markNav()
 }
@@ -2402,11 +2651,11 @@ function setMobileNavCompact(compact) {
 document.documentElement.dataset.mobileNav = localStorage.getItem(MOBILE_NAV_KEY) === '1' ? 'compact' : 'full'
 function mobilePages(anchor) {
   const cur = document.querySelector('.mobile-nav [data-nav].on')?.dataset.nav
-  const pages = [['wall', '图廊', 'image', '/'], ['series', '图集', 'apps', '/series'],
-    ['chat', '群聊', 'chat', '/chat'], ['road', '鞭打', 'pen', '/road'], ['me', '我的', 'contacts', '/me']]
+  const pages = [['wall', '图廊', 'image', '/'],
+    ['chat', '群聊', 'chat', '/chat'], ...(S.me ? [['road', '鞭打', 'pen', '/road']] : []), ['farm','农场','sprout','/farm'], ['novels','小说','book','/novels'], ['music','音乐','music','/music'], ['games','游戏','apps','https://cc.52dmeme.com'], ['me', '我的', 'contacts', '/me']]
   openPop(anchor, h('nav', { class: 'mobile-more mobile-pages', 'aria-label': '切换页面' }, pages.map(([key, label, ic, path]) =>
     h('button', { class: 'mobile-more-item' + (cur === key ? ' on' : ''), type: 'button',
-      'aria-current': cur === key ? 'page' : null, onclick: () => { closePop(); navigate(path) } }, icon(ic), label, key === 'chat' && chatBadge()))),
+      'aria-current': cur === key ? 'page' : null, onclick: () => { closePop(); if(path.startsWith('https://'))window.open(path,'_blank','noopener');else navigate(path) } }, icon(ic), label, key === 'chat' && chatBadge()))),
   { key: 'mobilepages', align: 'left', cls: 'sheet' })
 }
 function mobileSearch(anchor) {
@@ -2431,16 +2680,19 @@ function mobileMore(anchor) {
 // 互动提醒：别人对我发的图点喜欢 / 表情 / 回应 / 评论；一分钟拉一次未读数，打开面板即标已读
 const NOTIF = { unread: 0, items: null, at: 0, tab: 'all' }
 let notifSequence = 0, notifWrites = 0, notifReload = false
-const NOTIF_VERB = { like: '喜欢了', emoji: '回应了表情', reply: '回应了', comment: '评论了', creply: '回复了你在这帖的评论', post: '发了新帖',
-  mention: '在评论里 @ 了你', chat_at: '在群聊里 @ 了你', chat_reply: '在群聊里回复了你', post_at: '在帖子里 @ 了你', join_req: '申请回到群聊', badge: '你获得了徽章' }
+const NOTIF_VERB = { packet:'红包提醒', like: '喜欢了', emoji: '回应了表情', reply: '回应了', comment: '评论了', creply: '回复了你在这帖的评论', post: '发了新帖',
+  mention: '在评论里 @ 了你', chat_at: '在群聊里 @ 了你', chat_reply: '在群聊里回复了你', post_at: '在帖子里 @ 了你', join_req: '申请加入群聊', badge: '你获得了徽章' }
 // 提醒分类
 const NOTIF_TABS = [['all', '全部', null], ['like', '喜欢', ['like']], ['rx', '回应', ['emoji', 'reply']], ['cmt', '评论', ['comment', 'creply']],
-  ['at', '@我', ['mention', 'chat_at', 'post_at']], ['chat', '群聊', ['chat_at', 'chat_reply', 'join_req']], ['post', '新帖', ['post']]]
-const isChatNotif = (n) => n.kind === 'chat_at' || n.kind === 'chat_reply'
+  ['at', '@我', ['mention', 'chat_at', 'post_at']], ['chat', '群聊', ['chat_at', 'chat_reply', 'join_req','packet']], ['post', '新帖', ['post']]]
+const isChatNotif = (n) => n.kind === 'chat_at' || n.kind === 'chat_reply' || n.kind === 'packet'
 // 提醒设置：后端存，登录时随 /me 带回来
-const NOTIF_PREFS = [['like', '有人喜欢我的图'], ['emoji', '有人给我的图回应表情'], ['reply', '有人给我的图一句回应'], ['comment', '有人评论我的图'], ['creply', '有人回复我的评论'], ['post', '有人发了新帖'], ['mention', '有人在评论里 @ 我'], ['chat_at', '有人在群聊里 @ 我'], ['chat_reply', '有人在群聊里回复我'],
-  ['post_at', '有人在帖子里 @ 我'], ['badge', '我拿到了新徽章'], ['join_req', '有人申请回到群聊（群管理才有）']]
+const NOTIF_PREFS = [['packet','红包参与与开奖结果'],['like', '有人喜欢我的图'], ['emoji', '有人给我的图回应表情'], ['reply', '有人给我的图一句回应'], ['comment', '有人评论我的图'], ['creply', '有人回复我的评论'], ['post', '有人发了新帖'], ['mention', '有人在评论里 @ 我'], ['chat_at', '有人在群聊里 @ 我'], ['chat_reply', '有人在群聊里回复我'],
+  ['post_at', '有人在帖子里 @ 我'], ['ai_comment', 'AI 评论、回复和提及提醒'], ['badge', '我拿到了新徽章'], ['join_req', '有人申请加入群聊（群管理才有）']]
 const notifOn = (k) => S.me?.notif_prefs?.[k] !== false
+NOTIF_PREFS.unshift(['farm_conflict','农场攻防预警与结算'])
+NOTIF_TABS.push(['farm','农场',['farm_conflict']])
+NOTIF_TABS.push(['system','系统',['release']])
 function syncNotifBadge() {
   const n = NOTIF.unread
   document.querySelectorAll('[data-notif-badge]').forEach((el) => { el.textContent = n > 99 ? '99+' : n; el.hidden = !n })
@@ -2454,7 +2706,7 @@ async function loadNotifs() {
   const sequence = ++notifSequence, uid = S.me.id
   NOTIF.at = Date.now()
   try {
-    const d = await api('/notifs')
+    const d = await api('/notifs?system=1')
     if (sequence !== notifSequence || S.me?.id !== uid) return
     Object.assign(NOTIF, { unread: d.unread, items: d.items })
     syncNotifBadge()
@@ -2499,6 +2751,8 @@ function openChatMsg(gid, id) {
 }
 function notifRow(n) {
   const who = n.name || n.username || '有人'
+  if(n.kind==='release')return h('button',{class:'notif-row'+(n.unread?' unread':''),type:'button',onclick:()=>{readNotif(n);closePop();releaseNoticeDetail(n.val)}},h('i',{class:'notif-dot','aria-hidden':'true'}),icon('bell'),h('div',{class:'notif-main'},h('strong',null,'系统更新 · 请刷新界面'),h('div',{class:'notif-val clip'},n.val),h('time',{class:'muted'},fmtTime(n.at))))
+  if(n.kind==='farm_conflict')return h('a',{class:'notif-row'+(n.unread?' unread':''),href:'/farm?panel=conflict',onclick:e=>{e.preventDefault();readNotif(n);closePop();navigate('/farm?panel=conflict')}},h('i',{class:'notif-dot','aria-hidden':'true'}),icon('shield'),h('div',{class:'notif-main'},h('strong',null,'农场攻防'),h('div',{class:'notif-val muted'},n.val),h('time',{class:'muted'},fmtTime(n.at))))
   if(n.kind==='ai_alert'){
     const labels={cap:'今日 AI 请求已达上限',breaker:'AI 服务连续失败，已暂停',configuration:'AI 服务配置需要检查'}
     return h('a',{class:'notif-row'+(n.unread?' unread':''),href:'/admin/ai',onclick:async e=>{e.preventDefault();await readNotif(n);location.href='/admin/ai'}},
@@ -2522,10 +2776,11 @@ function notifRow(n) {
       h('i', { class: 'notif-dot', 'aria-hidden': 'true' }),
       avatar(n.avatar, who, 32),
       h('div', { class: 'notif-main' },
-        h('div', { class: 'notif-line' }, h('strong', null, who), ' 申请回到 ', h('span', { class: 'muted' }, '「' + (n.group_name || '群聊') + '」')),
-        h('div', { class: 'notif-val muted' }, (n.val === 'left' ? '之前自己退的群' : '之前被移出了') + ' · 点开处理'),
+        h('div', { class: 'notif-line' }, h('strong', null, who), n.val==='left'||n.val==='kick'?' 申请重新加入 ':' 申请加入 ', h('span', { class: 'muted' }, '「' + (n.group_name || '群聊') + '」')),
+        h('div', { class: 'notif-val muted' }, (n.val === 'left' ? '曾主动退群' : n.val === 'kick' ? '曾被踢出' : '首次申请入群') + ' · 点开审核'),
         h('time', { class: 'muted' }, fmtTime(n.at))))
   }
+  if(!Object.hasOwn(NOTIF_VERB,n.kind))return h('button',{class:'notif-row'+(n.unread?' unread':''),type:'button',onclick:()=>{readNotif(n);closePop();releaseNoticeDetail(n.val||'请刷新界面查看这条提醒。','系统提醒',false)}},icon('bell'),h('div',{class:'notif-main'},h('strong',null,'系统提醒'),h('div',{class:'notif-val clip'},n.val||'请刷新界面查看这条提醒。'),h('time',{class:'muted'},fmtTime(n.at))))
   const chat = isChatNotif(n)
   const href = chat ? `/chat/${n.gid}` : `/m/${n.meme_id}` + (n.kind === 'comment' || n.kind === 'creply' || n.kind === 'mention' ? '#comments' : n.kind === 'reply' ? '#replies' : '')
   const showVal = ['reply', 'comment', 'creply', 'mention', 'post_at'].includes(n.kind) || chat
@@ -2613,18 +2868,23 @@ function notifSettings(list, back) {
     h('div', { class: 'muted sm' }, '接收哪些提醒'),
     NOTIF_PREFS.map(row),
     h('div', { class: 'row-end' }, h('button', { class: 'btn-text sm', type: 'button', onclick: back }, '返回提醒'))))
+  const host=h('div',{class:'device-push-host'})
+  list.querySelector('.notif-prefs').append(host)
+  import('/device-push.js?v=98ddcc7d').then(({devicePushSettings})=>{
+    if(host.isConnected)host.replaceChildren(devicePushSettings({api,h,userId:S.me.id}))
+  }).catch(()=>{if(host.isConnected)host.textContent='设备通知设置加载失败，请重新打开。'})
 }
 
 function markNav() {
   const p = location.pathname
   const cur = p === '/' || p.startsWith('/t/') || p.startsWith('/u/') ? 'wall'
     : p.startsWith('/series') || p.startsWith('/s/') ? 'series'
-      : p.startsWith('/chat') || p.startsWith('/dm') ? 'chat' : p.startsWith('/road') ? 'road' : p.startsWith('/me') ? 'me' : ''
+      : p.startsWith('/novels') ? 'novels' : p.startsWith('/nsfw') ? 'nsfw' : p.startsWith('/chat') || p.startsWith('/dm') ? 'chat' : p.startsWith('/road') ? 'road' : p.startsWith('/farm') ? 'farm' : p.startsWith('/me') ? 'me' : ''
   if (p.startsWith('/m/')) return
   document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === cur))
   const title=document.getElementById('mobile-page-title')
   if(title) {
-    title.textContent=p.startsWith('/dm')?'私信':({wall:'图廊',series:'图集',chat:'群聊',road:'鞭打',me:'我的'})[cur] || '尽欢'
+    title.textContent=p.startsWith('/dm')?'私信':({wall:'图廊',series:'图集',chat:'群聊',road:'鞭打',farm:'农场',novels:'小说',nsfw:'RZP',me:'我的'})[cur] || '尽欢'
     title.setAttribute('aria-label', '切换页面，当前' + title.textContent)
     title.append(chatBadge('chat-badge mobile-chat-badge'))
   }
@@ -2771,6 +3031,7 @@ function dayLabel(d) {
 // 当前筛选条件拼成查询串（图廊、按天加载、日期目录共用）
 function listParams(st, extra = {}) {
   const p = new URLSearchParams({ sort: st.sort || 'new', ...nsfwParam(), ...extra })
+  if(st.nsfw)p.set('nsfw',st.nsfw)
   for (const k of ['q', 'tag', 'author', 'series', 'text']) if (st[k]) p.set(k, st[k])
   if (st.unseen) {
     p.set('unseen', '1')
@@ -2875,6 +3136,10 @@ function wallHref(from, focus) {
 }
 
 async function renderWall(base) {
+  if (base.series && !S.me) {
+    main.replaceChildren(emptyState('图集需要登录', '登录后可查看完整图集', h('a', { class: 'btn btn-primary sm', href: loginHref() }, '登录查看')))
+    return
+  }
   const params = new URLSearchParams(location.search)
   const st = {
     ...base,
@@ -2914,6 +3179,15 @@ async function renderWall(base) {
   if (pos) { st.restore = pos; st.from = pos.day; st.focus = pos.id }
   st.ready = !pos
   if (pos) setTimeout(() => { st.ready = true }, 4000)
+  // 加载期间用户已经开始浏览，就放弃迟到的定位，避免再把视口拉回旧锚点。
+  const keepUserScroll = e => {
+    if (e.type === 'keydown' && (!['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(e.key) || e.target.closest?.('input,textarea,[contenteditable]'))) return
+    st.scrollIntent = true; st.ready = true
+    st.restoreSizes?.disconnect()
+    st.restoreCard = null
+  }
+  for (const type of ['wheel','touchstart','keydown']) addEventListener(type, keepUserScroll, { passive: true })
+  onPageLeave(() => { for (const type of ['wheel','touchstart','keydown']) removeEventListener(type, keepUserScroll) })
   let head
   if (base.author) {
     head = pageHead('@' + st.author, '发过的图', h('button', { class: 'btn btn-ghost sm', type:'button', onclick:e=>userCard(st.author,e.currentTarget) }, '作者资料'))
@@ -2994,13 +3268,36 @@ async function renderWall(base) {
       h('span', { class: 'grow' }),
       h('button', { class:'tool-btn',type:'button','aria-label':'筛选发图人',onclick:e=>authorPicker(st,e.currentTarget) },icon('users','i tiny'),h('span',{class:'lbl'},'发图人')),
       filterBtn,
-      !st.series && h('a', { class: 'tool-btn', href: '/series', 'data-link': '' }, icon('apps', 'i tiny'), h('span', { class: 'lbl' }, '全部图集'))),
+      S.me && !st.series && h('a', { class: 'tool-btn', href: '/series', 'data-link': '' }, icon('apps', 'i tiny'), h('span', { class: 'lbl' }, '全部图集'))),
     (conds.length > 0 || st.author) && h('div', { class: 'conds' }, authorChips(st), conds),
     tagsRow,
     notice, hzDates, days, !st.hz && sentinel,
     st.hz && [
       h('button', { class: 'hz-nav prev', type: 'button', 'aria-label': '上一帖', onclick: () => hzStep(-1) }, icon('chevL')),
       h('button', { class: 'hz-nav next', type: 'button', 'aria-label': '下一帖', onclick: () => hzStep(1) }, icon('chevR'))])
+  // 返回图廊后，旧图即使没有记录宽高，也不能在晚加载时推走阅读位置。
+  let restoreFrame = 0
+  const restoreSizes = new ResizeObserver(() => stabilizeRestore())
+  st.restoreSizes = restoreSizes
+  const stabilizeRestore = () => {
+    if (restoreFrame || S.wall !== st || st.scrollIntent || st.hz || !st.restoreCard?.isConnected) return
+    restoreFrame = requestAnimationFrame(() => {
+      restoreFrame = 0
+      if (S.wall !== st || st.scrollIntent || !st.restoreCard?.isConnected) return
+      const delta = st.restoreCard.getBoundingClientRect().top - st.restore.top
+      if (Math.abs(delta) > 1) scrollTo(0, scrollY + delta)
+    })
+  }
+  const mediaSettled = e => { if (e.target instanceof HTMLImageElement) stabilizeRestore() }
+  wrap.addEventListener('load', mediaSettled, true)
+  wrap.addEventListener('error', mediaSettled, true)
+  onPageLeave(() => {
+    cancelAnimationFrame(restoreFrame)
+    restoreSizes.disconnect()
+    st.restoreSizes = null
+    wrap.removeEventListener('load', mediaSettled, true)
+    wrap.removeEventListener('error', mediaSettled, true)
+  })
   if (st.hz) {
     days.append(sentinel)
     days.tabIndex = 0
@@ -3023,11 +3320,11 @@ async function renderWall(base) {
     const hzIO = new IntersectionObserver((es) => {
       for (const en of es) {
         const el = en.target
-        if (en.isIntersecting && en.intersectionRatio >= 0.6) {
+        if (en.isIntersecting && seenPostCoverage(el)) {
           if (!hzTimers.has(el)) hzTimers.set(el, setTimeout(() => {
             hzTimers.delete(el)
             const m = ITEMS.get(Number(el.dataset.id))
-            if (!m || (wantBlur(m) && el.querySelector('[data-blur].blur'))) return
+            if (!m || !el.isConnected || document.hidden || !seenPostCoverage(el) || !seenMediaReady(el) || (wantBlur(m) && el.querySelector('[data-blur].blur'))) return
             hzIO.unobserve(el)
             markSeen(m)
           }, 800))
@@ -3037,7 +3334,7 @@ async function renderWall(base) {
         }
       }
     }, { root: days, threshold: [0, 0.6] })
-    st.hzSeen = (card) => { if (card.matches('.card[data-id]')) hzIO.observe(card) }
+    st.hzSeen = (card) => { if (card.matches('.card[data-id]')) { clearTimeout(hzTimers.get(card)); hzTimers.delete(card); hzIO.unobserve(card); hzIO.observe(card) } }
     onPageLeave(() => { hzIO.disconnect(); hzTimers.forEach((t) => clearTimeout(t)); hzTimers.clear() })
     // 标签条跟着横向位置高亮当天
     let raf = 0
@@ -3266,7 +3563,7 @@ function hzDayStep(st, dir) {
 }
 
 async function loadNextDay(st) {
-  if (st.loading || S.wall !== st || !st.dayList || st.di >= st.dayList.length) return
+  if (st.loading || S.wall !== st || !st.dayList || st.di >= st.dayList.length || (!st.hz && st.sections.some(sec => sec.failed))) return
   st.loading = true
   while (st.di < st.dayList.length && st.sections.some((s) => s.day === st.dayList[st.di].day)) st.di++
   if (st.di >= st.dayList.length) { st.loading = false; return }
@@ -3281,7 +3578,7 @@ async function loadNextDay(st) {
   } finally {
     st.loading = false
   }
-  if (S.wall !== st) return
+  if (S.wall !== st || sec.failed) return
   if (st.di >= st.dayList.length) st.sentinel.replaceChildren(h('div', { class: 'end' }, '— 到底了，起来走两步 —'))
   else if (!st.hzGoing && nearEnd(st)) loadNextDay(st)
 }
@@ -3299,12 +3596,15 @@ function daySection(st, d) {
   sec.top = h('div', { class: 'day-top' })
   sec.more = h('div', { class: 'day-more' })
   const setFold = (on) => {
+    const opening = sec.collapsed && !on
     sec.collapsed = on
     sec.el?.classList.toggle('collapsed', on)
     sec.tab?.classList.toggle('folded', on)
     toggle.setAttribute('aria-expanded', on ? 'false' : 'true')
     toggle.title = on ? '展开这一天' : '收起这一天' // 横向时只露一个小图标，靠 title 说明
     toggle.replaceChildren(on ? '展开' : '收起', icon('chevD', 'i tiny'))
+    // display:none 期间列高为零；恢复可测量后才按真实高度分配。
+    if (opening && !st.hz && grid.isConnected) sec.cols.build(wantCols())
   }
   sec.setFold = setFold
   const toggle = h('button', { class: 'day-toggle', type: 'button', onclick: () => {
@@ -3316,7 +3616,7 @@ function daySection(st, d) {
   sec.head = h('header', { class: 'day-head', id: 'd-' + d.day },
     h('strong', { class: 'day-date' }, lb.main),
     h('span', { class: 'day-week' }, lb.sub),
-    h('span', { class: 'day-n' }, st.unseen ? `${d.n} 张没看` : `${d.n} 张`),
+    h('span', { class: 'day-n' }, st.unseen ? `本次 ${d.n} 张` : `${d.n} 张`),
     (S.me || st.unseen) && sec.unseenLeft > 0 && h('span', { class: 'day-unseen' }, h('i', { class: 'dot' }), `${sec.unseenLeft} 未看`),
     h('span', { class: 'grow' }),
     toggle)
@@ -3329,6 +3629,9 @@ function daySection(st, d) {
 }
 
 async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
+  if (sec.busy || S.wall !== st) return false
+  const retrying = !!sec.failed
+  sec.busy = true
   sec.more.replaceChildren(h('div', { class: 'spinner' }))
   const p = listParams(st, { day: sec.day, limit: String(first ? DAY_FIRST : DAY_STEP), offset: String(sec.offset) })
   if (focus) p.set('focus', focus)
@@ -3336,7 +3639,7 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
     const bundled = first && !focus && sec.offset === 0 && st.firstPage?.day === sec.day ? st.firstPage : null
     if (bundled) st.firstPage = null
     const data = bundled || await browseApi('/memes?' + p, st)
-    if (S.wall !== st) return
+    if (S.wall !== st) return false
     if (!st.anchor && data.anchor) st.anchor = data.anchor
     if (focus && data.offset > 0) {
       sec.top.replaceChildren(h('a', { class: 'day-more-btn', href: wallHref(sec.day), 'data-link': '' },
@@ -3351,10 +3654,12 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
     }
     sec.offset = data.offset + data.items.length
     sec.loaded = true
+    sec.failed = false
     let firstVisibleCard = first && st.sections[0] === sec && !st.hz && !sec.collapsed && sec.offset === data.items.length
     const newCards = []
     for (const m of data.items) {
-      if (st.ids.has(m.id) || (st.unseen && !S.me && st.seenSnap.has(m.id))) continue
+      // 分页快照可能包含快照之后看过的图；保留原始offset，但不重复呈现已读。
+      if (st.ids.has(m.id) || (st.unseen && (isSeen(m) || (!S.me && st.seenSnap.has(m.id))))) continue
       st.ids.add(m.id)
       const card = wallCard(m, { stack: st.hz, priority: firstVisibleCard && m.kind !== 'text' })
       if (m.kind !== 'text') firstVisibleCard = false
@@ -3364,13 +3669,19 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
       if (m.id === focus && st.restore) {
         const top = st.restore.top
         requestAnimationFrame(() => {
+          if (S.wall !== st || st.scrollIntent || !card.isConnected) return
           if (st.hz) card.scrollIntoView({ inline: 'start', block: 'nearest' })
-          else scrollTo(0, scrollY + card.getBoundingClientRect().top - top)
+          else {
+            scrollTo(0, scrollY + card.getBoundingClientRect().top - top)
+            st.restoreCard = card
+            st.restoreSizes?.observe(st.days)
+            if (card.parentElement) st.restoreSizes?.observe(card.parentElement)
+          }
           setTimeout(() => { st.ready = true }, 300)
         })
       } else if (m.id === focus) {
         card.classList.add('focused')
-        setTimeout(() => card.scrollIntoView({ block: st.hz ? 'nearest' : 'center', inline: 'start', behavior: 'smooth' }), 300)
+        setTimeout(() => { if (S.wall === st && !st.scrollIntent && card.isConnected) card.scrollIntoView({ block: st.hz ? 'nearest' : 'center', inline: 'start', behavior: 'smooth' }) }, 300)
       }
     }
     sec.cols.addMany(newCards)
@@ -3379,10 +3690,20 @@ async function loadDayChunk(st, sec, { first = false, focus = 0 } = {}) {
       ? h('button', { class: 'day-more-btn', type: 'button', onclick: () => loadDayChunk(st, sec) },
         `这天还有 ${left} 张`, h('span', { class: 'muted' }, ` · 再看 ${Math.min(DAY_STEP, left)} 张`), icon('chevD', 'i tiny'))
       : '')
+    return true
   } catch (e) {
+    if (S.wall !== st) return false
+    sec.failed = true
     sec.more.replaceChildren(h('button', { class: 'btn-text', onclick: () => st.hz && first
       ? hzGoDay(st, st.dayList.findIndex((d) => d.day === sec.day))
       : loadDayChunk(st, sec, { first, focus }) }, e.message + ' · 重试'))
+    return false
+  } finally {
+    sec.busy = false
+    if (retrying && !sec.failed && !st.hz && S.wall === st) {
+      if (st.di >= st.dayList.length && !st.sections.some(s => s.failed)) st.sentinel.replaceChildren(h('div', { class: 'end' }, '— 到底了，起来走两步 —'))
+      else if (nearEnd(st)) loadNextDay(st)
+    }
   }
 }
 
@@ -3493,8 +3814,8 @@ async function loadMore(st, { retry = false } = {}) {
     }
     const newCards = []
     for (const m of data.items) {
-      // 热门排序翻页时可能重复；游客的「只看未看」在本地过滤
-      if (st.ids.has(m.id) || (st.unseen && !S.me && st.seenSnap.has(m.id))) continue
+      // 已读响应、本地新读与当前列表重复项均不再渲染，分页仍按服务端快照推进。
+      if (st.ids.has(m.id) || (st.unseen && (isSeen(m) || (!S.me && st.seenSnap.has(m.id))))) continue
       st.ids.add(m.id)
       newCards.push(wallCard(m, { stack: st.hz }))
     }
@@ -3519,6 +3840,10 @@ async function loadMore(st, { retry = false } = {}) {
 
 const SERIES_SORT = [['last', '最近更新'], ['first', '最早一期'], ['n', '图最多'], ['likes', '最受欢迎']]
 async function renderSeries() {
+  if (!S.me) {
+    main.replaceChildren(emptyState('图集需要登录', '登录后可查看完整图集', h('a', { class: 'btn btn-primary sm', href: loginHref() }, '登录查看')))
+    return
+  }
   const params = new URLSearchParams(location.search)
   const st = { author:params.get('author') || '',tag:params.get('tag') || '',q:params.get('q') || '',text:params.get('text') || '',unseen:params.get('unseen') === '1',seenSnap:new Set(SEEN.local) }
   st.setParam = (k,v) => {
@@ -3648,11 +3973,15 @@ function roadMedia(media) {
 const ROAD_KIND = { feature: ['需求', 'rocket'], bug: ['Bug', 'search'], idea: ['改进意见', 'pen'] }
 const ROAD_ST = { open: '待评估', planned: '计划中', doing: '进行中', done: '已上线', declined: '暂不做' }
 async function renderRoad() {
+  if (!S.me) {
+    main.replaceChildren(emptyState('鞭打需要登录', '登录后可查看需求和反馈', h('a', { class: 'btn btn-primary sm', href: loginHref() }, '登录查看')))
+    return
+  }
   const p = new URLSearchParams(location.search)
-  const st = { kind: p.get('kind') || '', status: p.get('status') || '', sort: p.get('sort') === 'new' ? 'new' : 'hot', item: p.get('item') || '' }
+  const st = { kind: p.get('kind') || '', status: p.get('status') || '', sort: ['new','hot'].includes(p.get('sort')) ? p.get('sort') : 'waiting', item: p.get('item') || '' }
   const list = loadingBox()
   const setQ = () => {
-    const q = new URLSearchParams(Object.entries(st).filter(([k, v]) => v && !(k === 'sort' && v === 'hot')))
+    const q = new URLSearchParams(Object.entries(st).filter(([k, v]) => v && !(k === 'sort' && v === 'waiting')))
     history.replaceState(history.state, '', '/road' + (q.toString() ? '?' + q : ''))
     S.bgKey = location.pathname + location.search
   }
@@ -3663,7 +3992,7 @@ async function renderRoad() {
   const bar = () => filters.replaceChildren(
     seg('kind', [['', '全部'], ...Object.entries(ROAD_KIND).map(([k, [l]]) => [k, l])], '类型'),
     seg('status', [['', '全部状态'], ...Object.entries(ROAD_ST)], '状态'),
-    seg('sort', [['hot', '票多的'], ['new', '新提的']], '排序'))
+    seg('sort', [['waiting', '久未处理'], ['new', '最新提出'], ['hot', '票多优先']], '排序'))
   bar()
   const openForm = () => { if (requireLogin('提需求')) roadForm(load) }
   const backfillStatus = h('span', { class: 'muted sm', role: 'status', 'aria-live': 'polite' })
@@ -3682,7 +4011,7 @@ async function renderRoad() {
     } catch (e) { backfillStatus.textContent = e.message + '；再次点击可从已完成位置继续' }
     finally { backfill.disabled = false }
   } }, '回填历史反馈')
-  main.replaceChildren(...nodes(pageHead('鞭打模块', '想要什么功能、遇到什么 Bug、哪里用着别扭，都来鞭打站长；可以附截图和文件，大家投票，票多的先做',
+  main.replaceChildren(...nodes(pageHead('鞭打模块', '需求与问题反馈；未完成的优先显示，已上线和不处理的排在后面。支持按等待时间、最新提出或票数排序。',
     h('button', { class: 'btn btn-primary sm', type: 'button', onclick: openForm }, icon('plus', 'i tiny'), '提一条')), filters,
     st.item && h('div', { class: 'notice-bar' }, `正在查看鞭打 #${st.item}`, h('a', { class: 'btn-text', href: '/road', 'data-link': '' }, '查看全部')),
     backfill && h('div', { class: 'road-backfill-bar' }, backfill, backfillStatus), list))
@@ -3838,14 +4167,19 @@ async function renderMe() {
   const st = { tab, q: p.get('q') || '', sort: p.get('sort') === 'old' ? 'old' : 'new', folder: Number(p.get('folder')) || 0, page: 0, more: true }
   S.meSt = st
   const u = S.me
+  const section=p.get('section')==='account'?'account':p.get('section')==='admin'&&(u.can_manage_ai||u.is_admin)?'admin':'content'
+  if(p.has('section')&&section==='content'){
+    p.delete('section')
+    history.replaceState(history.state,'','/me'+(p.toString()?'?'+p:''))
+  }
   const setQ = (obj) => {
     const q = new URLSearchParams(location.search)
     for (const [k, v] of Object.entries(obj)) v ? q.set(k, v) : q.delete(k)
     navigate('/me' + (q.toString() ? '?' + q : ''), { replace: true })
   }
 
-  const tabs = h('nav', { class: 'me-tabs' }, TABS.map(([k, label]) =>
-    h('a', { class: 'me-tab' + (k === tab ? ' on' : ''), href: k === 'fav' ? '/me' : `/me?tab=${k}`, 'data-link': '', 'data-tab': k },
+  const tabs = h('nav', { class: 'me-tabs', 'aria-label':'我的内容分类' }, TABS.map(([k, label]) =>
+    h('a', { class: 'me-tab' + (k === tab ? ' on' : ''), href: k === 'fav' ? '/me' : `/me?tab=${k}`, 'data-link': '', 'data-tab': k, 'aria-current':k===tab?'page':null },
       label, h('span', { class: 'n' }))))
   api('/me/stats').then((s) => tabs.querySelectorAll('[data-tab]').forEach((a) => { a.lastChild.textContent = fmtN(s[a.dataset.tab]) })).catch(() => {})
 
@@ -3883,31 +4217,48 @@ async function renderMe() {
   st.list = h('div', { class: 'me-list' })
   st.moreBtn = h('button', { class: 'btn btn-ghost block', hidden: true, onclick: () => loadMe(st) }, '加载更多')
   st.totalEl = h('span', { class: 'muted' })
-  main.replaceChildren(h('div', { class: 'me-page' },
-    h('section', { class: 'me-head' },
-      avatar(u.avatar, u.username, 60),
-      h('div', { class: 'me-who' }, h('h1', null, u.name || u.username), h('span', { class: 'muted' }, `@${u.username} · TL${u.trust_level}`),
-        u.bio && h('span', { class: 'me-bio' }, u.bio),
-        S.limits?.length ? h('span', { class: 'me-limits' }, '你当前被限制：', ...S.limits.map((l) =>
-          h('span', { class: 'badge danger' }, `${LIMIT_KINDS.find((k) => k[0] === l.kind)?.[1] || l.kind} ${untilText(l.until)}${l.reason ? `（${l.reason}）` : ''}`))) : null),
-      h('span', { class: 'grow' }),
-      u.linuxdo_username && h('a', { class: 'btn btn-ghost sm', href: `https://linux.do/u/${encodeURIComponent(u.linuxdo_username)}`, target: '_blank', rel: 'noopener' }, 'linux.do 主页', icon('ext', 'i tiny')),
-      h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: meSettings }, icon('gear', 'i tiny'), '设置'),
-      h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { location.href = '/me/invites' } }, icon('users', 'i tiny'), '邀请好友'),
-      h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { location.href = '/me/account' } }, icon('gear', 'i tiny'), '账号安全'),
-      h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: e => redpackDialog(e.currentTarget,{accountOnly:true}) }, icon('redpack','i tiny'), 'LDC 应用与记录'),
-      S.me?.owner && h('a', { class: 'btn btn-ghost sm', href: '/admin/ai' }, icon('gear', 'i tiny'), 'AI 接入与设置'),
-      S.me?.is_admin ? h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: noticeAdmin }, icon('bell', 'i tiny'), '公告设置') : null,
-      S.me?.is_admin ? h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => memberAdmin() }, icon('users', 'i tiny'), '成员管理') : null,
-      h('button', { class: 'btn btn-ghost sm', onclick: async () => { await api('/auth/logout', { method: 'POST' }); location.href = '/' } }, icon('logout', 'i tiny'), '退出')),
-    tabs,
-    h('div', { class: 'me-tools' }, h('h2', null, TABS.find(([k]) => k === tab)[1], ' ', st.totalEl), h('span', { class: 'grow' }), sf, sortSel),
-    folderRow,
-    st.list, st.moreBtn))
-  await getFolders().catch(() => {})
-  if (S.meSt !== st) return
-  if (folderRow) drawFolders().catch(() => {})
-  loadMe(st)
+  st.feedback=h('p',{class:'me-feedback muted',role:'status',hidden:true})
+  const startContent=async()=>{
+    if(st.started)return
+    st.started=true
+    await getFolders().catch(()=>{})
+    if(S.meSt!==st)return
+    if(folderRow)drawFolders().catch(e=>{folderRow.replaceChildren(h('span',{class:'muted'},e.message),h('button',{class:'btn-text',type:'button',onclick:()=>{st.started=false;startContent()}},'重试收藏夹'))})
+    loadMe(st)
+  }
+  const entry=(label,description,ic,action)=>h(action.href?'a':'button',{
+    class:'me-service',...(action.href?{href:action.href,...(action.external?{target:'_blank',rel:'noopener'}:{})}:{type:'button',onclick:action.onclick})
+  },icon(ic),h('span',null,h('strong',null,label),h('small',null,description)),icon(action.external?'ext':'chevR','i tiny'))
+  const services=h('div',{class:'me-service-list'},
+    entry('账号安全','登录方式、绑定账号与安全设置','lock',{href:'/me/account'}),
+    entry('个人猜词 AI','模型、密钥与猜词专用提示词','sparkle',{href:'https://cc.52dmeme.com/me/ai',external:true}),
+    entry('LDC 应用与记录','应用连接、余额与发放记录','redpack',{onclick:e=>redpackDialog(e.currentTarget,{accountOnly:true})}),
+    entry('邀请好友','邀请链接、邀请记录与奖励','users',{href:'/me/invites'}),
+    u.linuxdo_username&&entry('linux.do 主页','已绑定 @'+u.linuxdo_username,'ext',{href:`https://linux.do/u/${encodeURIComponent(u.linuxdo_username)}/activity`,external:true}),
+    entry('个人设置','资料、外观、AI 小伙伴与消息偏好','gear',{onclick:()=>meSettings()}))
+  const administration=h('div',{class:'me-service-list'},
+    u.can_manage_ai&&entry('AI 接入与设置','独立连接、用途分配、思考与流式设置','sparkle',{href:'/admin/ai'}),
+    u.is_admin&&entry('公告设置','发布与维护站点公告','bell',{onclick:noticeAdmin}),
+    u.is_admin&&entry('成员管理','查找用户、角色与访问限制','users',{onclick:()=>memberAdmin()}))
+  const logout=h('button',{class:'btn btn-ghost me-logout',type:'button',onclick:async e=>{
+    const button=e.currentTarget;button.disabled=true
+    try{await api('/auth/logout',{method:'POST'});location.href='/'}catch(err){button.disabled=false;toast(err.message,'err')}
+  }},icon('logout','i tiny'),'退出登录')
+  const categories=settingsSections({h,label:'个人中心分类',initial:section,onSelect:key=>{
+    const query=new URLSearchParams(location.search);key==='content'?query.delete('section'):query.set('section',key)
+    history.replaceState(history.state,'','/me'+(query.toString()?'?'+query:''))
+    if(key==='content')startContent()
+  },sections:[
+    {id:'content',label:'我的内容',keywords:'收藏 喜欢 回应 评论 发布 最近 看过 搜索 收藏夹',nodes:[tabs,h('div',{class:'me-tools'},h('h2',null,TABS.find(([k])=>k===tab)[1],' ',st.totalEl),h('span',{class:'grow'}),sf,sortSel),folderRow,st.feedback,st.list,st.moreBtn]},
+    {id:'account',label:'账号与服务',keywords:'安全 登录 绑定 LDC 应用 余额 记录 邀请 设置 外观 退出',nodes:[services,h('div',{class:'me-session'},h('span',{class:'muted sm'},'当前登录：@'+u.username),logout)]},
+    {id:'admin',label:'管理工具',keywords:'AI 接入 模型 参数 公告 成员 用户 权限 限制',available:()=>!!(u.can_manage_ai||u.is_admin),nodes:[administration]},
+  ]})
+  main.replaceChildren(h('div',{class:'me-page me-hub'},
+    h('section',{class:'me-head'},avatar(u.avatar,u.username,60),
+      h('div',{class:'me-who'},h('h1',null,u.name||u.username),h('span',{class:'muted'},`@${u.username} · TL${u.trust_level}`),u.bio&&h('span',{class:'me-bio'},u.bio),
+        S.limits?.length?h('span',{class:'me-limits'},'你当前被限制：',...S.limits.map(l=>h('span',{class:'badge danger'},`${LIMIT_KINDS.find(k=>k[0]===l.kind)?.[1]||l.kind} ${untilText(l.until)}${l.reason?`（${l.reason}）`:''}`))):null),
+      h('div',{class:'me-quick'},h('button',{class:'btn btn-ghost sm',type:'button',onclick:()=>meSettings('profile')},icon('gear','i tiny'),'编辑资料'),h('button',{class:'btn btn-ghost sm',type:'button',onclick:()=>meSettings('deco')},icon('sparkle','i tiny'),'我的装扮'),h('button',{class:'btn btn-ghost sm',type:'button',onclick:e=>instantCardDialog(e.currentTarget)},icon('raffle','i tiny'),'抽卡'))),categories.element))
+  if(section==='content')startContent()
 }
 
 async function loadMe(st) {
@@ -3915,6 +4266,7 @@ async function loadMe(st) {
   st.loading = true
   st.moreBtn.disabled = true
   st.moreBtn.textContent = '加载中…'
+  st.failed=false;st.feedback.hidden=false;st.feedback.textContent='正在读取内容…'
   try {
     const p = new URLSearchParams({ tab: st.tab, page: String(st.page + 1) })
     if (st.q) p.set('q', st.q)
@@ -3922,19 +4274,21 @@ async function loadMe(st) {
     if (st.folder) p.set('folder', st.folder)
     const data = await api('/me/items?' + p)
     if (S.meSt !== st) return
+    const rendered=data.items.map(meRow)
+    st.feedback.hidden=true
     st.page++
     st.more = data.more
     st.totalEl.textContent = data.total
-    for (const it of data.items) st.list.append(meRow(it))
+    st.list.append(...rendered)
     if (st.page === 1 && !data.items.length) st.list.append(st.q ? emptyState(TAB_EMPTY[st.tab], '换个关键词试试', h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => navigate('/me' + (st.tab === 'fav' ? '' : '?tab=' + st.tab)) }, '清除搜索'))
       : emptyState(TAB_EMPTY[st.tab], null, goHomeBtn()))
   } catch (e) {
-    toast(e.message, 'err')
+    st.failed=true;st.feedback.hidden=false;st.feedback.textContent=e.message
   } finally {
     st.loading = false
     st.moreBtn.hidden = !st.more
     st.moreBtn.disabled = false
-    st.moreBtn.textContent = '加载更多'
+    st.moreBtn.textContent = st.failed?'重试加载':'加载更多'
   }
 }
 
@@ -4157,13 +4511,14 @@ function meRow(raw) {
       undoBtn = undo('取消喜欢', async () => !x.liked || toggleLike(x))
     }
     const href = memeHref(x) + (a.kind === 'comment' ? '#comments' : a.kind === 'reply' ? '#replies' : '')
+    const author=x.author_nick||x.author_name||'佚名'
     row.classList.toggle('undone', undone)
     row.replaceChildren(
-      h('a', { ...thumbBlur('me-thumb', x.sensitive ?? x.spoiler), href, 'data-link': '' }, memeImg(x.thumb || x.image, { loading: 'lazy' }),
+      h('a', { ...thumbBlur('me-thumb', x.sensitive ?? x.spoiler), href, 'data-link': '', 'aria-label':'查看'+(x.title||'帖子') }, x.thumb||x.image?memeImg(x.thumb || x.image, { loading: 'lazy' }):h('span',{class:'me-text-thumb'},icon(x.kind==='text'?'quote':'image'),x.kind==='text'?'文字':'内容'),
         x.image_count > 1 && h('span', { class: 'n' }, x.image_count)),
       h('div', { class: 'me-main' },
         h('a', { class: 'me-title', href, 'data-link': '' }, x.title || x.text || '无题'),
-        h('div', { class: 'me-meta muted' }, avatar(x.author_avatar, x.author_name, 18), x.author_name || '佚名', ' · 发布于 ', fmtTime(x.created_at)),
+        h('div', { class: 'me-meta muted' }, avatar(x.author_avatar, author, 18), author, ' · 发布于 ', fmtTime(x.created_at)),
         h('div', { class: 'me-act' }, chip,
           h('span', { class: 'muted' }, undone ? '已撤回' : `${ACT_VERB[a.kind]} ${fmtTime(a.at)}`),
           !undone && undoBtn && [h('span', { class: 'sep' }, '·'), undoBtn])),
@@ -4460,7 +4815,7 @@ const CIPHER_NAME = { shou: '兽音译者', fo: '与佛论禅', emoji: 'emoji �
   rail: '栅栏密码', vigenere: '维吉尼亚', aes: 'AES', zwsp: '隐形字', stego: '图片藏字',
   base58: 'Base58', base62: 'Base62', base85: 'Ascii85', decimal: '十进制码点', html: 'HTML 实体', rot47: 'ROT47', affine: '仿射密码',
   bacon: '培根密码', polybius: '棋盘密码', qwerty: '键盘密码', autokey: '自动密钥', rc4: 'RC4', xor: 'XOR 异或' }
-const loadCipher = () => import('/cipher.js?v=8acbc94b')
+const loadCipher = () => import('/cipher.js?v=98ddcc7d')
 
 function rewardView(pz, label) {
   const isLink = pz.reward_type === 'link'
@@ -4922,6 +5277,7 @@ function imageMenu(m, i, e) {
     item('放大看图', 'search', () => openViewer(m, i)),
     item('全屏看图', 'image', () => { openViewer(m, i); S.viewer?.root.requestFullscreen?.().catch(() => {}) }),
     item('新标签页打开原图', 'ext', () => open(url, '_blank', 'noopener')),
+    im.k !== 'v' && !im.v && item(/\.gif(?:\?|$)/i.test(url) ? '复制图片（静态）' : '复制原图', 'copy', () => copyImage(url, doc)),
     item('复制图片链接', 'copy', () => copyText(new URL(url, location.href).href)),
     !S.modal && item('查看详情', 'chat', () => navigate(memeHref(m)))))
 }
@@ -5096,6 +5452,7 @@ function openCompose(opts) {
   panel.addEventListener('paste', (e) => {
     const fs = [...(e.clipboardData?.files || [])]
     if (fs.length) { e.preventDefault(); tray.add(fs) }
+    else { const shared=e.clipboardData?.getData('text/plain')||''; if (socialLinks(shared).length && !withPuzzle && !tray.items.length && !title.value.trim() && !content.value.trim() && !tags.value().length) { e.preventDefault(); S.modal.guard=null; openShareCompose(shared) } }
   })
 
   const title = h('input', { class: 'input', maxlength: 80, placeholder: '标题 / 一句话配文（选填）' })
@@ -5192,11 +5549,58 @@ function composeKind(cur, dirty) {
     if (dirty() && !confirm('切换后这里填的内容会丢掉，确定吗？')) return
     S.modal.guard = null
     if (k === 'text') openTextCompose()
+    else if (k === 'share') openShareCompose()
     else openCompose()
   }
   return h('div', { class: 'segs compose-kind', role: 'tablist', 'aria-label': '帖子类型' },
-    [['image', '发图'], ['text', '发文字']].map(([k, label]) => h('button', { class: 'seg' + (k === cur ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': k === cur ? 'true' : 'false', onclick: () => go(k) }, label)))
+    [['image', '发图'], ['text', '发文字'], ['share', '分享链接']].map(([k, label]) => h('button', { class: 'seg' + (k === cur ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': k === cur ? 'true' : 'false', onclick: () => go(k) }, label)))
 }
+// 直接分享使用现有预览与帖子媒体接口，不上传媒体副本。
+function openShareCompose(initial = '') {
+  if (!requireLogin('发帖')) return
+  if (S.me.trust_level < S.minPostTL) return toast(`发帖需要 linux.do 信任等级 ≥ ${S.minPostTL}`, 'err')
+  const shell=openModalShell('compose-panel text-compose');S.modal.kind='compose'
+  if (!initial && S.shareDraft) { const d=S.shareDraft;S.shareDraft=null;shell.replaceChildren(d.el);S.modal.guard=d.guard;d.resume();d.focus();return }
+  const panel=h('div',{class:'compose-wrap'}), input=h('textarea',{class:'input',rows:3,maxlength:10000,placeholder:'粘贴分享链接或整段分享文案'}), status=h('p',{class:'muted sm',role:'status'})
+  const title=h('input',{class:'input',maxlength:80,placeholder:'标题（选填）'}),content=h('textarea',{class:'input',rows:5,maxlength:10000,placeholder:'读取后可编辑正文'}), preview=h('div',{class:'cm-social-media'}),tags=tagPicker(),spoiler=h('input',{type:'checkbox'})
+  let loaded='',loading=false,version=0,controller
+  const submit=h('button',{class:'btn btn-primary',disabled:true},'发布'),read=h('button',{type:'button',class:'btn'},'读取内容')
+  function invalidate(){version++;controller?.abort();loaded='';loading=false;submit.disabled=true;read.disabled=false;preview.replaceChildren();status.textContent='点击读取，确认内容后发布'}
+  input.addEventListener('input',invalidate)
+  async function load(){
+    const links=socialLinks(input.value)
+    if(links.length!==1){invalidate();status.textContent='请每次粘贴一条分享链接';return}
+    if(!canSocialPost(links[0].provider)){invalidate();status.textContent='该平台暂不支持转成帖子';return}
+    const raw=input.value,run=++version;controller?.abort();controller=new AbortController();loaded='';loading=true;submit.disabled=true;read.disabled=true;preview.replaceChildren();status.textContent='正在读取内容…'
+    try{
+      const data=await api('/social/preview?share='+encodeURIComponent(raw),{signal:controller.signal})
+      if(run!==version)return
+      if(!data.available)throw Error('暂未取得公开内容，请稍后重试')
+      loaded=raw;content.value=data.description||'';spoiler.checked=data.sensitive;status.textContent=data.embed?'内容已就绪，可补充配文后发布':'内容已读取，可编辑后发布'
+      if(data.embed&&!data.media?.length){const embed=officialPostContent(data.embed.url);if(embed)preview.append(embed)}
+      for(const it of data.media||[])preview.append(it.kind==='video'?h('video',{src:it.url,poster:it.poster,controls:true,playsinline:true,preload:'metadata',onerror:()=>{status.textContent='视频暂未加载，可重新读取后重试'}}):h('img',{src:it.url,alt:'分享图片',loading:'lazy',onerror:()=>{status.textContent='图片暂未加载，可重新读取后重试'}}))
+      submit.disabled=false
+    }catch(e){if(run===version&&e.name!=='AbortError')status.textContent=e.message}
+    finally{if(run===version){loading=false;read.disabled=false}}
+  }
+  read.onclick=load
+  input.addEventListener('paste',e=>{const raw=e.clipboardData?.getData('text/plain')||'';if(socialLinks(raw).length){e.preventDefault();input.value=raw;invalidate();load()}})
+  submit.onclick=async()=>{
+    if(loading||!loaded||loaded!==input.value)return
+    submit.disabled=true;read.disabled=true;input.disabled=true;submit.textContent='发布中…'
+    try{const r=await api('/memes',{method:'POST',body:{share_url:loaded,title:title.value,content:content.value,tags:tags.value(),spoiler:spoiler.checked}});closeModal(false);S.bgKey=null;S.wallFresh=true;toast(r.existed?'已发布，已打开原帖':'已发布','ok');navigate('/m/'+r.id)}
+    catch(e){status.textContent=e.message;submit.disabled=false;read.disabled=false;input.disabled=false;submit.textContent='发布'}
+  }
+  const guard=()=>input.value.trim()||title.value.trim()||content.value.trim()?{text:'这里有没发出去的分享内容，要保留草稿吗？',keep:()=>{S.shareDraft={el:panel,guard,resume:watchRemoval,focus:()=>focusEditorOnOpen(input,panel)}}}:null
+  panel.append(h('header',{class:'compose-head'},composeKind('share',()=>!!guard()),h('button',{class:'btn-icon','aria-label':'关闭',onclick:()=>requestClose()},icon('close'))),
+    h('div',{class:'compose-body text-body'},field('分享链接',input),h('div',{},read,status),field('标题',title),field('正文',content),preview,field('标签',tags.el),h('label',{class:'switch'},spoiler,h('span',{class:'switch-ui'}),h('span',{},'慎点'))),
+    h('footer',{class:'compose-foot'},h('span',{class:'grow'}),h('button',{class:'btn btn-ghost',onclick:()=>requestClose()},'取消'),submit))
+  function watchRemoval(){onRemoval(panel,()=>{preview.querySelectorAll('video').forEach(v=>v.pause());if(loading)invalidate()})}
+  watchRemoval()
+  shell.replaceChildren(panel);S.modal.guard=guard;focusEditorOnOpen(input,panel)
+  if(initial){input.value=initial;load()}
+}
+
 // 文字帖：标题 + 正文为主，可配几张图；在图廊里占满一整行
 function openTextCompose() {
   if (!requireLogin('发帖')) return
@@ -5226,6 +5630,7 @@ function openTextCompose() {
   panel.addEventListener('paste', (e) => {
     const fs = [...(e.clipboardData?.files || [])]
     if (fs.length) { e.preventDefault(); tray.add(fs) }
+    else { const shared=e.clipboardData?.getData('text/plain')||''; if (socialLinks(shared).length && !tray.items.length && !title.value.trim() && !content.value.trim() && !tags.value().length) { e.preventDefault(); S.modal.guard=null; openShareCompose(shared) } }
   })
   panel.addEventListener('dragover', (e) => { if (e.dataTransfer?.types?.includes('Files')) e.preventDefault() })
   panel.addEventListener('drop', (e) => { if (e.dataTransfer?.files?.length) { e.preventDefault(); tray.add(e.dataTransfer.files) } })
@@ -6704,11 +7109,13 @@ function bindMsgTools(doc) {
 bindMsgTools(document)
 
 // ---------- 群聊 ----------
-// 默认群「迷友」所有登录用户自动加入；建群、拉人只有管理员能做。打开的群 3 秒轮询一次，未读数 30 秒刷一次
-const CHAT = { groups: [], canManage: false, loaded: false, subs: new Set(), panes: new Set(), at: 0 }
+const CHAT_SUMMARY_URL = 'https://memechat-archive.lafish.workers.dev/'
+// 默认群自主申请，管理员审批后加入；建群、拉人只有管理员能做。打开的群 3 秒轮询一次，未读数 30 秒刷一次
+const CHAT = { groups: [], dmUnread: 0, canManage: false, loaded: false, subs: new Set(), panes: new Set(), at: 0 }
 const onChat = (fn) => { CHAT.subs.add(fn); return () => CHAT.subs.delete(fn) }
 // 免打扰的群只算 @ 我的
-const chatUnread = () => CHAT.groups.reduce((a, g) => a + (g.muted ? (g.at_me || 0) : (g.unread || 0)), 0)
+const groupUnread = () => CHAT.groups.reduce((a, g) => a + (g.muted ? (g.at_me || 0) : (g.unread || 0)), 0)
+const chatUnread = () => groupUnread() + CHAT.dmUnread
 const findGroup = (id) => CHAT.groups.find((g) => g.id === id)
 const findGone = (id) => (CHAT.gone || []).find((g) => g.id === id)
 // 只保存消息编号与视口偏移，不缓存聊天正文；同一浏览器按账号、群隔离。
@@ -6731,18 +7138,21 @@ const CHAT_POS = {
 function goneView(x, { onBack } = {}) {
   const box = h('div', { class: 'chat-gone' })
   const draw = () => {
-    const left = x.kind === 'left'
+    const left = x.kind === 'left', fresh=x.kind==='new'
+    const acknowledge=h('input',{type:'checkbox','aria-label':'已成年并了解群聊内容提示'})
     box.replaceChildren(...nodes(
       h('div', { class: 'cg-mark' + (left ? ' left' : '') }, icon(left ? 'logout' : 'lock')),
-      h('h2', null, left ? '你已自行退出群聊，请保持看图的纯粹' : '群聊已临时关闭'),
-      h('p', { class: 'muted' }, left ? '想回来聊天，可以申请，群管理同意后就能回来。看图不受影响。' : '暂时看不到群消息。看图、发图都不受影响。'),
+      h('h2', null, fresh ? x.name+' · 全站群聊' : left ? '你已退出群聊' : '群聊已临时关闭'),
+      h('p', { class: 'muted' }, '群聊为自愿加入。群内可能包含没品、变态、地狱笑话及 18 禁内容，请按自身接受程度选择。申请通过前不会展示群消息。'),
+      x.req!==0&&!findGroup(x.id)&&h('label',{class:'set-check'},acknowledge,'我已成年，已了解上述内容提示并自愿申请加入'),
       findGroup(x.id) ? h('button', { class: 'btn btn-primary', type: 'button', onclick: () => openGroup(x.id) }, '你已经回到群里，进去看看')
         : x.req === 0 ? h('button', { class: 'btn btn-ghost', type: 'button', disabled: true }, '已申请，等管理员处理')
           : h('button', { class: 'btn btn-primary', type: 'button', onclick: async (e) => {
             const b = e.currentTarget
             b.disabled = true
             try {
-              await api(`/chat/groups/${x.id}/join-req`, { method: 'POST' })
+              if(!acknowledge.checked)throw Error('请先勾选成年及内容知悉确认')
+              await api(`/chat/groups/${x.id}/join-req`, { method: 'POST',body:{adult_content_ack:true} })
               x.req = 0
               toast('已申请，管理员会收到提醒', 'ok')
               draw()
@@ -6758,26 +7168,60 @@ function goneView(x, { onBack } = {}) {
   const off = onChat(() => { if (!box.isConnected) return off(); const y = findGone(x.id); if (y) Object.assign(x, y); draw() })
   return box
 }
-const goneAsGroup = (x) => ({ id: x.id, name: x.kind === 'left' ? x.name : '群聊', gone: x, members: 0, latest: null, unread: 0 })
+const goneAsGroup = (x) => ({ id: x.id, name: x.kind === 'left'||x.kind==='new' ? x.name : '群聊', gone: x, members: 0, latest: null, unread: 0 })
+const chatPollRequests = new Map()
+async function loadChatPoll(path) {
+  const userId = S.me?.id
+  if (!userId) throw new Error('请先登录')
+  const key = `${userId}:${path}`
+  let pending = chatPollRequests.get(key)
+  if (!pending) {
+    // 仅共享同账号、完整游标相同的进行中轮询；完成或失败后立即清理。
+    pending = api(path).finally(() => {
+      if (chatPollRequests.get(key) === pending) chatPollRequests.delete(key)
+    })
+    chatPollRequests.set(key, pending)
+  }
+  const data = await pending
+  if (S.me?.id !== userId) throw new Error('登录账号已切换')
+  // 各窗口继续独立维护消息、游标和阅读位置，不能共用可变响应对象。
+  return structuredClone(data)
+}
 let groupsRequestSeq = 0, groupsAppliedSeq = 0
-async function loadGroups() {
+let groupsInFlight = null, groupsRetryAt = 0, groupsRetryUser = null, groupsAppliedUser = null
+async function loadGroups({ background = false } = {}) {
   const userId = S.me?.id
   if (!userId) return CHAT.groups
+  // 主页面和小窗共享后台刷新。主动操作仍发新请求，以取得操作完成后的状态。
+  if (background) {
+    if (groupsInFlight?.userId === userId) return groupsInFlight.promise
+    if ((groupsRetryUser === userId && Date.now() < groupsRetryAt) || (groupsAppliedUser === userId && Date.now() - CHAT.at <= 30000)) return CHAT.groups
+  }
   const seq = ++groupsRequestSeq
-  try {
-    const d = await api('/chat/groups')
-    // 后发的成功请求若先返回，不能再让旧快照覆盖群名、未读数和成员状态。
-    if (S.me?.id !== userId || seq < groupsAppliedSeq) return CHAT.groups
-    groupsAppliedSeq = seq
-    Object.assign(CHAT, { groups: d.groups, gone: d.gone || [], canManage: d.can_manage, canCreate: !!d.can_create, loaded: true, at: Date.now() })
-  } catch {}
-  if (S.me?.id === userId && seq === groupsAppliedSeq) CHAT.subs.forEach((fn) => fn())
-  return CHAT.groups
+  const promise = (async () => {
+    try {
+      const d = await api('/chat/groups')
+      // 后发的成功请求若先返回，不能再让旧快照覆盖群名、未读数和成员状态。
+      if (S.me?.id !== userId || seq < groupsAppliedSeq) return CHAT.groups
+      groupsAppliedSeq = seq
+      groupsAppliedUser = userId
+      groupsRetryAt = 0
+      Object.assign(CHAT, { groups: d.groups, dmUnread: Math.max(0, Number(d.dm_unread)||0), gone: d.gone || [], canManage: d.can_manage, canCreate: !!d.can_create, loaded: true, at: Date.now() })
+    } catch {
+      // 失败不更新业务快照；仅合并自动重试，手动刷新和群成员操作不受此限制。
+      if (S.me?.id === userId && seq >= groupsAppliedSeq) { groupsRetryUser = userId; groupsRetryAt = Date.now() + 30000 }
+    }
+    if (S.me?.id === userId && seq === groupsAppliedSeq) CHAT.subs.forEach((fn) => fn())
+    return CHAT.groups
+  })()
+  groupsInFlight = { userId, promise }
+  try { return await promise }
+  finally { if (groupsInFlight?.promise === promise) groupsInFlight = null }
 }
 setInterval(() => {
   if (!S.me || document.hidden) return
   CHAT.panes.forEach((p) => { if (!p.st.ownPoll) p.poll() })
-  if (Date.now() - CHAT.at > 30000) loadGroups()
+  if (Date.now() - CHAT.at > 30000) loadGroups({ background: true })
 }, 3000)
 document.addEventListener('visibilitychange', () => {
   if (document.hidden || !S.me) return
@@ -6788,12 +7232,16 @@ function syncChatBadges() {
   const n = chatUnread()
   syncTab()
   document.querySelectorAll('[data-chat-badge]').forEach((el) => { el.textContent = n > 99 ? '99+' : n; el.hidden = !n })
+  document.querySelectorAll('[data-dm-badge]').forEach(el => { el.textContent = CHAT.dmUnread > 99 ? '99+' : CHAT.dmUnread; el.hidden = !CHAT.dmUnread })
+  document.querySelectorAll('[data-group-badge]').forEach(el => { const count=groupUnread(); el.textContent=count>99?'99+':count; el.hidden=!count })
+  document.querySelectorAll('[data-conversation-kind]').forEach(el => { const dm=el.dataset.conversationKind==='dm',count=dm?CHAT.dmUnread:groupUnread();el.setAttribute('aria-label',(dm?'私信':'群聊')+(count?`，${count>99?'99+':count} 条未读`:'')) })
   document.querySelectorAll('.mobile-nav [data-nav="chat"]').forEach(el => el.setAttribute('aria-label', n ? `群聊，${n > 99 ? '99+' : n} 条未读` : '群聊'))
   const title = document.getElementById('mobile-page-title')
   if (title) title.setAttribute('aria-label', `切换页面，当前${title.firstChild?.textContent || ''}${n ? `，群聊 ${n > 99 ? '99+' : n} 条未读` : ''}`)
 }
 onChat(syncChatBadges)
 const chatBadge = (cls = 'chat-badge') => { const n = chatUnread(); return h('i', { class: cls, 'data-chat-badge': '', hidden: !n }, n > 99 ? '99+' : n) }
+const dmBadge = () => h('i', {class:'chat-badge', 'data-dm-badge':'', hidden:!CHAT.dmUnread}, CHAT.dmUnread>99?'99+':CHAT.dmUnread)
 
 // 正文：[quote="名字, msg:id"]…[/quote] 引用块 + 折叠 / 遮挡 / 链接 / 表情；站内图片链接下面附一张预览卡
 const QUOTE_RE = /\[quote(?:="([^"]*)")?\]([\s\S]*?)\[\/quote\]/g
@@ -6947,12 +7395,12 @@ const chatImg = (msg) => ({ id: -msg.id, image: msg.image, images: [{ u: msg.ima
 // 图片 / GIF / 视频 / 实况（iPhone 导出的同名 JPG + MOV），单个 20MB，一次最多 12 个
 const MAX_FILES = 12
 const MAX_FILE = 20 * 1024 * 1024
-const ACCEPT = 'image/png,image/jpeg,image/gif,image/webp,video/mp4,video/quicktime,video/webm'
+const ACCEPT = 'image/png,image/apng,image/jpeg,image/gif,image/webp,video/mp4,video/quicktime,video/webm'
 const isVid = (f) => /^video\//.test(f.type) || /\.(mov|mp4|webm)$/i.test(f.name || '')
-const isJpg = (f) => /^image\/(jpeg|jpg|pjpeg)$/i.test(f.type) || (!/^image\/(png|gif|webp)$/.test(f.type) && /\.jpe?g$/i.test(f.name || ''))
+const isJpg = (f) => /^image\/(jpeg|jpg|pjpeg)$/i.test(f.type) || (!/^image\/(png|apng|gif|webp)$/.test(f.type) && /\.jpe?g$/i.test(f.name || ''))
 function checkFile(f) {
   if (/heic|heif/i.test(f.type) || /\.(heic|heif)$/i.test(f.name || '')) return 'HEIC 浏览器看不了：iPhone 可在 设置 → 相机 → 格式 选「兼容性最佳」，或先转成 JPG'
-  if (!/^image\/(png|gif|webp)$/.test(f.type) && !isJpg(f) && !isVid(f)) return `「${f.name || '文件'}」格式不支持`
+  if (!/^image\/(png|apng|gif|webp)$/.test(f.type) && !isJpg(f) && !isVid(f)) return `「${f.name || '文件'}」格式不支持`
   // 动态照片是 JPG + 视频，放宽到 40MB，切开后各自再按 20MB 算；普通大图会先压缩，原图大一点也收
   if (f.size > (isJpg(f) ? MAX_FILE * 2 : /^image\/(png|webp)$/.test(f.type) ? MAX_FILE * 2 : MAX_FILE)) return `「${f.name || '文件'}」超过 20MB`
   return ''
@@ -7022,31 +7470,86 @@ function probeMedia(f, url) {
       return
     }
     const v = document.createElement('video')
-    let done = false
-    const finish = (r) => { if (!done) { done = true; v.removeAttribute('src'); v.load(); ok(r) } }
+    let done = false, capturing = false, playRequested = false
+    let timer
+    const finish = (r) => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      v.onloadedmetadata = v.onloadeddata = v.oncanplay = v.onseeked = v.onerror = null
+      v.pause(); v.removeAttribute('src'); v.load()
+      ok(r)
+    }
     v.muted = true
     v.playsInline = true
     v.preload = 'auto'
-    v.onloadeddata = () => { v.currentTime = Math.min(0.1, (v.duration || 1) / 2) }
-    v.onseeked = () => {
-      const c = document.createElement('canvas')
-      const k = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight, 1))
-      c.width = Math.round(v.videoWidth * k) || 1
-      c.height = Math.round(v.videoHeight * k) || 1
-      c.getContext('2d').drawImage(v, 0, 0, c.width, c.height)
-      c.toBlob((b) => finish({ w: v.videoWidth, h: v.videoHeight, dur: v.duration, poster: b && new File([b], 'poster.jpg', { type: 'image/jpeg' }) }), 'image/jpeg', 0.82)
+    const capture = () => {
+      if (done || capturing || v.readyState < 2 || !v.videoWidth || !v.videoHeight) return
+      capturing = true
+      const w = v.videoWidth, h = v.videoHeight, dur = v.duration
+      try {
+        const c = document.createElement('canvas'), k = Math.min(1, 1280 / Math.max(w, h))
+        c.width = Math.round(w * k); c.height = Math.round(h * k)
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height)
+        c.toBlob((b) => finish(b ? { w, h, dur, poster: new File([b], 'poster.jpg', { type: 'image/jpeg' }) } : { bad: true }), 'image/jpeg', 0.82)
+      } catch { finish({ bad: true }) }
+    }
+    v.onloadeddata = v.oncanplay = v.onseeked = capture
+    v.onloadedmetadata = () => {
+      capture()
+      if (done || capturing || playRequested) return
+      // iOS 的本地 Blob 可能只预载元数据；短暂静音解码取得首帧后立即释放。
+      playRequested = true
+      try { v.play()?.catch(() => {}) } catch {}
     }
     v.onerror = () => finish({ bad: true })
-    setTimeout(() => finish({ bad: true }), 8000)
+    timer = setTimeout(() => finish({ bad: true }), 8000)
     v.src = url
   })
 }
+const pendingUploadIds = new WeakMap()
 async function uploadFile(file, forWhat, as, signal) {
+  if(signal?.aborted)throw new Error('上传已取消')
+  let pending=pendingUploadIds.get(file)
+  if(!pending){pending=new Map();pendingUploadIds.set(file,pending)}
+  const scope=JSON.stringify([forWhat,as||'']),previous=pending.get(scope)
+  const receipt=previous&&Date.now()-previous.at<23*3600000?previous:{id:crypto.randomUUID(),at:Date.now()}
+  pending.set(scope,receipt)
   const fd = new FormData()
   fd.append('file', file)
   fd.append('for', forWhat)
+  fd.append('nonce',receipt.id)
   if (as) fd.append('as', as)
-  return api('/uploads', { method: 'POST', body: fd, signal })
+  const controller=new AbortController()
+  let timer,abort
+  const stopped=new Promise((_,reject)=>{
+    abort=()=>{reject(new Error('上传已取消'));controller.abort()}
+    timer=setTimeout(()=>{reject(new Error('上传超时，请检查网络后点击重试'));controller.abort()},180000)
+    signal?.addEventListener('abort',abort,{once:true})
+  })
+  try {
+    const result=await Promise.race([api('/uploads',{method:'POST',body:fd,signal:controller.signal}),stopped])
+    if(!result||typeof result.key!=='string'||!result.key||typeof result.url!=='string'||!result.url)throw new Error('上传响应不完整，请重试')
+    if(pending.get(scope)===receipt)pending.delete(scope)
+    return result
+  } finally {clearTimeout(timer);signal?.removeEventListener('abort',abort)}
+}
+
+// 只复用当前托盘已确认成功的文件；短于服务端24小时未使用清理期限。
+async function uploadMediaParts(item,files,forWhat,signal) {
+  const cache=item.uploads ||= new Map()
+  const results=await Promise.allSettled(files.map(async file=>{
+    if(!file)return null
+    const saved=cache.get(file)
+    if(saved&&Date.now()-saved.at<23*3600000)return saved.result
+    const result=await uploadFile(file,forWhat,undefined,signal)
+    if(signal?.aborted)throw new Error('上传已取消')
+    cache.set(file,{result,at:Date.now()})
+    return result
+  }))
+  const failed=results.find(r=>r.status==='rejected')
+  if(failed)throw failed.reason
+  return results.map(r=>r.value)
 }
 
 // 待发的媒体托盘：选完马上在后台上传，点发送时多半已经传好
@@ -7060,6 +7563,8 @@ function mediaTray({ forWhat = 'meme', max = MAX_FILES } = {}) {
   t.releaseLocal = () => { localVideos.forEach((url) => URL.revokeObjectURL(url)); localVideos.clear() }
   const changed = () => { draw(); t.onchange?.() }
   function start(it) {
+    it.controller?.abort()
+    const controller=it.controller=new AbortController()
     it.state = 'up'
     const gen = it.gen = (it.gen || 0) + 1
     const stale = () => it.gen !== gen
@@ -7067,11 +7572,18 @@ function mediaTray({ forWhat = 'meme', max = MAX_FILES } = {}) {
       if (!it.split && !it.video && isJpg(it.file)) {
         it.split = true
         const mp = await splitMotion(it.file).catch(() => null)
+        if(stale())return
         if (mp) Object.assign(it, { file: mp.video, still: mp.still, video: true, motion: true })
         draw()
       }
       // 大图先压一下（打过码的、GIF 不动）；托盘上显示压完的大小
-      if (!it.video && !it.shrunk && !it.orig) {
+      if (!it.video && !it.animationChecked) {
+        const animation=await normalizeAnimationFile(it.file)
+        if(stale())return
+        it.animationChecked=true;it.animated=animation.animated
+        if(animation.file!==it.file){URL.revokeObjectURL(it.url);it.file=animation.file;it.url=URL.createObjectURL(it.file);it.meta=null}
+      }
+      if (!it.video && !it.animated && !it.shrunk && !it.orig) {
         it.shrunk = true
         const before = it.file.size
         const f2 = await shrinkImage(it.file).catch(() => it.file)
@@ -7082,18 +7594,22 @@ function mediaTray({ forWhat = 'meme', max = MAX_FILES } = {}) {
       if (!it.meta) {
         // 实况 / 动态照片的 it.url 是静图，读视频要用视频自己的地址
         const vu = it.still ? URL.createObjectURL(it.file) : it.url
-        it.meta = await probeMedia(it.file, vu)
+        const meta = await probeMedia(it.file, vu)
         if (vu !== it.url) URL.revokeObjectURL(vu)
+        if(stale())return
+        it.meta = meta
       }
-      if (it.meta.bad) throw new Error('这个视频读不出来，换成 MP4 试试')
+      if(stale())return
+      if (it.meta.bad) { it.meta = null; throw new Error('这个视频读不出来，换成 MP4 试试') }
       draw()
       if (it.video) {
         const still = it.still || it.meta.poster
-        if (!still) throw new Error('视频截不到封面')
-        const [pv, vd] = await Promise.all([uploadFile(still, forWhat), uploadFile(it.file, forWhat)])
+        if (!still) { it.meta = null; throw new Error('视频截不到封面') }
+        const [pv, vd] = await uploadMediaParts(it,[still,it.file],forWhat,controller.signal)
+        if(stale())return
         it.out = { key: vd.key, poster: pv.key, w: it.meta.w, h: it.meta.h, ...(it.still ? { kind: 'l' } : {}) }
       } else {
-        const [r, o] = await Promise.all([uploadFile(it.file, forWhat), it.keepOrig && it.orig ? uploadFile(it.orig, forWhat) : null])
+        const [r, o] = await uploadMediaParts(it,[it.file,it.keepOrig?it.orig:null],forWhat,controller.signal)
         if (stale()) return
         it.out = { key: r.key, w: it.meta.w, h: it.meta.h, ...(o ? { orig: o.key } : {}) }
       }
@@ -7116,6 +7632,7 @@ function mediaTray({ forWhat = 'meme', max = MAX_FILES } = {}) {
     openMasker(src, (f, o) => onMasked(it, src, f, o))
   }
   const onMasked = (it, src, f, { keep }) => {
+    if(!t.items.includes(it))return
     if (it.kept) Object.assign(it, { kept: null, orig: src, split: true, video: false })
     URL.revokeObjectURL(it.url)
     it.orig ||= it.file
@@ -7156,7 +7673,8 @@ function mediaTray({ forWhat = 'meme', max = MAX_FILES } = {}) {
     if (errs.length) toast(errs[0], 'err')
     changed()
   }
-  t.remove = (it) => { URL.revokeObjectURL(it.url); t.items = t.items.filter((x) => x !== it); changed() }
+  const cancel = it => { it.gen=(it.gen||0)+1;it.controller?.abort();URL.revokeObjectURL(it.url) }
+  t.remove = (it) => { cancel(it); t.items = t.items.filter((x) => x !== it); changed() }
   t.move = (it, d) => {
     const i = t.items.indexOf(it)
     const j = i + d
@@ -7164,7 +7682,7 @@ function mediaTray({ forWhat = 'meme', max = MAX_FILES } = {}) {
     ;[t.items[i], t.items[j]] = [t.items[j], t.items[i]]
     changed()
   }
-  t.clear = () => { t.releaseLocal(); t.items.forEach((it) => URL.revokeObjectURL(it.url)); t.items = []; input.value = ''; changed() }
+  t.clear = () => { t.releaseLocal(); t.items.forEach(cancel); t.items = []; input.value = ''; changed() }
   t.busy = () => t.items.some((it) => it.state === 'up')
   // 发送时：失败的再试一次，等全部传完，返回给接口的 [{key, poster, w, h, kind}]
   t.media = async () => {
@@ -7200,7 +7718,7 @@ function mediaTray({ forWhat = 'meme', max = MAX_FILES } = {}) {
       const thumb = it.video && !it.still && !it.kept
         ? h('video', { src: it.url, muted: true, playsinline: true, preload: 'metadata' })
         : h('img', { src: it.url, alt: '' })
-      const gif = it.kept ? it.kept.k === 'g' : it.file.type === 'image/gif'
+      const gif = it.kept ? it.kept.k === 'g' : it.animated || it.file.type === 'image/gif'
       const badge = it.kept ? KIND_LABEL[it.kept.k] : it.video ? (it.still ? '实况' : '视频') : null
       const st = it.state === 'up' ? '上传中' : it.state === 'ok' ? '已上传' : it.state === 'err' ? '上传失败：' + (it.err || '未知原因') : ''
       return h('div', { class: 'tray-it ' + (it.state || '') + (it.posted ? ' posted' : ''), title: [it.file?.name, info(it), st].filter(Boolean).join('\n'), 'aria-label': `第 ${i + 1} 个，${info(it)}，${st || '等待上传'}`, role: 'group' },
@@ -7591,7 +8109,7 @@ function mentionPicker(ta, g, recent = () => []) {
       if (my !== seq || at < 0 || !ta.isConnected) return
       const selected = opts[sel]?.username
       const unique = new Map()
-      if(g&&hit({username:'欢欢',name:'欢欢 · 猜词红包'}))unique.set('欢欢',{username:'欢欢',name:'欢欢 · 猜词红包',avatar:null})
+      if(g&&hit({username:'欢欢',name:'欢欢 · AI助手'}))unique.set('欢欢',{username:'欢欢',name:'欢欢 · AI助手',avatar:'/ai-avatar.svg'})
       for (const u of [...members, ...users]) if (u.username && u.username !== S.me?.username && hit(u) && !unique.has(u.username)) unique.set(u.username, u)
       const list = [...unique.values()].sort((a, b) => Number(b.username.toLowerCase().startsWith(q)) - Number(a.username.toLowerCase().startsWith(q)))
       opts = list.slice(0, 8)
@@ -7643,15 +8161,76 @@ function mentionPicker(ta, g, recent = () => []) {
   return { el: box, close }
 }
 
+// 待拆提醒不包含自己发的包或猜词；猜词答案/线索变更只更新专区。
+function packetBagReminderKey(groupId) { return `packetBagReminder:${S.me?.id || 0}:${groupId}` }
+function packetBagRemindersEnabled(groupId) {
+  try { return localStorage.getItem(packetBagReminderKey(groupId)) !== 'off' } catch { return true }
+}
+function setPacketBagReminders(groupId, enabled) {
+  const key=packetBagReminderKey(groupId)
+  if(enabled)localStorage.removeItem(key)
+  else localStorage.setItem(key,'off')
+  window.dispatchEvent(new CustomEvent('packet-bag-reminder-change',{detail:{key}}))
+}
+function packetBagReminderSettings(groupId) {
+  const input=h('input',{type:'checkbox',checked:packetBagRemindersEnabled(groupId),onchange:e=>{
+    try { setPacketBagReminders(groupId,e.target.checked) }
+    catch { e.target.checked=packetBagRemindersEnabled(groupId);toast('无法保存，请检查浏览器存储权限','err') }
+  }})
+  const row=h('div',{class:'packet-bag-reminder'},h('label',{class:'set-check'},input,'提醒我还有红包'),h('small',null,'仅本浏览器、当前账号和群。关闭后仍可打开红包袋。'))
+  const sync=()=>{input.checked=packetBagRemindersEnabled(groupId)}
+  window.addEventListener('packet-bag-reminder-change',sync)
+  window.addEventListener('storage',sync)
+  onRemoval(row,()=>{window.removeEventListener('packet-bag-reminder-change',sync);window.removeEventListener('storage',sync)})
+  return row
+}
+function packetAffectsBagBadge(message) {
+  const packet = message.redpack
+  return !!packet && !message.mine && packet.game !== 'free_guess' && !['guess', 'clues'].includes(packet.ldc_mode)
+}
 // 一个群的消息区 + 输入框：站内群聊页、飞书伪装、LINUX DO 聊天抽屉共用，外观由各自的 CSS 决定
-function chatPane(g, { onHead } = {}) {
+function chatPane(g, { onHead, targetDocument = document } = {}) {
   const st = { first: 0, last: 0, more: true, busy: false, olderFailed: false, since: 0, items: [], unreadAt: null, sentRead: 0, stick: true, done: false }
   const positionKey = `${S.me?.id || 0}:${g.id}`
   let positionTimer = 0
-  let aiPanel, aiLoading
+  let aiPanel, aiLoading, guessPanel, guessLoading, huancaiPanel, huancaiLoading, gamePanel, gameLoading, vipPanel, vipLoading, sideMode='', bagTimer=0, bagLast=0, bagBusy=false, bagQueued=false
+  async function openGuess(mid = 0) {
+    sideMode='guess';huancaiPanel?.close();gamePanel?.close()
+    try {
+      guessLoading ||= import('/guess-room.js?v=98ddcc7d').then(({ createGuessRoom }) => {
+        if (!st.destroyed) guessPanel = createGuessRoom({ pane: el, chat: chatColumn, scroller, opener: guessOpen, gid: g.id, userId: S.me?.id, h, icon, api, onMode:g.id===1?openGameMode:null,
+          create: anchor => redpackDialog(anchor, { group:g, autoGuess:{amount:''}, onSent:()=>{poll();guessPanel?.refresh(true)} }) })
+      }).catch(error => { guessLoading = null; throw error })
+      await guessLoading
+      if (!st.destroyed&&sideMode==='guess') guessPanel.open(mid)
+    } catch (error) { if (!st.destroyed) toast(error.message, 'err') }
+  }
+  async function openHuancai(){
+    sideMode='huancai';guessPanel?.close();gamePanel?.close()
+    try{
+      huancaiLoading ||= import('/huancai.js?v=98ddcc7d').then(({createHuancai})=>{if(!st.destroyed)huancaiPanel=createHuancai({pane:el,chat:chatColumn,scroller,opener:huancaiOpen,userId:S.me?.id,h,api})}).catch(error=>{huancaiLoading=null;throw error})
+      await huancaiLoading;if(!st.destroyed&&sideMode==='huancai')huancaiPanel.open()
+    }catch(error){if(!st.destroyed)toast(error.message,'err')}
+  }
+  async function openGameMode(mode,roomId='') {
+    if(mode==='guess')return openGuess()
+    if(g.id!==1)return
+    if(mode==='outside'){
+      try{
+        vipLoading ||= import('/vip-chat-dock.js?v=98ddcc7d').then(({createVipChatDock})=>{if(!st.destroyed)vipPanel=createVipChatDock({pane:el,scroller,opener:outsideOpen,api,emojiPicker:(anchor,pick)=>openPop(anchor,emojiBoard(k=>{pick(k);closePop()}),{key:'outside-chat-emoji',cls:'pop-stk'}),renderBody:text=>richBody(text,{md:'lite'})})}).catch(error=>{vipLoading=null;throw error})
+        await vipLoading;if(!st.destroyed)vipPanel.open()
+      }catch(error){if(!st.destroyed)toast(error.message,'err')}
+      return
+    }
+    sideMode=mode;guessPanel?.close();huancaiPanel?.close()
+    try{
+      gameLoading ||= import('/game-panel.js?v=98ddcc7d').then(({createGamePanel})=>{if(!st.destroyed)gamePanel=createGamePanel({pane:el,chat:chatColumn,scroller,opener:outsideOpen,user:S.me,api,onMode:openGameMode,emojiPicker:(anchor,pick)=>openPop(anchor,emojiBoard(k=>{pick(k);closePop()}),{key:'outside-chat-emoji',cls:'pop-stk'}),renderBody:text=>richBody(text,{md:'lite'})})}).catch(error=>{gameLoading=null;throw error})
+      await gameLoading;if(!st.destroyed&&sideMode===mode)gamePanel.open(mode,roomId)
+    }catch(error){if(!st.destroyed)toast(error.message,'err')}
+  }
   async function openAi(anchor, mode = 'summary', range = '200') {
     try {
-      aiLoading ||= import('/ai-chat.js?v=3fa586bb').then(({ createAiChat }) => {
+      aiLoading ||= import('/ai-chat.js?v=98ddcc7d').then(({ createAiChat }) => {
         if (!st.destroyed) aiPanel = createAiChat({ pane: el, gid: g.id, h, icon, api })
       }).catch(error => { aiLoading = null; throw error })
       await aiLoading
@@ -7699,7 +8278,9 @@ function chatPane(g, { onHead } = {}) {
   }
   const queuePosition = () => { clearTimeout(positionTimer); positionTimer = setTimeout(savePosition, 400) }
   const pauseFollow = () => {
-    if (!st.done || st.followPaused) return
+    // 用户在首屏两帧定位期间开始上滑，后续校准不能把视口拉回保存位置。
+    if (!st.done) { st.userScrollIntent = true; return }
+    if (st.followPaused) return
     st.followPaused = true
     st.stick = false
     // 取消前一轮新消息可能还在进行的平滑滚动。
@@ -7764,7 +8345,10 @@ function chatPane(g, { onHead } = {}) {
     queuePosition()
   }
   // 标签页切走期间、以及切回来那一下拉到的消息：不自动滚到底，免得漏看
-  const doc = scroller.ownerDocument
+  // 小窗会在构造后才收养这些节点，生命周期应从一开始绑定目标窗口。
+  const doc = targetDocument
+  const bubbleMotion=createChatBubbleVisibility({list,scrollRoot:scroller,document:doc,isLive:()=>!st.destroyed&&!st.after&&!histEl&&nearBottom()})
+  onRemoval(list,()=>bubbleMotion.destroy())
   // 切走（标签页隐藏，或主窗口失焦——切到别的软件）期间、以及切回来 4 秒内那次轮询拉到的，都算「人不在」。
   // 以前要离开 5 秒以上才算，切走一小会儿回来照样被拽到底部
   const away = () => doc.hidden || st.blur || (st.backAt && Date.now() - st.backAt < 4000 && st.backAt - st.hiddenAt > 1000)
@@ -7777,6 +8361,8 @@ function chatPane(g, { onHead } = {}) {
     if (doc.hidden) { savePosition(); if (!st.blur) { st.hiddenAt = Date.now(); st.awayEnd = 0; dropAway(); st.awayDismissed = false } return }
     if (st.blur && doc.hasFocus()) st.blur = false // 有的浏览器切回标签页不发 focus
     if (!st.blur) back()
+    guessPanel?.refresh()
+    refreshBagBadge()
   }
   // 失焦只看主窗口：弹出的小窗本来就是给「切到别处也一直看得到」用的，照常跟着滚
   const win = doc === document ? doc.defaultView : null
@@ -7809,14 +8395,14 @@ function chatPane(g, { onHead } = {}) {
     const atMe = ms.filter((m) => !repMe.includes(m) && re && re.test(stripQuotes(m.body || '')))
     awayEl?.remove()
     awayEl = h('div', { class: 'cm-away', role: 'status' },
-      h('span', { class: 'cm-away-t' }, `你离开的 ${mins} 分钟里有 `, h('strong', null, ms.length), ' 条新消息',
+      h('span', { class: 'cm-away-t' }, `离开 ${mins} 分钟 · 已加载 `, h('strong', null, ms.length), ' 条期间消息',
         h('span', { class: 'muted' }, ` · ${people} 人说话${pics ? ` · ${pics} 张图` : ''}`),
         atMe.length > 0 && h('span', { class: 'cm-away-at' }, ` · @你 ${atMe.length} 次`),
         repMe.length > 0 && h('span', { class: 'cm-away-at' }, ` · 回复你 ${repMe.length} 次`)),
       h('span', { class: 'cm-away-acts' },
         h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: (e) => openAi(e.currentTarget, 'summary', 'away') }, 'AI 摘要'),
         h('button', { class: 'btn btn-primary sm', type: 'button', onclick: () => digest(ms, atMe, repMe, `离开的 ${mins} 分钟`, true) }, '速览'),
-        h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { jumpTo(ms[0].id); dropAway() } }, '从第一条看'),
+        h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: () => { jumpTo(ms[0].id); dropAway() } }, '从已加载首条看'),
         h('button', { class: 'cm-x', type: 'button', 'aria-label': '知道了', onclick: dropAway }, icon('close', 'i tiny'))))
     el.append(awayEl)
   }
@@ -7937,6 +8523,7 @@ function chatPane(g, { onHead } = {}) {
   const renderRow = (view, m, prev) => {
     const kids = renderRowContent(view, m, prev)
     const el = h('div', { class: 'cm-row', 'data-row': m.id }, kids)
+    el._mediaKey = JSON.stringify([m.body,m.deleted,m.media,m.image,m.redpack])
     view.rows.set(m.id, el)
     if (m.at_read) queueMicrotask(() => paintReads(view, m))
     return windowContent(el, () => {
@@ -7949,7 +8536,7 @@ function chatPane(g, { onHead } = {}) {
   const redrawIn = (view, i) => {
     const m = view.items[i]
     const old = view.rows.get(m?.id)
-    if (old) old.replaceWith(renderRow(view, m, view.items[i - 1]))
+    if (old) replaceChatMediaRow(old,renderRow(view, m, view.items[i - 1]))
   }
   const redraw = (i) => redrawIn(mainView, i)
   let refreshTitleRaffles = () => {}
@@ -7962,7 +8549,7 @@ function chatPane(g, { onHead } = {}) {
     if(where==='live')for(const m of items.filter(m=>m.system_kind==='redpack_due'&&!m.deleted).slice(0,3)){
       drawQueue=drawQueue.then(async()=>{
         if(drawLifetime.signal.aborted||doc.hidden)return
-        const {syncPacketDraw}=await import('/redpacket.js?v=d85e0791')
+        const {syncPacketDraw}=await import('/redpacket.js?v=98ddcc7d')
         await syncPacketDraw({id:Number(m.system_ref),api,signal:drawLifetime.signal,onUpdate:update})
       }).catch(()=>{})
     }
@@ -8025,9 +8612,23 @@ function chatPane(g, { onHead } = {}) {
     drawLatest()
     drawDown()
   }
-  // 编辑 / 撤回 / 表情 / 回应 / 转帖 / 轮询 changed：主列表和历史层里有这条的都重画
+  function updateReferences(view, source) {
+    view.items.forEach((message, i) => {
+      const next = refreshMessageReference(message, source)
+      if (next === message) return
+      view.items[i] = next
+      // 仅替换摘要，避免重建回复里的图片、视频和正文。离屏行唤醒时读取最新模型。
+      view.rows.get(message.id)?.querySelector('.cm-ref-row')?.replaceChildren(chatReference(next.reply_to, view.pane))
+    })
+  }
+  // 编辑 / 撤回 / 表情 / 回应 / 转帖 / 轮询 changed：同步原消息和引用它的摘要。
   const update = (m) => {
+    guessPanel?.signal([m])
     histView?.apply(m)
+    updateReferences(mainView, m)
+    if (histView) updateReferences(histView, m)
+    if (st.reply?.id === m.id && m.group_id === g.id) setReply(m.deleted ? null : m, false)
+    if (packetAffectsBagBadge(m)) refreshBagBadge(true)
     const i = st.items.findIndex((x) => x.id === m.id)
     if (i < 0) return
     st.items[i] = { ...m, floor: m.floor ?? st.items[i].floor }
@@ -8062,7 +8663,7 @@ function chatPane(g, { onHead } = {}) {
       }
       st.more = d.more
       add(d.items, initial ? 'bottom' : 'top')
-      topSpin.replaceChildren(st.more ? h('div', { class: 'spinner' }) : h('div', { class: 'cm-begin' }, d.items.length || st.items.length ? `这是「${g.name}」最早的消息` : `「${g.name}」还没有消息，来说第一句`))
+      topSpin.replaceChildren(st.more ? h('div', { class: 'spinner' }) : h('div', { class: 'cm-begin' }, d.items.length || st.items.length ? `这是「${g.name}」你入群后可见的最早消息` : `「${g.name}」暂无入群后的消息`))
       if (!initial) trimHistory('older')
       if (initial) {
         // 导航插入 pane、手机紧凑头部和同步占位尺寸完成后再恢复，期间不标已读。
@@ -8070,7 +8671,7 @@ function chatPane(g, { onHead } = {}) {
         if (st.destroyed || !scroller.isConnected) return
         const mark = list.querySelector('.cm-unread')
         const target = resume && (rows.get(resume.id) || rows.get(d.items.find(m => m.id >= resume.id)?.id) || rows.get(d.items.at(-1)?.id))
-        const place = () => { if (target) {
+        const place = () => { if (st.userScrollIntent) return; if (target) {
           const offset = Math.abs((resume.width || 0) - scroller.clientWidth) > 20 && resume.height > 0
             ? Math.min(0, resume.offset / resume.height) * target.offsetHeight : resume.offset
           scroller.scrollTop = target.offsetTop - offset
@@ -8103,7 +8704,7 @@ function chatPane(g, { onHead } = {}) {
     } finally {
       st.busy = false
     }
-    if (loaded && st.more && scroller.scrollTop < 300 && scroller.isConnected) requestAnimationFrame(() => older())
+    if (loaded && st.more && scroller.scrollTop < 300 && scroller.isConnected && scroller.clientHeight) requestAnimationFrame(() => older())
   }
 
   async function poll() {
@@ -8114,14 +8715,16 @@ function chatPane(g, { onHead } = {}) {
     try {
       // 每轮最多追5页，其余短暂让出主线程后继续，不等下一次3秒轮询。
       for (let batch = 0; batch < 5 && scroller.isConnected && st.done; batch++) {
-      const d = await api(`/chat/groups/${g.id}/messages?after=${st.last}&since=${st.since}`)
+      const d = await loadChatPoll(`/chat/groups/${g.id}/messages?after=${st.last}&since=${st.since}&include_total=0`)
       if (st.destroyed || !scroller.isConnected) { more = false; return }
       more = !!d.more && d.items.length > 0
       st.since = d.now
+      guessPanel?.signal(d.items)
       const wasFollowing = st.stick && !st.followPaused
       d.changed.forEach(update)
       if (st.after) { more = false; return } // 在跳转窗口里，最新的消息等回到底部再拉
       if (d.items.length) {
+        if (d.items.some(packetAffectsBagBadge)) refreshBagBadge(true)
         const others = d.items.filter((m) => !m.mine && !m.deleted && !rows.has(m.id))
         const gg = findGroup(g.id)
         if (gg) {
@@ -8137,7 +8740,7 @@ function chatPane(g, { onHead } = {}) {
         // 来新消息要不要跟着滚：在底部时跟（默认）/ 总是滚到最新 / 不自动滚（只出按钮）
         const ap = chatAuto()
         // 开着历史层：正在看旧消息，主列表也不动，只记数
-        const stick = !gone && !histEl && !st.followPaused && (ap === 'always' ? true : ap === 'off' ? false : wasFollowing)
+        const stick = !!scroller.clientHeight && !gone && !histEl && !st.followPaused && (ap === 'always' ? true : ap === 'off' ? false : wasFollowing)
         // 人不在：从第一条没看的开始画「以下是新消息」（这次离开期间已经画过就不挪）
         if (gone && !st.awayMark) {
           list.querySelectorAll('.cm-unread').forEach((el) => el.remove())
@@ -8184,23 +8787,28 @@ function chatPane(g, { onHead } = {}) {
   // 所有入口（搜索、引用条、N 条回复、公告 / 正文里的引用、提醒、历史层里再点）都走这一个：
   // 历史层开着且层里有 → 层里滚过去；主列表有 → 先收起历史层再滚主列表；都没有 → 开历史层
   async function jumpTo(id) {
+    id=Number(id)
+    if(!Number.isSafeInteger(id)||id<=0)return
     const hitIn = (view) => {
-      const el = view?.rows.get(id)?.querySelector('.cm-msg')
+      const row=view?.rows.get(id)
+      if(!row)return false
+      wakeWindowContent(row)
+      const el = row.querySelector('.cm-msg')
       if (!el) return false
       if (view !== histView) closeHist()
-      el.scrollIntoView({ block: 'center', behavior: REDUCED.matches ? 'auto' : 'smooth' })
+      pauseFollow()
+      focusChatMessage(view.scrollRoot,el)
       flashMsg(el, view.find(id))
       return true
     }
     const hit = () => hitIn(histView) || hitIn(mainView)
     if (hit()) return
-    if (st.items.length && id > st.last && !st.after) return toast('这条消息还没加载出来')
     while (st.busy) await new Promise((r) => setTimeout(r, 80))
     if (hit()) return
     return historyView(id)
   }
   // 历史消息层：盖在消息列表上，前后各 25 条，要看更多点「更早 / 更晚」，不会无限往上翻
-  function closeHist() { if (!histEl) return; histEl.remove(); histEl = null; histView = null; drawDown() }
+  function closeHist() { if (!histEl) return; histEl.remove(); histEl = null; histView = null; drawDown();bubbleMotion.refresh() }
   async function historyView(id) {
     closeHist()
     const box = h('div', { class: 'cm-hist-list' }, h('div', { class: 'cm-hist-loading', role: 'status', 'aria-label': '正在加载历史消息' }, h('div', { class: 'spinner', 'aria-hidden': 'true' })))
@@ -8211,6 +8819,7 @@ function chatPane(g, { onHead } = {}) {
         h('button', { class: 'btn btn-ghost sm', type: 'button', onclick: close }, '回到当前聊天')),
       box)
     stage.append(histEl)
+    bubbleMotion.refresh()
     drawDown()
     // 历史层也是一个视图：同一个 renderRow、同一套委托；动作沿用主 pane 的（jumpTo / update 本来就两边都管），看大图在这一段里串
     const rowsBox = h('div', { class: 'cm-hist-rows' })
@@ -8230,7 +8839,7 @@ function chatPane(g, { onHead } = {}) {
       rowsBox.replaceChildren(...hv.items.map((m, i) => renderRow(hv, m, hv.items[i - 1])))
       box.replaceChildren(
         hv.more ? h('button', { class: 'btn-text cm-hist-more', type: 'button', onclick: () => extend('up') }, '↑ 更早的 25 条')
-          : h('div', { class: 'cm-begin' }, `这是「${g.name}」最早的消息`),
+          : h('div', { class: 'cm-begin' }, `这是「${g.name}」你入群后可见的最早消息`),
         rowsBox,
         hv.after ? h('button', { class: 'btn-text cm-hist-more', type: 'button', onclick: () => extend('down') }, '↓ 更晚的 25 条')
           : h('button', { class: 'btn-text cm-hist-more', type: 'button', onclick: close }, '已经到最新了 · 回到当前聊天'))
@@ -8280,7 +8889,7 @@ function chatPane(g, { onHead } = {}) {
       title.textContent = '历史消息 · ' + fullDate(t.created_at)
       draw()
       const r = hv.rows.get(id)?.querySelector('.cm-msg')
-      r?.scrollIntoView({ block: 'center' })
+      if(r)focusChatMessage(box,r)
       if (r) flashMsg(r, t)
     } catch (e) { if (histView === hv) close(); toast(e.message, 'err') }
   }
@@ -8295,7 +8904,7 @@ function chatPane(g, { onHead } = {}) {
       st.after = d.more_after ? d.items[d.items.length - 1]?.id || 0 : 0
       st.last = Math.max(st.last, d.items[d.items.length - 1]?.id || 0)
       add(d.items, 'bottom')
-      topSpin.replaceChildren(st.more ? h('div', { class: 'spinner' }) : h('div', { class: 'cm-begin' }, `这是「${g.name}」最早的消息`))
+      topSpin.replaceChildren(st.more ? h('div', { class: 'spinner' }) : h('div', { class: 'cm-begin' }, `这是「${g.name}」你入群后可见的最早消息`))
       drawLatest()
     } catch (e) { toast(e.message, 'err') } finally { st.busy = false }
   }
@@ -8404,7 +9013,7 @@ function chatPane(g, { onHead } = {}) {
     } catch {} finally { st.reading = false }
   }
   scroller.addEventListener('scroll', () => {
-    if (!st.done || st.restoring || st.destroyed) return
+    if (!st.done || st.restoring || st.destroyed || !scroller.clientHeight) return
     const delta=scroller.scrollTop-(st.lastHeadScroll ?? scroller.scrollTop)
     const header=scroller.closest('.chat-body')?.querySelector('.chat-head')
     if(header && innerWidth<=640) {
@@ -8423,10 +9032,10 @@ function chatPane(g, { onHead } = {}) {
     queuePosition()
   }, { passive: true })
   // 图片晚加载会把内容往下顶：原本贴着底部就继续贴着
-  scroller.addEventListener('load', () => { if (st.done && !st.restoring && st.stick && !st.followPaused) scroller.scrollTop = scroller.scrollHeight }, true)
+  scroller.addEventListener('load', () => { if (scroller.clientHeight && st.done && !st.restoring && st.stick && !st.followPaused && nearBottom()) scroller.scrollTop = scroller.scrollHeight }, true)
   // 输入框
   const reply = h('div', { class: 'cm-reply', hidden: true })
-  const setReply = (m) => {
+  const setReply = (m, focus = true) => {
     if (m && st.editing) setEdit(null)
     st.reply = m
     reply.hidden = !m
@@ -8441,7 +9050,7 @@ function chatPane(g, { onHead } = {}) {
       pic && h('img', { class: 'cm-reply-pic', src: pic, alt: '' }),
       h('button', { class: 'cm-x', type: 'button', 'aria-label': '取消回复', onclick: () => setReply(null) }, icon('close', 'i tiny'))))
     // 手机上不自动弹键盘，想打字自己点输入框
-    if (!COARSE) ta.focus()
+    if (focus && !COARSE) ta.focus()
   }
   // 编辑自己的消息：正文放进输入框，回车保存；Esc 或 × 取消，原来没发的草稿放回去
   const setEdit = (m) => {
@@ -8589,7 +9198,44 @@ function chatPane(g, { onHead } = {}) {
   ta.addEventListener('keydown', (e) => { if (e.key === 'Escape' && st.editing) { e.stopPropagation(); setEdit(null) } })
   const tb = (ic, title, onclick, extra = {}) => h('button', { class: 'cm-ibtn', type: 'button', title, 'aria-label': title, onclick, ...extra }, icon(ic))
   const sendBtn = tb('send', '发送', () => st.editing ? saveEdit() : send())
+  function huanTools(anchor) {
+    const choose = prefix => {
+      closePop()
+      if (st.editing) { toast('请先结束消息编辑，再向欢欢发消息'); return }
+      const draft = ta.value.replace(/^(?:[@＠]{2}\s*|[?？!！](?![?？!！\[])\s*|(?:聊|猜|问(?:欢欢)?)\s*[:：]\s*|[@＠]欢欢(?:\s*[:：]\s*|\s+))/, '')
+      ta.value = prefix + draft
+      grow(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length)
+      ta.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    const action = (prefix, label, example) => h('button', { type: 'button', class: 'menu-item', onclick: () => choose(prefix) },
+      h('code', null, prefix.trim()), h('span', null, label, h('small', null, example)))
+    openPop(anchor, h('div', { class: 'menu-list cm-huan-menu' },
+      h('strong', null, '欢欢快捷指令'),
+      action('@@ ', '聊天', '@@ 今天聊点什么？'),
+      action('? ', '问是非', '? 它是动物吗？'),
+      action('! ', '猜答案', '! 长颈鹿'),
+      h('p', null, '点击填入草稿，再输入内容发送。全角符号也可用；回答显示在原消息下方。'),
+      h('details', null, h('summary', null, '玩法与旧指令'),
+        h('p', null, '群聊中用 @@内容 或 @欢欢 内容与 AI 聊天。猜答案、问是非和要线索请打开分屏猜词窗口；群聊中的 ?、!、“猜：”和“问：”均按普通消息发送。'),
+        h('p', null, '?线索 每次给一条，冷却30秒。@欢欢 猜词 20 LDC 可让欢欢出题，也支持“出词／出题／猜题”；点确认按钮后核对奖励并发起。题主可发 @欢欢 流局 结束尚未猜中的一轮。要把符号当普通文字，在前面加反斜杠。')),
+      h('button', { type: 'button', class: 'menu-item', onclick: () => { closePop(); openAi(anchor, 'assistant') } }, '私有助手 / 群聊总结'),
+      h('a', { class: 'menu-item', href: CHAT_SUMMARY_URL, target: '_blank', rel: 'noopener noreferrer', onclick: closePop }, '聊天总结归档 ↗')),
+      { key: 'cm-huan' + g.id, up: true })
+  }
   const key = 'cmstk' + g.id
+  const favoriteBoard = async anchor => {
+    const {openChatFavorites}=await import('/chat-favorites.js?v=98ddcc7d')
+    if(st.destroyed||!scroller.isConnected)return
+    openChatFavorites(anchor,{h,icon,api,openPop,closePop,toast,send:async job=>{
+      if(st.destroyed||!scroller.isConnected)throw Error('聊天窗口已关闭')
+      job.prepared ||= await api(`/chat/favorites/${job.id}/prepare`,{method:'POST',body:{nonce:job.nonce}})
+      if(st.destroyed||!scroller.isConnected)throw Error('聊天窗口已关闭')
+      const {message}=await api(`/chat/groups/${g.id}/messages`,{method:'POST',body:{...job.prepared,retry:job.tries++>0}})
+      if(st.destroyed)return
+      const follow=st.stick&&!st.followPaused&&nearBottom()&&!histEl
+      add([message],'live');if(follow)toBottom(false);else drawDown()
+    }})
+  }
   const compose = S.me
     ? h('div', { class: 'cm-compose' }, reply, att.el, att.input, fileIn, ta,
       h('div', { class: 'cm-bar' },
@@ -8609,14 +9255,14 @@ function chatPane(g, { onHead } = {}) {
           closePop();att.add([new File([blob],`表情-${item.message_id}-${item.index}.${blob.type.split('/')[1]}`,{type:blob.type})]);ta.focus({preventScroll:true})
         }}), { key, cls: 'pop-stk', up: true }), { 'data-pop': key }),
         tb('image', '发图片 / 视频', () => att.pick()),
+        tb('bookmark', '消息收藏', e => favoriteBoard(e.currentTarget.closest('.cm-compose')||e.currentTarget).catch(e=>toast(e.message,'err'))),
         tb('redpack', '发红包', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { group: g, onSent: (message) => {
           const follow = st.stick && !st.followPaused && nearBottom() && !histEl
           closeHist(); add([message], 'live')
           if (follow && !st.followPaused) toBottom(false)
           else drawDown()
         } }), { class: 'cm-ibtn cm-redpack-btn' }),
-        tb('packetBag', '群红包袋', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { archiveGroup:g, onUpdate:update })),
-        tb('raffle', '称号抽奖', (e) => titleRaffleDialog(e.currentTarget)),
+        tb('raffle', '抽卡', (e) => instantCardDialog(e.currentTarget)),
         tb('doc', '发文件（20MB 以内）', () => fileIn.click()),
         tb('at', '@ 某人', () => { insertAtCursor(ta, (/\S$/.test(ta.value.slice(0, ta.selectionStart)) ? ' ' : '') + '@') }),
         tb('quote', '引用', () => { const m = st.reply || st.items[st.items.length - 1]; if (m) quoteMsg(m) }),
@@ -8624,15 +9270,16 @@ function chatPane(g, { onHead } = {}) {
           insertAtCursor(ta, (/\S$/.test(ta.value.slice(0, ta.selectionStart)) ? ' ' : '') + `No.${m.id} `)
         }, 'cmpost' + g.id), { 'data-pop': 'cmpost' + g.id }),
         tb('search', '搜索聊天记录', () => search()),
-        tb('smile', 'AI 小伙伴', (e) => openAi(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more')), { class: 'cm-ibtn cm-ai-open' }),
+        tb('smile', '欢欢助手', (e) => huanTools(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more')), { class: 'cm-ibtn cm-ai-open' }),
         tb('download', '导出 / 让 AI 总结', (e) => pickRange(e.currentTarget), { 'data-pop': 'cmrange' }),
+        tb('ext', '聊天总结归档', () => window.open(CHAT_SUMMARY_URL, '_blank', 'noopener,noreferrer')),
         h('span', { class: 'grow' }),
         sendBtn), mention.el)
     : h('a', { class: 'cm-compose ghost', href: loginHref() }, '登录 Linux.DO 后加入「迷友」聊天')
   if (S.me) acceptImages(compose, ta, { add: (fs) => att.add(fs) })
   if (S.me) {
     const bar = compose.querySelector('.cm-bar')
-    const extras = [...bar.querySelectorAll('button')].filter(b => ['发红包', '群红包袋', '称号抽奖', '发文件（20MB 以内）', '@ 某人', '引用', '引用帖子（插入 No.编号，会带预览卡）', '搜索聊天记录', 'AI 小伙伴'].includes(b.title))
+    const extras = [...bar.querySelectorAll('button')].filter(b => ['发红包', '群红包袋', '称号抽奖', '发文件（20MB 以内）', '@ 某人', '引用', '引用帖子（插入 No.编号，会带预览卡）', '搜索聊天记录', '欢欢助手', '聊天总结归档'].includes(b.title))
     extras.forEach(b => b.classList.add('cm-secondary'))
     bar.querySelector('[data-pop="cmrange"]')?.classList.add('desktop-only')
     const more = tb('more', '更多聊天操作', e => openPop(e.currentTarget,
@@ -8697,7 +9344,7 @@ function chatPane(g, { onHead } = {}) {
     input.focus()
     if (q0) { input.value = q0; run() }
   }
-  function destroy() { drawLifetime.abort(); savePosition(); st.destroyed = true; aiPanel?.destroy(); st.done = false; CHAT.panes.delete(api_); clearTimeout(positionTimer); clearTimeout(awayT); clearTimeout(st.catchupT); clearInterval(st.ownPoll); clearInterval(st.readT); doc.removeEventListener('visibilitychange', onVis); doc.defaultView?.removeEventListener('pagehide', savePosition); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); doc.defaultView?.removeEventListener('title-raffle-update', refreshTitleRaffles); offNotice(); offUnread() }
+  function destroy() { drawLifetime.abort(); savePosition(); st.destroyed = true; aiPanel?.destroy(); guessPanel?.destroy(); huancaiPanel?.destroy(); gamePanel?.destroy(); vipPanel?.destroy(); st.done = false; CHAT.panes.delete(api_); clearTimeout(positionTimer); clearTimeout(awayT); clearTimeout(st.catchupT); st.stopOwnPoll?.(); clearInterval(st.readT); clearInterval(bagTimer); doc.removeEventListener('visibilitychange', onVis); doc.defaultView?.removeEventListener('pagehide', savePosition); win?.removeEventListener('blur', onBlur); win?.removeEventListener('focus', onFocus); doc.defaultView?.removeEventListener('title-raffle-update', refreshTitleRaffles); offNotice(); offUnread() }
 
   // 群公告：顶上一条，点 × 收起（记住这一版），右上角留个小「公告」随时再打开；公告改了会重新弹出来
   const noticeEl = h('div', { class: 'cm-notice-wrap' })
@@ -8736,10 +9383,11 @@ function chatPane(g, { onHead } = {}) {
         const name = RAFFLE_TITLES[r.title]?.name || '神秘称号'
         const remaining = data.raffles.length - 1
         const join = r.entry_mode === 'optin' && h('button', { class: 'cm-raffle-pin-join', type: 'button', onclick: async e => {
+          if(r.paid_version)return titleRaffleDialog(e.currentTarget,null,r.id)
           const button=e.currentTarget; button.disabled = true
           try { await api(`/chat/1/title-raffles/${r.id}/join`, { method: 'POST' }); toast('已报名，等开奖吧', 'ok'); refreshTitleRaffles() }
           catch (error) { toast(error.message, 'err'); button.disabled = false }
-        } }, r.joined ? '已报名' : '点我报名')
+        } }, r.paid_version?(r.joined?'追加 / 详情':'报名 · 100 D币'):r.joined ? '已报名' : '点我报名')
         rafflePin.replaceChildren(h('div', { class: 'cm-raffle-pin', role: 'note' }, icon('raffle', 'i tiny'),
           h('span', { class: 'cm-raffle-pin-main' }, h('strong', null, name, ' · 抽奖中'), h('small', null, ` ${r.entries} 人报名 · ${new Date(r.closes_at * 1000).toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit', hour12:false })} 开奖`)),
           join, h('button', { class: 'cm-raffle-pin-link', type: 'button', onclick: e => titleRaffleDialog(e.currentTarget, null, r.id) }, remaining ? `另有 ${remaining} 场` : '详情')))
@@ -8750,7 +9398,53 @@ function chatPane(g, { onHead } = {}) {
   }
 
   pendingSlot()
-  const el = h('div', { class: 'cm-pane' }, noticeEl, rafflePin, stage, pill, latestBtn, compose)
+  stage.append(pill, latestBtn)
+  const guessOpen = h('button', { type:'button', class:'cm-guess-open', title:'猜词专区 / 分屏', 'aria-label':'猜词专区 / 分屏', 'aria-expanded':'false', onclick:()=>openGuess() }, h('img',{src:'/ai-avatar.svg',class:'cm-guess-icon',alt:'',width:24,height:24}), h('span',{class:'cm-guess-label'},'猜词专区 / 分屏'), h('span',{'aria-hidden':'true'},'↗'))
+  const bagOpen = h('button', {type:'button',class:'cm-bag-open',title:'群红包袋','aria-label':'群红包袋',onclick:e=>redpackDialog(e.currentTarget,{archiveGroup:g,onUpdate:update,onClose:()=>refreshBagBadge(true)})},
+    icon('packetBag','i tiny'),h('span',null,'群红包袋'),h('span',{class:'cm-bag-alert','aria-hidden':'true'},'还有红包'))
+  const updatesOpen=h('button',{type:'button',class:'cm-updates-open',title:'最近更新','aria-label':'最近更新',onclick:async e=>{
+    const anchor=e.currentTarget;if(anchor.disabled)return;anchor.disabled=true
+    try{const {openRecentUpdates}=await import('/recent-updates.js?v=98ddcc7d');if(anchor.isConnected)openRecentUpdates(anchor)}
+    catch{toast('更新记录加载失败，请重试','err')}finally{anchor.disabled=false}
+  }},icon('clock','i tiny'),h('span',null,'最近更新'))
+  async function refreshBagBadge(force=false) {
+    if (!packetBagRemindersEnabled(g.id)) {
+      bagOpen.classList.toggle('has-packet',false)
+      bagOpen.title='群红包袋'
+      bagOpen.setAttribute('aria-label',bagOpen.title)
+      return
+    }
+    if (!S.me || st.destroyed || !el.isConnected || doc.hidden) return
+    if (bagBusy) { bagQueued ||= force; return }
+    if (!force && Date.now()-bagLast<60000) return
+    bagBusy=true;bagLast=Date.now()
+    try {
+      const result=await api(`/chat/groups/${g.id}/redpacks/available`)
+      if(st.destroyed||!bagOpen.isConnected)return
+      const active=packetBagRemindersEnabled(g.id)&&!!result.has_available
+      bagOpen.classList.toggle('has-packet',active)
+      bagOpen.title=active?'群红包袋，还有红包可拆':'群红包袋'
+      bagOpen.setAttribute('aria-label',bagOpen.title)
+    } catch { /* 读取提醒失败时保留上次状态，红包袋仍可打开。 */ }
+    finally {bagBusy=false;if(bagQueued){bagQueued=false;refreshBagBadge(true)}}
+  }
+  const chatColumn = h('div', { class:'cm-chat-column' }, noticeEl, rafflePin, stage, compose)
+  const huancaiOpen=h('button',{type:'button',class:'cm-bag-open cm-huancai-open',hidden:g.id!==1,'aria-expanded':'false','aria-label':'欢彩',onclick:openHuancai},icon('sparkle','i tiny'),h('span',null,'欢彩'))
+  const outsideOpen=h('button',{type:'button',class:'cm-bag-open cm-outside-open',hidden:g.id!==1,title:'分屏查看VIP聊天','aria-label':'VIP聊天','aria-expanded':'false',onclick:()=>openGameMode('outside')},icon('chat','i tiny'),h('span',null,'VIP聊天'))
+  const el = h('div', { class: 'cm-pane' }, h('div',{class:'cm-guess-bar'},bagOpen,updatesOpen,huancaiOpen,guessOpen,outsideOpen), chatColumn)
+  if(g.id===1){const invite=new URL(targetDocument.defaultView.location.href);if(['arena','drawing'].includes(invite.searchParams.get('game')))queueMicrotask(()=>{if(!st.destroyed)openGameMode(invite.searchParams.get('game'),invite.searchParams.get('room')||'')})}
+  const syncBagReminder=(event)=>{
+    const key=event?.type==='storage'?event.key:event?.detail?.key
+    if(key&&key!==packetBagReminderKey(g.id))return
+    if(st.destroyed)return
+    clearInterval(bagTimer);bagTimer=0
+    refreshBagBadge(true)
+    if(S.me&&packetBagRemindersEnabled(g.id))bagTimer=setInterval(()=>refreshBagBadge(true),300000)
+  }
+  window.addEventListener('packet-bag-reminder-change',syncBagReminder)
+  window.addEventListener('storage',syncBagReminder)
+  onRemoval(el,()=>{window.removeEventListener('packet-bag-reminder-change',syncBagReminder);window.removeEventListener('storage',syncBagReminder);clearInterval(bagTimer)})
+  if(S.me)setTimeout(()=>{if(!st.destroyed)syncBagReminder()},0)
   if (g.id === 1) queueMicrotask(refreshTitleRaffles)
   // 在光标处插入 @用户名，前面不是空白就补一个空格；刚插过同一个人不重复插
   const atUser = (username) => {
@@ -8758,7 +9452,7 @@ function chatPane(g, { onHead } = {}) {
     if (before.endsWith('@' + username + ' ')) return ta.focus()
     insertAtCursor(ta, (/\S$/.test(before) ? ' ' : '') + '@' + username + ' ')
   }
-  const api_ = { el, poll, destroy, update, setReply, setEdit, recalled, quoteMsg, jumpTo, gallery, search, atUser, send: (t) => send(t), focus: () => ta.focus(), group: g, st }
+  const api_ = { el, poll, destroy, update, setReply, setEdit, recalled, quoteMsg, jumpTo, gallery, search, atUser, openGuess, send: (t) => send(t), focus: () => ta.focus(), group: g, st }
   mainView.pane = api_
   // 消息上的右键 / 左滑：委托在整个 pane 上（跟着 pane 进小窗 document），按消息所在列表找视图和消息。
   // 发送中的占位不在任何列表里，自然不管
@@ -8848,15 +9542,16 @@ function linkImg(url, extra) {
   const ext = /^https?:\/\//.test(url)
   const proxy = ext && url.startsWith('https://') && LD_HOST.test(new URL(url).hostname)
   let b = null
-  const img = h('img', { src: url, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', decoding: 'async',
+  const img = deferChatImage(h('img', { alt: '', referrerpolicy: 'no-referrer', decoding: 'async',
     onerror: () => {
-      if (proxy && !img.dataset.fallback) { img.dataset.fallback = '1'; img.src = '/ext?u=' + encodeURIComponent(url); return }
+      if (!img.isConnected) return
+      if (proxy && !img.dataset.fallback) { img.dataset.fallback = '1'; deferChatImage(img, '/ext?u=' + encodeURIComponent(url)); return }
       // 失败也保留预览高度，原链接仍能打开，避免后面的消息突然上移。
       b.replaceWith(h('a', { class: 'cm-linkimg-failed', href: url, target: '_blank', rel: 'noopener noreferrer', title: url }, icon('image'), '打开原图'))
-    } })
+    } }), url)
   b = h('button', { class: 'cm-img sized', type: 'button', 'aria-label': '查看大图',
     onclick: (e) => {
-      const src = img.currentSrc || img.src
+      const src = img.dataset.fallback ? '/ext?u=' + encodeURIComponent(url) : url
       openViewer({ id: -1, image: src, images: [{ u: src, w: img.naturalWidth || null, h: img.naturalHeight || null }], image_count: 1, title: '', seen_at: 1 }, 0, { doc: e.currentTarget.ownerDocument })
     } },
   img, h('span', { class: 'cm-zoom', 'aria-hidden': 'true' }, icon('zoom')))
@@ -8877,8 +9572,8 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=d85e0791')
-    if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, uploadCover: async (file,signal) => {
+    const { openRedpacket } = await import('/redpacket.js?v=98ddcc7d')
+    if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, bagReminderSettings:packetBagReminderSettings, uploadCover: async (file,signal) => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
       const compact=await shrinkImage(file,{edge:1280,threshold:1024*1024,keepTall:false})
@@ -8889,10 +9584,15 @@ async function redpackDialog(anchor, options) {
     }, uploadClue: file => uploadFile(file, 'chat') })
   } catch (e) { toast(e.message, 'err') }
 }
-async function titleRaffleDialog(anchor, packetId = null, raffleId = null) {
+async function instantCardDialog(anchor) {
+  try {closePop();const {openInstantCards}=await import('/instant-cards.js?v=98ddcc7d');openInstantCards({anchor,api,h,dress:id=>meSettings('deco',id),preview:(id,level)=>{const u={deco:{ft:id,fn:level}};return h('div',{class:'ic-actual-preview'},h('div',{class:'ic-identity'},badgeEl(u,'chat',true),titleEl(u,'chat')),h('div',{class:'cm-text'+bubbleCls(u)},h('span',{class:'rt-copy'},'每次相遇，都留有光芒。')))},legacy:()=>titleRaffleDialog(anchor,null,null,true)})}
+  catch(e){toast(e.message,'err')}
+}
+async function titleRaffleDialog(anchor, packetId = null, raffleId = null, legacy = false) {
+  if(!packetId&&!raffleId&&!legacy)return instantCardDialog(anchor)
   try {
     closePop()
-    const { openTitleRaffle } = await import('/title-raffle.js?v=91deda3f')
+    const { openTitleRaffle } = await import('/title-raffle.js?v=98ddcc7d')
     openTitleRaffle({ anchor, packetId, raffleId, api, h, icon })
   } catch (e) { toast(e.message, 'err') }
 }
@@ -8931,6 +9631,32 @@ function drainRedpackAuto() {
   redpackDialog(anchor,{message:next.message,autoOpen:true,onUpdate:next.pane.update,onClose:()=>{REDPACK_AUTO.active=false;drainRedpackAuto()}})
     .then(()=>{if(!doc.querySelector('.rpk-dialog')){REDPACK_AUTO.active=false;drainRedpackAuto()}})
 }
+// 回应、回复数和装饰更新不重建未变化的播放器，避免轮询时中断视频。
+function replaceChatMediaRow(old,fresh){
+  if (old._mediaKey!==fresh._mediaKey) { old.replaceWith(fresh);return }
+  const previous=[...old.querySelectorAll('.cm-social,.cm-media,.cm-car')]
+  const next=[...fresh.querySelectorAll('.cm-social,.cm-media,.cm-car')]
+  old.before(fresh)
+  previous.forEach((region,index)=>{
+    const target=next[index];if(!target)return
+    const active=[...region.querySelectorAll('video')].filter(v=>!v.paused&&!v.ended).map(v=>({v,time:v.currentTime}))
+    const action=region.querySelector('.cm-social-post-action'),newAction=target.querySelector('.cm-social-post-action')
+    if(action&&newAction)action.replaceWith(newAction)
+    // 支持moveBefore的浏览器原位迁移iframe/视频；其余浏览器保留节点并恢复播放位置。
+    if(typeof target.parentElement.moveBefore==='function')target.parentElement.moveBefore(region,target)
+    else target.before(region)
+    target.remove()
+    for(const {v,time} of active){if(v.currentTime!==time&&Number.isFinite(time)){try{v.currentTime=time}catch{}}if(v.paused)v.play().catch(error=>v._playFailure?.(error))}
+  })
+  old.remove()
+}
+function rankDigest(body){
+  const lines=body.split('\n'),sections={日榜:[],总榜:[],称号:[]};let key='日榜'
+  for(const line of lines.slice(1)){if(Object.hasOwn(sections,line)){key=line;continue}sections[key].push(line)}
+  const list=rows=>h('div',{class:'cm-digest-lines'},...rows.map(line=>{const split=line.indexOf('｜');return split<0?h('p',null,line):h('div',{class:'cm-digest-row'},h('b',null,line.slice(0,split)),h('span',null,line.slice(split+1)))}))
+  return h('div',{class:'cm-rank-digest',role:'note'},h('strong',null,lines[0]),h('p',{class:'cm-digest-caption'},'各榜前三 · 水群统计至次日 04:00'),list(sections.日榜),
+    ...['总榜','称号'].filter(k=>sections[k].length).map(k=>h('details',null,h('summary',null,k==='总榜'?'查看总榜前三':'查看称号与升级'),list(sections[k]))))
+}
 function chatMsg(m, { cont, pane, pending } = {}) {
   const who = m.user.name || m.user.username
   if(m.system_kind==='title_raffle_open')return h('div',{class:'cm-welcome cm-title-raffle',role:'note'},
@@ -8946,9 +9672,13 @@ function chatMsg(m, { cont, pane, pending } = {}) {
     h('span',{class:'cm-welcome-star','aria-hidden':'true'},'✦'),
     h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'称号抽奖已撤回':m.body)),
     !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>titleRaffleDialog(e.currentTarget,null,m.system_ref)},'看结果'))
+  if(m.system_kind==='release_notice')return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},icon('bell'),h('span',{class:'cm-welcome-copy'},h('strong',{style:'white-space:pre-line'},m.deleted?'更新提醒已撤回':m.body)),!m.deleted&&h('button',{class:'btn btn-ghost sm',type:'button',onclick:()=>releaseNoticeDetail(m.body)},'查看更新'))
+  if(m.system_kind==='sleep_reminder')return h('div',{class:'cm-welcome cm-sleep-reminder',role:'note'},icon('moon'),h('span',null,m.deleted?'提醒已撤回':m.body))
+  if(m.system_kind==='rank_award'&&!m.deleted&&m.system_ref?.startsWith('rank:daily:'))return rankDigest(m.body)
+  if(['guess_level','luck_level','rank_award'].includes(m.system_kind))return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},h('span',{'aria-hidden':'true'},'✦'),h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'通知已撤回':m.body)))
   if(m.system_kind==='ldc_game')return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},h('span',{class:'cm-welcome-copy'},h('strong',null,m.body)),h('button',{class:'btn btn-ghost sm',type:'button',onclick:()=>pane?pane.jumpTo(Number(m.system_ref)):jumpMsg(Number(m.system_ref))},'对应发言'))
-  if(['redpack_due','redpack_draw','ldc_winner'].includes(m.system_kind))return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},icon('redpack'),
-    h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'红包提醒已撤回':m.system_kind!=='redpack_due'?m.body:'红包到点啦！'),!m.deleted&&m.system_kind==='redpack_due'&&h('span',null,'正在等待平台开奖结果；打开可同步名单')),
+  if(['redpack_due','redpack_draw','redpack_result','ldc_winner','ldc_cancel','ldc_expired'].includes(m.system_kind))return h('div',{class:'cm-welcome cm-redpack-due',role:'note'},icon('redpack'),
+    h('span',{class:'cm-welcome-copy'},h('strong',null,m.deleted?'红包提醒已撤回':m.system_kind!=='redpack_due'?m.body.split('\n答案释义：')[0]:'红包到点啦！'),!m.deleted&&m.body.includes('\n答案释义：')&&h('span',{class:'cm-answer-meaning'},'答案释义：'+m.body.split('\n答案释义：').slice(1).join('；')),!m.deleted&&m.system_kind==='redpack_due'&&h('span',null,m.body==='[红包到点提醒]'?'红包已到设定时间，打开查看当前结果':m.body)),
     !m.deleted && h('button',{class:'btn btn-primary sm',type:'button',onclick:e=>redpackDialog(e.currentTarget,{message:{id:Number(m.system_ref)},onUpdate:fresh=>pane?.update(fresh)})},'去看看'))
   if (m.system_kind === 'join') return h('div', { class: 'cm-welcome' + (m.deleted ? ' gone' : ''), role: 'note', 'aria-label': m.deleted ? '入群提醒已撤回' : `欢迎 ${who} 加入群聊` },
     m.deleted ? h('span', null, '入群提醒已撤回') : [
@@ -8970,31 +9700,23 @@ function chatMsg(m, { cont, pane, pending } = {}) {
   let ref = null
   if (m.deleted) body.push(h('div', { class: 'cm-gone' }, `${m.mine ? '你' : who} 撤回了一条消息`))
   else {
-    if (m.reply_to) {
-      const r = m.reply_to
-      const rn = r.name || r.username || '佚名'
-      const text = r.deleted ? '消息已撤回' : previewText(stripQuotes(r.text || '')) || ''
-      ref = h('button', { class: 'cm-ref' + (S.me && r.username === S.me.username ? ' me' : ''), type: 'button', title: text ? `${rn}：${text}` : '跳到原消息',
-        onclick: () => pane ? pane.jumpTo(r.id) : jumpMsg(r.id) },
-        avatar(r.avatar, rn, 16), uName('strong', r, {}, (r.username ? '@' : '') + rn, 'chat')[0],
-        h('span', { class: 'cm-ref-text' }, text || (r.file || r.image ? '' : '…')),
-        !r.deleted && r.file && h('span', { class: 'cm-ref-pic' }, icon('doc', 'i tiny'), r.file),
-        !r.deleted && !r.file && r.image && (r.thumb ? h('img', { class: 'cm-ref-thumb', src: r.thumb, alt: '', loading: 'lazy' }) : h('span', { class: 'cm-ref-pic' }, icon('image', 'i tiny'), '图片')))
-    }
+    if (m.reply_to) ref = chatReference(m.reply_to, pane)
     // 正文里贴了图片直链：显示成图；整条只有这个链接时就不再画文字气泡
     const lnk = m.body ? bodyImgUrl(m.body) : null
     const edited = m.edited_at && h('span', { class: 'cm-edited', title: '编辑于 ' + new Date(m.edited_at * 1000).toLocaleString('zh-CN', { hour12: false }) }, '（已编辑）')
     if (m.road_id) body.push(h('a', { class: 'cm-road', href: `/road?item=${m.road_id}`, 'data-link': '' }, `已转到鞭打 #${m.road_id}`))
     if (m.redpack) body.push(h('button', { type: 'button', class: 'cm-redpack' + (m.redpack.solved ? ' is-open' : ''), 'aria-label': '打开红包',
-      onclick: (e) => redpackDialog(e.currentTarget, { message: m, claimOnOpen:true, onUpdate: (fresh) => pane?.update(fresh) }) },
-      m.redpack.cover && h('img',{class:'cm-redpack-cover',src:m.redpack.cover,alt:'红包封面',loading:'lazy',onerror:e=>e.currentTarget.remove()}),
-      h('span', { class: 'cm-redpack-seal', 'aria-hidden': 'true' }, icon('redpack')),
-      h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || '给你一个红包'),
-        h('span', null, m.redpack.game==='ldc'?`${({fixed:'普通红包',random:'拼手气',guess:'欢欢猜词',clues:'逐步线索'})[m.redpack.ldc_mode]||'本站红包'} · ${(m.redpack.ldc_total/100).toFixed(2)} LDC`:m.redpack.provider && m.redpack.provider!=='native' ? `${({hb:'HB',credit:'Credit',fish:'Fish'})[m.redpack.provider]} 红包` : `${({ open: '直接开', phrase: '对暗号', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.solved ? ' · 已拆封' : ''}`),['guess','clues'].includes(m.redpack.ldc_mode)&&h('span',null,'群里发送“猜：答案”即可参与')),
-      h('span', { class: 'cm-redpack-foot' }, m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放',unconfirmed:'结果待核对'})[m.redpack.snapshot?.state] || (m.redpack.provider && m.redpack.provider!=='native' || m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, m.redpack.game==='ldc'||m.redpack.provider && m.redpack.provider!=='native'?'LDC 红包':`${m.redpack.opened} 人拆过`))))
-    if ((!m.redpack || m.redpack.shared) && m.body && !lnk?.only) body.push(h('div', stkOnly(m.body) ? { class:'cm-text stk-only' } : bubbleView(m.user, 'cm-text'),
-      (raffleOf(m.user)||personalOf(m.user,'chat')) ? h('span', { class:'ds-copy rt-copy' }, richBody(m.body, { md:'lite' }), edited) : [richBody(m.body, { md: 'lite' }), edited]))
+      onclick: (e) => pane && ['guess','clues'].includes(m.redpack.ldc_mode) ? pane.openGuess(m.id) : redpackDialog(e.currentTarget, { message: m, claimOnOpen:true, onUpdate: (fresh) => pane?.update(fresh) }) },
+      m.redpack.cover && deferChatImage(h('img',{class:'cm-redpack-cover',alt:'红包封面',onerror:e=>{if(e.currentTarget.isConnected)e.currentTarget.remove()}}),m.redpack.cover),
+      h('span', { class: 'cm-redpack-seal'+((m.redpack.provider==='coin52'||m.redpack.payment_provider==='coin52')?' is-dcoin':''), 'aria-hidden': 'true' }, (m.redpack.provider==='coin52'||m.redpack.payment_provider==='coin52')?dcoinIcon(h):icon('redpack')),
+      h('span', { class: 'cm-redpack-copy' }, h('strong', null, m.redpack.prompt || (m.redpack.game==='free_guess'?'一起猜词吧':'给你一个红包')),
+        h('span', null, m.redpack.provider==='coin52'?'红包 · 站内积分':m.redpack.game==='free_guess'?'欢欢猜词 · 无 LDC 奖励':m.redpack.game==='ldc'?`${m.redpack.draw?.kind==='lottery'?'限时抽奖':({fixed:'普通红包',random:'拼手气',guess:'欢欢猜词',clues:'逐步线索'})[m.redpack.ldc_mode]||'本站红包'} · ${(m.redpack.ldc_total/100).toFixed(m.redpack.payment_provider==='coin52'?0:2)} ${m.redpack.payment_provider==='coin52'?'D币':'LDC'}`:m.redpack.provider && m.redpack.provider!=='native' ? `${({hb:'HB',credit:'Credit',fish:'Fish'})[m.redpack.provider]} 红包` : `${({ open: '直接开', phrase: '复读红包', cipher: '解个谜', image: '猜张图' })[m.redpack.mode]}${m.redpack.ldc_total!=null?` · ${(m.redpack.ldc_total/100).toFixed(m.redpack.payment_provider==='coin52'?0:2)} ${m.redpack.payment_provider==='coin52'?'D币':'LDC'}`:''}${m.redpack.solved ? ' · 已拆封' : ''}`),['guess','clues'].includes(m.redpack.ldc_mode)&&h('span',null,m.redpack.ldc_response_mode==='similarity'?`答案 ${m.redpack.ldc_answer_length} 字 · 相关度模式`:'是非问答'),['guess','clues'].includes(m.redpack.ldc_mode)&&h('span',null,'打开分屏参与猜词')),
+      h('span', { class: 'cm-redpack-foot' }, m.redpack.game==='free_guess'?'进入猜词专区':m.redpack.snapshot?.claimed ? '已领取' : ({exhausted:'被抢光啦',expired:'已过期',cancelled:'已取消',registered:'等待开奖',drawing:'正在开奖',not_won:'未中奖',payment_pending:'等待发放',simulation:'模拟奖励',draft:'尚未开放',unconfirmed:'结果待核对'})[m.redpack.snapshot?.state] || (m.redpack.draw?.kind==='lottery'?'参与 / 查看抽奖':m.redpack.provider && m.redpack.provider!=='native' || m.redpack.solved ? '查看红包' : '戳我拆开'), h('span', null, (m.redpack.provider==='coin52'||m.redpack.payment_provider==='coin52')?dcoinIcon(h):m.redpack.game==='free_guess'?'猜词游戏':m.redpack.game==='ldc'||m.redpack.provider && m.redpack.provider!=='native'?'LDC 红包':`${m.redpack.opened} 人拆过`))))
+    const displayBody=m.redpack?m.body:socialMessageText(m.body||'')
+    if ((!m.redpack || m.redpack.shared) && displayBody && !lnk?.only) body.push(h('div', stkOnly(displayBody) ? { class:'cm-text stk-only' } : bubbleView(m.user, 'cm-text','chat',false,m.id),
+      (raffleOf(m.user)||personalOf(m.user,'chat')) ? h('span', { class:'ds-copy rt-copy' }, richBody(displayBody, { md:'lite' }), edited) : [richBody(displayBody, { md: 'lite' }), edited]))
     if (lnk) body.push(linkImg(lnk.url, lnk.only && edited))
+    if (!pending) body.push(...socialCards(m,{h,api,onRemoval,onOpenMedia:openSocialMedia,renderVideo:im=>mediaVideo(im),onPost:(anchor,index)=>m.meme_id?navigate('/m/'+m.meme_id):chatToPost(m,pane,anchor,'social-post-'+m.id,index)}))
     const all = m.redpack && !m.redpack.shared ? [] : m.media?.length ? m.media : m.image ? [{ u: m.image, w: m.width, h: m.height }] : []
     const files = all.filter((x) => x.k === 'f')
     const media = all.filter((x) => x.k !== 'f')
@@ -9026,7 +9748,6 @@ function chatMsg(m, { cont, pane, pending } = {}) {
                 } }))
               bindVideoHold(shell)
               const video = player.querySelector('video')
-              video.addEventListener('error', () => { shell.replaceWith(b); toast('视频加载失败，请尝试放大播放') }, { once: true })
               b.replaceWith(shell)
               video.play().catch(() => {})
               return
@@ -9037,7 +9758,7 @@ function chatMsg(m, { cont, pane, pending } = {}) {
           'data-mi': i, 'data-mask': (it.b || it.o) && pane ? '' : null,
           oncontextmenu: (it.b || it.o) && !pane ? (e) => { e.preventDefault(); e.stopPropagation(); open(e, i) } : null,
           'data-video': inlineVideo ? '' : null },
-        it.u ? h('img', { src: it.u, alt: '', loading: 'lazy', width: it.w || null, height: it.h || null })
+        it.u ? deferChatImage(h('img', { alt: '', width: it.w || null, height: it.h || null }), it.u)
           : inlineVideo ? h('span', { class: 'cm-video-placeholder', 'aria-hidden': 'true' })
             : h('video', { src: it.v, muted: true, playsinline: true, preload: 'metadata' }),
         kindBadge(it), it.o && h('span', { class: 'mask-badge' }, maskTap() === 'peek' ? '已打码 · 点一下看原图' : '已打码'),
@@ -9108,7 +9829,12 @@ function chatMsg(m, { cont, pane, pending } = {}) {
       h('a', { class: 'cm-file', href: f.u + '?n=' + encodeURIComponent(f.n || '文件'), download: f.n || '文件', target: '_blank', rel: 'noopener' },
         h('span', { class: 'cm-file-ic' }, icon('doc')), h('span', { class: 'cm-file-main' }, h('strong', null, f.n || '文件'), h('span', { class: 'muted' }, fmtBytes(f.s || 0))),
         icon('download', 'i tiny')))))
-    if (m.boosts?.length) body.push(h('div', { class: 'cm-boosts' }, m.boosts.map((b) =>
+    if (m.boosts?.length) body.push(h('div', { class: 'cm-boosts' }, m.boosts.map((b) => b.ai ?
+      h('div',{class:'cm-ai-boost','data-ai-status':b.status},avatar(b.avatar,'欢欢',18),h('div',{class:'cm-ai-content'},
+        h('strong',{class:'cm-ai-name'},'欢欢'),h('span',{class:'cm-ai-answer'},b.text),
+        Number.isInteger(b.score)&&h('div',{class:'cm-ai-meter',role:'progressbar','aria-label':'答案相关度','aria-valuemin':0,'aria-valuemax':100,'aria-valuenow':b.score},h('span',{style:`width:${Math.max(0,Math.min(100,b.score))}%`})),
+        m.mine&&pane&&b.status==='done'&&b.text.startsWith('自动出词：')&&h('button',{type:'button',class:'cm-ai-create',onclick:e=>redpackDialog(e.currentTarget,{group:pane.group,autoGuess:{amount:/(?:出词|出题|猜词|猜题)\s*[:：]?\s*(\d{1,4}(?:\.\d{1,2})?)\s*(?:ldc|积分)?\s*$/i.exec(m.body)?.[1]||''},onSent:()=>pane.poll()})},'确认奖励并发起')
+      )) :
       h('button', { ...bubbleView(b, 'cm-boost boost-sent' + (b.mine ? ' mine' : ''), 'chat', true), type: 'button', title: `${b.name || b.username} · ${clock(b.at)}${b.mine ? ' · 点一下撤掉' : ''}`,
         onclick: (e) => b.mine && pane ? chatBoost(m, pane, '') : userCard(b.username, e.currentTarget) }, avatar(b.avatar, b.name || b.username, 16), boostText(b.text)))))
     if (m.reactions.length) body.push(h('div', { class: 'cm-rx' }, m.reactions.map((r) => rxChip(m, r, pane))))
@@ -9129,6 +9855,17 @@ function chatMsg(m, { cont, pane, pending } = {}) {
     body),
   !m.deleted && S.me && !pending && chatTools(m, pane),
   !m.deleted && S.me && !pending && h('span', { class: 'cm-sw', 'aria-hidden': 'true' }, icon('reply')))
+}
+
+function chatReference(r, pane) {
+  const rn = r.name || r.username || '佚名'
+  const text = r.deleted ? '消息已撤回' : previewText(stripQuotes(r.text || '')) || ''
+  return h('button', { class: 'cm-ref' + (S.me && r.username === S.me.username ? ' me' : ''), type: 'button', title: text ? `${rn}：${text}` : '跳到原消息',
+    onclick: () => pane ? pane.jumpTo(r.id) : jumpMsg(r.id) },
+    avatar(r.avatar, rn, 16), uName('strong', r, {}, (r.username ? '@' : '') + rn, 'chat')[0],
+    h('span', { class: 'cm-ref-text' }, text || (r.file || r.image ? '' : '…')),
+    !r.deleted && r.file && h('span', { class: 'cm-ref-pic' }, icon('doc', 'i tiny'), r.file),
+    !r.deleted && !r.file && r.image && (r.thumb ? deferChatImage(h('img', { class: 'cm-ref-thumb', alt: '' }), r.thumb) : h('span', { class: 'cm-ref-pic' }, icon('image', 'i tiny'), '图片')))
 }
 
 // 「N 条回复」弹层：服务端按 reply_to 查（不受当前只加载了多少条的限制），点一条用 jumpTo 跳过去
@@ -9246,6 +9983,7 @@ function chatMenu(m, pane, e) {
   const stickerIndex=clickedImage?Number(clickedImage.dataset.mi):-1
   const stickerMedia=media.length?media:m.image?[{u:m.image}]:[]
   const favoriteCandidate=stickerMedia[stickerIndex]
+  const copyCandidate = favoriteCandidate || (stickerIndex < 0 ? stickerMedia[0] : null)
   const clickedVideo = e.target.closest?.('[data-video][data-mi]')
   const clickedIndex = clickedVideo ? Number(clickedVideo.dataset.mi) : -1
   const normalVideo = it => it?.k === 'v' && !!it.v && !it.b && !it.o
@@ -9257,10 +9995,15 @@ function chatMenu(m, pane, e) {
     h('button', { class: 'eq-btn', type: 'button', title: '更多表情', 'aria-label': '更多表情', onclick: () => {
       openPop(anchor, emojiBoard((k) => { closePop(); chatReact(m, k, pane) }, { mine }), { key: key + 'e', cls: 'pop-emo' })
     } }, icon('emojiAdd'))),
+    !m.deleted && quickBoosts(m, pane),
     item('回复', 'reply', () => pane.setReply(m)),
     item('引用', 'quote', () => { pane.setReply(m); pane.quoteMsg(m) }),
     videoIndex >= 0 && pane.gallery && item('放大播放', 'zoom', () => { host?.querySelector(`[data-video][data-mi="${videoIndex}"] video`)?.pause(); pane.gallery(m, videoIndex) }),
     m.body && item('+1 复读', 'plus', () => pane.send?.(m.body)),
+    S.me&&!m.deleted&&!m.redpack&&!m.system_kind&&item('收藏消息','bookmark',async()=>{
+      try{await api(`/chat/messages/${m.id}/favorite`,{method:'POST'});toast('已收藏，可从输入框的收藏按钮快捷发送','ok')}
+      catch(error){toast(error.message,'err')}
+    }),
     item('回应', 'rocket', () => boostPrompt(m, pane, anchor)),
     selIn ? item('复制选中的文字', 'copy', () => copyText(sel)) : item('复制', 'copy', () => chatCopy(m)),
     m.body && !selIn && item('选择文字', 'quote', () => {
@@ -9268,13 +10011,15 @@ function chatMenu(m, pane, e) {
       const t = host?.querySelector('.cm-text, .im-text')
       if (t) setTimeout(() => doc.getSelection().selectAllChildren(t), 50)
     }),
-    pic && item('复制图片链接', 'image', () => copyText(location.origin + pic)),
+    pic && item('复制图片链接', 'image', () => copyText(new URL(copyCandidate?.v || copyCandidate?.o || copyCandidate?.u || pic, location.origin).href)),
+    !m.redpack && !m.deleted && copyCandidate?.u && !['v','f'].includes(copyCandidate.k) && !copyCandidate.v &&
+      item(/\.gif(?:\?|$)/i.test(copyCandidate.o || copyCandidate.u) ? '复制图片（静态）' : '复制原图', 'copy', () => copyImage(copyCandidate.o || copyCandidate.u, doc)),
     S.me&&!m.deleted&&!m.redpack&&favoriteCandidate?.u&&!favoriteCandidate.b&&!favoriteCandidate.v&&item('添加表情','heart',async()=>{
       try{await api(`/chat/messages/${m.id}/sticker`,{method:'POST',body:{index:stickerIndex}});toast('已添加到表情包 💗','ok')}
       catch(error){toast(error.message,'err')}
     }),
     m.reactions.length > 0 && item('谁回应了', 'users', () => whoReacted(anchor, `/chat/messages/${m.id}/reactions`, 'rxw' + m.id)),
-    (m.image || m.media?.length) && (m.meme_id
+    (m.image || m.media?.length || socialLinks(m.body||'').some(x=>canSocialPost(x.provider))) && (m.meme_id
       ? item('看转成的帖子', 'ext', () => navigate('/m/' + m.meme_id))
       : item('转成帖子', 'send', () => chatToPost(m, pane, anchor, key + 'p'))),
     m.can_edit && m.body && item('编辑', 'pen', () => pane.setEdit(m)),
@@ -9282,15 +10027,15 @@ function chatMenu(m, pane, e) {
   { key, cls: 'pop-menu', align: btn ? 'right' : 'left' })
 }
 // 二级只选标签，点了就发；图会复制一份，聊天里撤回也不影响帖子
-function chatToPost(m, pane, anchor, key) {
+function chatToPost(m, pane, anchor, key, socialIndex) {
   if (!requireLogin('发帖')) return
   // 发帖人：别人的消息默认记在原发言人名下，也可以记在自己名下
   let as = 'author'
   const go = async (tags) => {
     closePop()
     try {
-      const r = await api(`/chat/messages/${m.id}/to-post`, { method: 'POST', body: { tags, as } })
-      pane.update({ ...m, meme_id: r.id })
+      const r = await api(`/chat/messages/${m.id}/to-post`, { method: 'POST', body: { tags, as, social_index:socialIndex } })
+      pane?.update({ ...m, meme_id: r.id })
       toast(r.existed ? `已经转过了：No.${r.id}` : `已发成帖子 No.${r.id}`, 'ok')
       S.bgKey = null
       S.wallFresh = true
@@ -9398,7 +10143,20 @@ async function chatBoost(m, pane, text) {
   try {
     const { message } = await api(`/chat/messages/${m.id}/boosts`, { method: 'POST', body: { text } })
     pane.update(message)
+    if (text.trim()) {
+      try { localStorage.setItem('chatBoostRecent:' + S.me.id, JSON.stringify([text.trim(), ...recentBoosts()].filter((t, i, all) => all.indexOf(t) === i).slice(0, 4))) } catch {}
+    }
   } catch (e) { toast(e.message, 'err') }
+}
+function recentBoosts() {
+  try { const saved = JSON.parse(localStorage.getItem('chatBoostRecent:' + S.me?.id) || '[]'); return Array.isArray(saved) ? saved.filter(t => typeof t === 'string' && t.trim() && [...t].length <= BOOST_MAX).slice(0, 4) : [] } catch { return [] }
+}
+function quickBoosts(m, pane) {
+  const choices = [...new Set([...recentBoosts(), '善', '甚好', '666', '魔了'])].slice(0, 4)
+  return h('div', { class: 'cm-menu-boost', role: 'group', 'aria-label': '快捷回应' }, choices.map(text => h('button', {
+    class: 'chip bz-chip', type: 'button', 'aria-label': '快捷回应：' + text,
+    onclick: () => { closePop(); chatBoost(m, pane, text) },
+  }, boostText(text))))
 }
 function boostPrompt(m, pane, anchor) {
   const key = 'cmb' + m.id
@@ -9430,31 +10188,140 @@ async function chatReact(m, emoji, pane) {
 }
 
 // ---------- 站内群聊页 /chat ----------
-async function renderChat(gid) {
+async function renderChat(gid, {dmPath='', mountDm} = {}) {
   document.body.classList.add('chat-mode')
   onPageLeave(() => document.body.classList.remove('chat-mode', 'chat-open'))
   if (!S.me) {
     main.replaceChildren(h('div', { class: 'chat-login' },
       h('div', { class: 'chat-login-mark' }, icon('users')),
       h('h1', null, '迷友群'),
-      h('p', null, '聊梗图、接龙、转发好图，群里的人都来自 linux.do。'),
+      h('p', null, '群聊自愿申请加入。群内可能包含没品、变态、地狱笑话及 18 禁内容；未成年人请勿加入。登录后可选择申请，看图不受影响。'),
       h('a', { class: 'btn btn-primary', href: loginHref() }, '前往登录')))
     return
   }
   const side = h('aside', { class: 'chat-side' })
   const body = h('section', { class: 'chat-body' }, h('div', { class: 'spinner' }))
-  const page = h('div', { class: 'chat-page' }, side, body)
-  main.replaceChildren(page)
-  // 高度按实际剩下的空间算：上面有公告条、手机键盘弹起时都不会把输入框挤出屏幕
-  const fit = () => {
-    if (!page.isConnected) return
-    const vh = visualViewport?.height || innerHeight
-    const top = page.getBoundingClientRect().top + scrollY
-    const bottom=innerWidth<=640 ? (document.querySelector('.mobile-nav')?.getBoundingClientRect().height || 0) : 0
-    page.style.height = Math.max(200, vh - top - bottom - (innerWidth > 760 ? 12 : 0)) + 'px'
-    // 手机点输入框弹出输入法：浏览器会先把整页往上推，页面变矮之后下面就空出一截白底。输入框本来就在可见区底部，推回原位
-    if (innerWidth <= 760 && (scrollY > 0 || visualViewport?.offsetTop > 0)) requestAnimationFrame(() => { if (page.isConnected) scrollTo(0, 0) })
+  const page = h('div', { class: 'chat-page' }, side)
+  const collapsedKey='chatSideCollapsed:'+S.me.id
+  let collapsed=false
+  try{collapsed=localStorage.getItem(collapsedKey)==='1'}catch{}
+  const collapseButton=h('button',{type:'button',class:'btn-icon ghost chat-side-collapse',onclick:()=>setCollapsed(!collapsed)})
+  function setCollapsed(value){
+    collapsed=value;page.classList.toggle('side-collapsed',collapsed)
+    collapseButton.replaceChildren(icon(collapsed?'chevR':'chevL'))
+    collapseButton.setAttribute('aria-label',collapsed?'展开会话列表':'收起会话列表')
+    collapseButton.title=collapsed?'展开会话列表':'收起会话列表'
+    collapseButton.setAttribute('aria-expanded',String(!collapsed))
+    sideResize.tabIndex=collapsed?-1:0
+    try{localStorage.setItem(collapsedKey,collapsed?'1':'0')}catch{}
   }
+  // 只调整桌面群列表；宽度以像素保存，窗口缩小时按实际可用空间收敛。
+  const sideWidthKey = 'chatSideWidth'
+  const sideMin = 210, sideDefault = 300
+  const sideMax = () => Math.max(sideMin, Math.min(480, page.clientWidth - (page.querySelector('.cm-pane.gr-open') ? 728 : 360)))
+  const sideClamp = value => Math.round(Math.max(sideMin, Math.min(sideMax(), value)))
+  let sideSaved = null
+  try { const n = Number(localStorage.getItem(sideWidthKey)); if (Number.isFinite(n) && n > 0) sideSaved = n } catch {}
+  const sideApply = value => {
+    const width = sideClamp(value ?? sideDefault)
+    page.style.setProperty('--chat-side-w', width + 'px')
+    sideResize.setAttribute('aria-valuemax', sideMax())
+    sideResize.setAttribute('aria-valuenow', width)
+    sideResize.setAttribute('aria-valuetext', `群列表宽 ${width} 像素`)
+    return width
+  }
+  const sideSave = value => {
+    sideSaved = value == null ? null : sideApply(value)
+    try { if (sideSaved == null) localStorage.removeItem(sideWidthKey); else localStorage.setItem(sideWidthKey, String(sideSaved)) } catch {}
+    sideApply(sideSaved)
+  }
+  let sideDrag = null
+  const sideResize = h('div', { class: 'chat-side-resizer', role: 'separator', tabindex: 0,
+    'aria-label': '调整群列表宽度', 'aria-orientation': 'vertical', 'aria-valuemin': sideMin,
+    title: '拖动调整群列表宽度；方向键微调，双击恢复默认',
+    onpointerdown: e => {
+      if (e.button !== 0 || innerWidth <= 760 || collapsed) return
+      e.preventDefault()
+      sideDrag = { id: e.pointerId, x: e.clientX, width: sideClamp(sideSaved ?? sideDefault) }
+      sideResize.setPointerCapture(e.pointerId)
+      page.classList.add('side-dragging')
+    },
+    onpointermove: e => { if (sideDrag?.id === e.pointerId) sideApply(sideDrag.width + e.clientX - sideDrag.x) },
+    onpointerup: e => {
+      if (sideDrag?.id !== e.pointerId) return
+      sideSave(sideDrag.width + e.clientX - sideDrag.x)
+      sideDrag = null
+      page.classList.remove('side-dragging')
+      if (sideResize.hasPointerCapture(e.pointerId)) sideResize.releasePointerCapture(e.pointerId)
+    },
+    onpointercancel: () => { sideDrag = null; page.classList.remove('side-dragging'); sideApply(sideSaved) },
+    onlostpointercapture: () => { if (sideDrag) { sideDrag = null; page.classList.remove('side-dragging'); sideApply(sideSaved) } },
+    ondblclick: () => sideSave(null),
+    onkeydown: e => {
+      const step = e.shiftKey ? 48 : 16
+      if (e.key === 'ArrowLeft') sideSave(sideClamp(sideSaved ?? sideDefault) - step)
+      else if (e.key === 'ArrowRight') sideSave(sideClamp(sideSaved ?? sideDefault) + step)
+      else if (e.key === 'Home') sideSave(sideMin)
+      else if (e.key === 'End') sideSave(sideMax())
+      else if (e.key === 'Enter') sideSave(null)
+      else return
+      e.preventDefault()
+    } })
+  page.append(sideResize, body)
+  main.replaceChildren(h('div',{class:'chat-workspace'},page))
+  setCollapsed(collapsed)
+  sideApply(sideSaved)
+  const sideFit = () => sideApply(sideSaved)
+  addEventListener('resize', sideFit)
+  onPageLeave(() => removeEventListener('resize', sideFit))
+  // 高度按实际剩下的空间算：上面有公告条、手机键盘弹起时都不会把输入框挤出屏幕
+  let fitFrame = 0
+  let viewportBase = Math.max(innerHeight, visualViewport?.height || 0, document.documentElement.clientHeight)
+  let viewportWidth = innerWidth, keyboardRelease = 0, releaseSince = null
+  const fitNow = () => {
+    fitFrame = 0
+    if (!page.isConnected) return
+    if (visualViewport && visualViewport.scale !== 1) return // 手动缩放时保留浏览器自身的聚焦平移。
+    const editing = page.contains(document.activeElement) && document.activeElement?.matches('input, textarea, [contenteditable="true"]')
+    const pinned = page.classList.contains('keyboard-open'), mobile = innerWidth <= 760
+    // iOS 键盘过渡帧可能先缩小 innerHeight，visualViewport.height 却仍报完整高度。
+    // 编辑态取两者较小值，避免误判为键盘已收起，导致输入栏重新落到可见区外。
+    const vvHeight = visualViewport?.height || innerHeight
+    const vh = mobile && (editing || pinned) ? Math.min(vvHeight, innerHeight) : vvHeight
+    if (Math.abs(innerWidth - viewportWidth) > 60) {
+      viewportBase = Math.max(innerHeight, vh, document.documentElement.clientHeight)
+    } else if (!pinned && !editing) {
+      viewportBase = Math.max(viewportBase, innerHeight, vh, document.documentElement.clientHeight)
+    }
+    viewportWidth = innerWidth
+    // 键盘可能同时缩小 innerHeight，保留编辑前的高度基准；切换输入框时不依赖瞬时焦点。
+    const reduced = Math.max(viewportBase, innerHeight) - vh > (pinned ? 60 : 120)
+    let keyboard = mobile && reduced && (editing || pinned)
+    if (mobile && pinned && !reduced) {
+      // Safari 的收起动画可能短暂报告完整高度。稳定恢复后才释放 fixed，避免来回切布局。
+      if (releaseSince === null) releaseSince = performance.now()
+      keyboard = performance.now() - releaseSince < 180
+      if (keyboard && !keyboardRelease) keyboardRelease = setTimeout(() => { keyboardRelease = 0; fit() }, 190)
+    } else {
+      clearTimeout(keyboardRelease); keyboardRelease = 0; releaseSince = null
+    }
+    // Safari 会在键盘动画中平移布局视口。此时从 page 的负 top 反算高度会不断放大聊天区，
+    // 与浏览器的光标滚动互相追逐。编辑期间直接锚定可见视口，不移动/重建输入节点。
+    page.classList.toggle('keyboard-open', keyboard)
+    if (keyboard) {
+      const height = vh + 'px', top = (visualViewport?.offsetTop || 0) + 'px'
+      if (page.style.height !== height) page.style.height = height
+      if (page.style.top !== top) page.style.top = top
+      return
+    }
+    clearTimeout(keyboardRelease); keyboardRelease = 0; releaseSince = null
+    page.style.top = ''
+    const top = Math.max(0, page.getBoundingClientRect().top)
+    const bottom=innerWidth<=640 ? (document.querySelector('.mobile-nav')?.getBoundingClientRect().height || 0) : 0
+    const height = Math.max(120, vh + (visualViewport?.offsetTop || 0) - top - bottom - (innerWidth > 760 ? 12 : 0)) + 'px'
+    if (page.style.height !== height) page.style.height = height
+  }
+  const fit = () => { if (!fitFrame) fitFrame = requestAnimationFrame(fitNow) }
   const ro = new ResizeObserver(fit)
   ro.observe(document.body)
   const nb = document.getElementById('notice-bar')
@@ -9462,23 +10329,38 @@ async function renderChat(gid) {
   visualViewport?.addEventListener('resize', fit)
   visualViewport?.addEventListener('scroll', fit)
   addEventListener('resize', fit)
+  page.addEventListener('focusin', fit)
+  page.addEventListener('focusout', fit)
   requestAnimationFrame(fit)
-  onPageLeave(() => { ro.disconnect(); visualViewport?.removeEventListener('resize', fit); visualViewport?.removeEventListener('scroll', fit); removeEventListener('resize', fit) })
-  const drawSide = () => side.replaceChildren(
-    h('div', { class: 'chat-side-head' }, h('strong', null, '迷友群'), h('span', { class: 'grow' }),
-      h('a', { class: 'btn btn-ghost sm', href: '/dm', 'data-link': true }, '私信')),
-    h('div', { class: 'chat-groups' }, CHAT.groups.map((g) => groupRow(g, g.id === gid, () => navigate('/chat/' + g.id))),
+  onPageLeave(() => { cancelAnimationFrame(fitFrame); clearTimeout(keyboardRelease); ro.disconnect(); visualViewport?.removeEventListener('resize', fit); visualViewport?.removeEventListener('scroll', fit); removeEventListener('resize', fit); page.removeEventListener('focusin', fit); page.removeEventListener('focusout', fit) })
+  const sideContents=h('div',{class:'chat-side-content'})
+  const category=(dm)=>h('a',{class:'chat-category'+(!!dmPath===dm?' on':''),href:dm?'/dm':'/chat','data-link':'','data-conversation-kind':dm?'dm':'group',
+    'aria-current':!!dmPath===dm?'page':null,title:dm?'私信':'群聊',onclick:()=>{if(collapsed)setCollapsed(false)}},
+    icon(dm?'chat':'users'),h('span',{class:'chat-category-label'},dm?'私信':'群聊'),dm?dmBadge():h('i',{class:'chat-badge','data-group-badge':'',hidden:!groupUnread()},groupUnread()>99?'99+':groupUnread()))
+  side.append(h('div',{class:'chat-side-head'},h('strong',null,'消息'),h('span',{class:'grow'}),collapseButton),
+    h('nav',{class:'chat-categories','aria-label':'消息分类'},category(false),category(true)),sideContents)
+  const drawSide = () => {
+    if(!dmPath)sideContents.replaceChildren(h('div', { class: 'chat-groups' }, CHAT.groups.map((g) => groupRow(g, g.id === gid, () => navigate('/chat/' + g.id))),
       (CHAT.gone || []).map((x) => groupRow(goneAsGroup(x), x.id === gid, () => navigate('/chat/' + x.id)))))
+    syncChatBadges()
+  }
   onPageLeave(onChat(drawSide))
   if (!CHAT.loaded) await loadGroups()
   if (!page.isConnected) return
+  if(dmPath){
+    drawSide()
+    document.body.classList.toggle('chat-open',dmPath!=='/dm')
+    mountDm(body,{path:dmPath,me:S.me,navigate,onLeave:onPageLeave,sidebarHost:sideContents,onRead:()=>loadGroups(),compose:createDmComposer,renderText:text=>richBody(text,{md:'lite'}),renderMedia:dmMedia})
+    return
+  }
   // 只有一个群：不要群列表这一层，直接进
   const solo = CHAT.groups.length + (CHAT.gone?.length || 0) === 1 && !CHAT.canManage
-  page.classList.toggle('solo', solo)
-  const g = findGroup(gid) || (!gid && (solo || innerWidth > 760) ? CHAT.groups[0] : null)
+  // 单群仍保留会话分类，私信入口不能被 solo 布局隐藏。
+  const g = findGroup(gid) || (!gid && innerWidth > 760 ? CHAT.groups[0] : null)
   drawSide()
   const gx = !g && (findGone(gid) || (!gid && !CHAT.groups.length && CHAT.gone?.[0]))
   if (gx) {
+    document.body.classList.add('chat-open')
     body.replaceChildren(goneView(gx, { onBack: solo ? null : () => navigate('/chat') }))
     return
   }
@@ -9490,7 +10372,11 @@ async function renderChat(gid) {
   document.body.classList.add('chat-open')
   const pane = chatPane(g)
   onPageLeave(pane.destroy)
-  body.replaceChildren(chatHead(g, { back: solo ? null : () => navigate('/chat'), pane }), pane.el)
+  body.replaceChildren(chatHead(g, { back: () => navigate('/chat'), pane }), pane.el)
+  // 猜词分屏打开时保留双栏所需宽度；关闭后恢复用户保存的群列表宽度。
+  const sideGuessObserver = new MutationObserver(sideFit)
+  sideGuessObserver.observe(pane.el, { attributes: true, attributeFilter: ['class'] })
+  onPageLeave(() => sideGuessObserver.disconnect())
   if (innerWidth > 760) pane.focus()
 }
 
@@ -9500,7 +10386,10 @@ function groupRow(g, on, onclick) {
   return h('button', { class: 'chat-gr' + (on ? ' on' : '') + (g.gone ? ' gone' : ''), type: 'button', onclick },
     groupAvatar(g.name, 40),
     h('span', { class: 'chat-gr-main' },
-      h('span', { class: 'chat-gr-top' }, h('strong', null, g.name), h('time', null, convTime(g.latest?.at))),
+      h('span', { class: 'chat-gr-top' },
+        h('span', { class: 'chat-gr-label' }, h('strong', null, g.name),
+          !g.gone && Number.isFinite(g.online) && h('span', { class: 'chat-inline-online' }, `${g.online} 人在线`)),
+        h('time', null, convTime(g.latest?.at))),
       h('span', { class: 'chat-gr-sub' }, h('span', null, sub),
         g.muted && icon('bellOff', 'i tiny muted'),
         (g.muted ? g.at_me > 0 : g.unread > 0) && h('i', { class: 'chat-badge' + (g.muted ? ' at' : '') }, g.muted ? '@' + g.at_me : g.unread > 99 ? '99+' : g.unread))))
@@ -9511,7 +10400,7 @@ function memberCount(g, fmt, cls = 'muted') {
   const off = onChat(() => {
     if (!el.isConnected) return off()
     const x = findGroup(g.id)
-    if (x) el.textContent = fmt(x)
+    if (x) el.replaceChildren(fmt(x))
   })
   return el
 }
@@ -9519,12 +10408,16 @@ function chatHead(g, { back, pane } = {}) {
   return h('header', { class: 'chat-head' },
     back && h('button', { class: 'btn-icon ghost chat-back', 'aria-label': '返回', onclick: back }, icon('chevL')),
     groupAvatar(g.name, 34),
-    h('span', { class: 'chat-head-title' }, h('strong', { title:g.name }, g.name), memberCount(g, (x) => `${x.members} 人${x.online ? ` · ${x.online} 人在线` : ''}${x.is_default && innerWidth>640 ? ' · 登录即入群' : ''}`)),
+    h('span', { class: 'chat-head-title' },
+      h('span', { class: 'chat-head-name' }, h('strong', { title:g.name }, g.name),
+        memberCount(g, (x) => Number.isFinite(x.online) ? `${x.online} 人在线` : '', 'chat-inline-online')),
+      memberCount(g, (x) => h('span', null, `${x.members} 人`,
+        h('span', { class: 'chat-members-extra' }, `${x.online ? ` · ${x.online} 人在线` : ''}${x.is_default && innerWidth>640 ? ' · 自愿加入' : ''}`)))),
     pane && h('button', { class: 'btn-icon ghost', title: '搜索聊天记录', 'aria-label': '搜索聊天记录', onclick: () => pane.search() }, icon('search')),
-    h('a', { class: 'btn-icon ghost', href: '/dm', 'data-link': true, title: '私信', 'aria-label': '私信' }, icon('chat')),
+    h('a', { class: 'btn-icon ghost chat-dm-shortcut', href: '/dm', 'data-link': true, title: '私信', 'aria-label': '私信', 'data-conversation-kind':'dm' }, icon('chat'),dmBadge()),
     pane && h('button', { class: 'btn-icon ghost', title: '弹出小窗', 'aria-label': '弹出小窗', onclick: () => chatPopout(g) }, icon('popout')),
     h('button', { class: 'btn btn-ghost sm chat-members', 'aria-label':CHAT.canManage ? '成员与设置' : '成员',title:CHAT.canManage ? '成员与设置' : '成员', onclick: () => groupPanel(g) }, icon('users', 'i tiny'), h('span',{class:'lbl'},CHAT.canManage ? '成员与设置' : '成员'),
-      CHAT.canManage && findGroup(g.id)?.reqs > 0 && h('i', { class: 'chat-badge', title: '有人申请回群' }, findGroup(g.id).reqs)))
+      CHAT.canManage && findGroup(g.id)?.reqs > 0 && h('i', { class: 'chat-badge', title: '有人申请加入群聊' }, findGroup(g.id).reqs)))
 }
 
 // 「x 分钟前在线」：3 分钟内有动静算在线
@@ -9538,17 +10431,87 @@ function seenText(ts, now) {
 }
 
 // 成员与设置：所有人能看成员、退群；管理员能改名、拉人、移出、解散（默认群也能拉人、移人，只是不能解散）
-async function groupPanel(g, { outside } = {}) {
-  const panel = openModalShell('group-panel')
+function groupFiles(g) {
+  let opened = false, loaded = false, busy = false, cursor = null, next = null, more = false
+  const fileSize = size => size >= 1048576 ? (size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(size / 1024)) + ' KB'
+  const previous = [], list = h('div', { class: 'gp-files-list' }), controls = h('div', { class: 'gp-files-controls' })
+  const body = h('div', { hidden: true }, list, controls)
+  const head = h('button', { class: 'gp-h gp-fold', type: 'button', 'aria-expanded': 'false', onclick: () => {
+    opened = !opened; body.hidden = !opened; head.setAttribute('aria-expanded', String(opened))
+    if (opened && !loaded) load()
+  } }, icon('file', 'i tiny'), '群文件')
+  const root = h('section', { class: 'gp-sec gp-files' }, head, body)
+  async function load(target = cursor, direction = '') {
+    if (busy) return
+    busy = true; controls.replaceChildren(h('span', { class: 'muted', role: 'status' }, '正在加载…'))
+    try {
+      const data = await api(`/chat/groups/${g.id}/files` + (target ? `?before=${target}` : ''))
+      if (!root.isConnected) return
+      if (direction === 'next') previous.push(cursor)
+      if (direction === 'prev') previous.pop()
+      if (direction === 'reset') previous.length = 0
+      cursor = target; next = data.before; more = data.more; loaded = true
+      list.replaceChildren(...(data.items.length ? data.items.map(f => h('a', {
+        class: 'gp-file', href: f.u + '?n=' + encodeURIComponent(f.n || '文件'), download: f.n || '文件', target: '_blank', rel: 'noopener',
+      }, icon('file'), h('span', null, h('strong', null, f.n || '文件'), h('small', { class: 'muted' }, `${f.by} · ${fmtTime(f.created_at)}${f.s ? ' · ' + fileSize(f.s) : ''}`)), icon('download', 'i tiny')))
+        : [h('p', { class: 'muted' }, '群里还没有文件')]))
+      controls.replaceChildren(
+        h('button', { class: 'btn btn-ghost sm', disabled: !previous.length, onclick: () => load(previous.at(-1), 'prev') }, '上一页'),
+        h('button', { class: 'btn btn-ghost sm', disabled: !more, onclick: () => load(next, 'next') }, '下一页'),
+        h('button', { class: 'btn-text sm', onclick: () => load(null, 'reset') }, '刷新'))
+    } catch (e) {
+      if (root.isConnected) controls.replaceChildren(h('span', { class: 'muted', role: 'status' }, e.message), h('button', { class: 'btn btn-ghost sm', onclick: () => load(target, direction) }, '重试'))
+    } finally { busy = false }
+  }
+  return root
+}
+
+async function chatRankPanel(g) {
+  const panel = openModalShell('group-panel chat-rank-panel')
+  S.modal.kind = 'chat-rank'
+  const close = () => closeModal(false)
+  const periodBox = h('div', { class: 'chat-rank-options', 'aria-label': '水群榜周期' })
+  const metricBox = h('div', { class: 'chat-rank-options', 'aria-label': '水群榜类型' })
+  const status = h('p', { class: 'gp-note muted', role: 'status' })
+  const mine = h('div', { class: 'chat-rank-mine' })
+  const list = h('ol', { class: 'chat-rank-list' })
+  let period = 'today', metric = 'count', ticket = 0, request
+  const value = (r) => metric === 'count' ? `${r.messages} 条` : period==='all' ? `${r.value} 次前三` : new Date(r.value * 1000).toLocaleTimeString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })
+  const tabs = () => {
+    periodBox.replaceChildren(...[['today','今日'],['all','总榜']].map(([v,label]) => h('button', { class: 'btn sm', 'aria-pressed': String(period===v), onclick: () => { period=v; tabs(); load() } },label)))
+    metricBox.replaceChildren(...[['count','消息最多'],['early','最早发言'],['late','最晚发言']].map(([v,label]) => h('button', { class: 'btn sm', 'aria-pressed':String(metric===v), onclick: () => { metric=v; tabs(); load() } },label)))
+  }
+  const load = async () => {
+    const key=++ticket; request?.abort(); request=new AbortController()
+    status.classList.remove('danger'); status.textContent='正在读取榜单…'; mine.replaceChildren(); list.replaceChildren()
+    try {
+      const d=await api(`/chat/groups/${g.id}/activity-stats?period=${period}&metric=${metric}`,{signal:request.signal})
+      if(key!==ticket||S.modal?.kind!=='chat-rank'||!list.isConnected)return
+      status.textContent=period==='today'?`${d.today} 04:00 至次日 04:00 · 北京时间`:metric==='count'?'本站现存有效消息累计':'累计每日进入前三的次数 · 每天北京时间 04:00 结算后更新'
+      mine.textContent=d.mineRank?`我：${value(d.mine)} · 第 ${d.mineRank} 名`:'我：暂未上榜'
+      list.replaceChildren(...d.leaders.map((r,i)=>h('li',{},h('span',{class:'chat-rank-number'},String(i+1)),avatar(r.avatar,r.name,26),h('span',{class:'chat-rank-name'},r.name),h('strong',{},value(r)))))
+      if(!d.leaders.length)list.append(h('li',{class:'muted'},period==='all'&&metric!=='count'?'尚无已结算的每日前三记录':'本周期还没有有效发言'))
+    } catch(e) { if(key!==ticket||e.name==='AbortError'||!list.isConnected)return; status.classList.add('danger'); status.textContent=`读取失败：${e.message}，可点击刷新重试。` }
+  }
+  panel.replaceChildren(h('div',{class:'compose-head'},h('h2',{},'水群榜'),h('button',{class:'icon-btn','aria-label':'关闭',onclick:close},icon('close'))),h('div',{class:'gp-body'},h('p',{class:'gp-note muted'},`${g.name} · 仅统计主群用户消息；撤回、系统通知、欢欢回复和猜词专区不计。相同成绩按用户编号排序。`),periodBox,metricBox,status,mine,list,h('div',{class:'chat-rank-options'},h('button',{class:'btn sm',onclick:load},'刷新榜单'),h('button',{class:'btn sm',onclick:()=>groupPanel(g,{section:'resources'})},'返回群设置'))))
+  tabs(); await load()
+}
+
+async function groupPanel(g, { outside, section } = {}) {
+  const panel = openModalShell('group-panel group-settings-panel')
   S.modal.kind = 'group'
+  const viewToken = Symbol('group-settings')
+  S.modal.groupView = viewToken
+  const current = () => S.modal?.groupView === viewToken && S.modal?.kind === 'group'
   const close = () => closeModal(false)
   panel.replaceChildren(h('div', { class: 'modal-loading' }, h('div', { class: 'spinner' })))
   let d
   const load = async () => { d = await api(`/chat/groups/${g.id}/members`); MEMBERS.delete(g.id) }
   try { await load() } catch (e) { toast(e.message, 'err'); return close() }
-  if (S.modal?.kind !== 'group') return
+  if (!current()) return
   const admin = CHAT.canManage
-  const changed = async () => { await load(); if (S.modal?.kind === 'group') draw(); loadGroups() }
+  const filesSection = groupFiles(g)
+  const changed = async () => { await load(); if (current()) draw(); loadGroups() }
   const leave = async () => {
     if (!confirm(`退出「${d.group.name}」？${d.group.is_default ? '默认群退了之后，管理员可以再把你拉回来。' : ''}`)) return
     try {
@@ -9559,37 +10522,47 @@ async function groupPanel(g, { outside } = {}) {
       afterGroupGone(g.id)
     } catch (e) { toast(e.message, 'err') }
   }
-  // 不在群里的人（被移出的 / 自己退的）：只有群管理看得到，可以拉回、同意或拒绝申请
-  let out = null, outOpen = !!outside
-  const loadOut = async () => { try { out = await api(`/chat/groups/${g.id}/outside`) } catch (e) { out = { error: e.message } } if (S.modal?.kind === 'group') draw() }
-  if (admin && outOpen) await loadOut()
+  // 未入群、主动退群和被踢出分开；未申请的新账号仅展示。
+  let out = null, outOpen = !!outside, outLoading = false, outMoreError = ''
+  const loadOut = async (more=false) => {
+    if(outLoading)return
+    outLoading=true;outMoreError=''
+    try { const data=await api(`/chat/groups/${g.id}/outside?view=membership${more&&out?.next_before?'&before='+out.next_before:''}`);if(current())out=more?{...data,users:[...out.users,...data.users]}:data }
+    catch(e){if(more)outMoreError=e.message;else out={error:e.message}}
+    finally{outLoading=false;if(current())draw()}
+  }
   const outSec = () => {
     if (!admin) return null
     const head = h('button', { class: 'gp-h gp-fold', type: 'button', 'aria-expanded': String(outOpen), onclick: () => { outOpen = !outOpen; if (outOpen && !out) loadOut(); draw() } },
       icon(outOpen ? 'chevD' : 'chevR', 'i tiny'), '不在群里的人', h('span', { class: 'muted sm' }, ' · 只有管理能看到'),
       findGroup(g.id)?.reqs > 0 && h('i', { class: 'chat-badge' }, findGroup(g.id).reqs + ' 个申请'))
     if (!outOpen) return h('div', { class: 'gp-sec' }, head)
-    const act = (u, ok, label, cls) => h('button', { class: `btn-text sm ${cls || ''}`, type: 'button', onclick: async () => {
+    const act = (u, ok, label, cls) => h('button', { class: `btn-text sm ${cls || ''}`, type: 'button', onclick: async e => {
+      const button=e.currentTarget;button.disabled=true
       try {
         await api(`/chat/groups/${g.id}/join-req/${u.id}`, { method: 'POST', body: { ok } })
-        toast(ok ? `${u.username} 回到群里了` : '已拒绝', 'ok')
+        toast(ok ? `${u.username} 已加入群聊` : '已拒绝', 'ok')
         out = null
         await load(); await loadOut(); loadGroups()
-      } catch (e) { toast(e.message, 'err') }
+      } catch (e) { toast(e.message, 'err') } finally {button.disabled=false}
     } }, label)
-    const list = !out ? [h('div', { class: 'spinner' })] : out.error ? [h('p', { class: 'muted' }, out.error)] : !out.users.length ? [h('p', { class: 'muted sm' }, '没有人')]
-      : out.users.map((u) => h('div', { class: 'gp-row' + (u.req === 0 ? ' req' : '') },
+    const row = u => h('div', { class: 'gp-row' + (u.req === 0 ? ' req' : '') },
         h('button', { class: 'gp-face', type: 'button', 'data-pop': 'u' + u.username, onclick: (e) => userCard(u.username, e.currentTarget) }, avatar(u.avatar, u.name || u.username, 32)),
         h('span', { class: 'gp-who' }, h('strong', null, u.name || u.username),
-          h('span', { class: 'muted' }, '@' + u.username, ' · ', u.kind === 'left' ? '自己退出' : '被移出', u.gone_at ? ` · ${fmtTime(u.gone_at)}` : ''),
-          u.req === 0 && h('span', { class: 'gp-req' }, `申请回群 · ${fmtTime(u.req_at)}`)),
-        u.req === 0 ? [act(u, true, '同意'), act(u, false, '拒绝', 'danger')] : act(u, true, '拉回')))
-    return h('div', { class: 'gp-sec' }, head, h('div', { class: 'gp-list gp-out' }, list))
+          h('span', { class: 'muted' }, '@' + u.username, u.kind==='new'?` · ${fmtTime(u.created_at)}注册`:u.gone_at?` · ${fmtTime(u.gone_at)}`:''),
+          u.req === 0 && h('span', { class: 'gp-req' }, `${u.kind==='new'?'首次申请':'申请重新加入'} · ${fmtTime(u.req_at)}`)),
+        u.req === 0 ? [act(u, true, '同意'), act(u, false, '拒绝', 'danger')] : u.kind==='new'?h('span',{class:'muted sm'},u.req===2?'申请已拒绝':'尚未申请'):act(u, true, '拉回'))
+    const list=!out?[h('div',{class:'spinner'})]:out.error?[h('p',{class:'muted'},out.error),h('button',{class:'btn btn-ghost sm',type:'button',onclick:()=>loadOut()},'重试读取申请')]:[
+      ...[['new','已注册未入群'],['left','主动退群'],['kick','被踢出']].map(([kind,label])=>{
+        const users=out.users.filter(u=>u.kind===kind).sort((a,b)=>Number(b.req===0)-Number(a.req===0)||(b.req_at||b.gone_at||b.created_at)-(a.req_at||a.gone_at||a.created_at))
+        return h('section',{class:'gp-sec'},h('h4',{class:'gp-group'},label,h('span',null,users.length)),h('div',{class:'gp-list gp-out'},users.length?users.map(row):h('p',{class:'gp-note muted',style:'padding:10px 12px'},'暂无人员')))
+      }),outMoreError&&h('p',{class:'danger sm'},outMoreError),out.next_before&&h('button',{class:'btn btn-ghost sm',type:'button',disabled:outLoading,onclick:()=>loadOut(true)},outLoading?'加载中…':'加载更多群外账号')]
+    return h('div', { class: 'gp-sec' }, head, list)
   }
   const noticeSec = () => {
     const x = findGroup(g.id) || {}
-    if (!admin) return x.notice ? h('div', { class: 'gp-sec' }, h('h3', { class: 'gp-h' }, '群公告'), h('div', { class: 'gp-notice' }, richBody(x.notice, { md: 'lite', inlineRefs: true, groupId: g.id }))) : null
-    const ta = h('textarea', { class: 'input', rows: 4, maxlength: 1000, placeholder: '写点群规、活动、提醒…（留空就是不要公告）；写 No.1234 引用帖子' }, x.notice || '')
+    if (!admin) return x.notice ? h('div', { class: 'gp-sec' }, h('h3', { class: 'gp-h' }, '群公告'), h('div', { class: 'gp-notice' }, richBody(x.notice, { md: 'lite', inlineRefs: true, groupId: g.id }))) : h('p',{class:'muted'},'本群暂未设置公告。')
+    const ta = h('textarea', { class: 'input', rows: 4, maxlength: 1000, 'aria-label':'群公告', placeholder: '写点群规、活动、提醒…（留空就是不要公告）；写 No.1234 引用帖子' }, x.notice || '')
     return h('div', { class: 'gp-sec' }, field('群公告', ta, '改了之后，所有人进群都会在顶上看到一次'),
       h('div', { class: 'row-end' },
         h('button', { class: 'btn-text sm', type: 'button', 'data-pop': 'gnpost', onclick: (e) => postPicker(e.currentTarget, (m) => insertAtCursor(ta, `No.${m.id} `), 'gnpost') }, icon('link', 'i tiny'), '引用帖子'),
@@ -9659,70 +10632,61 @@ async function groupPanel(g, { outside } = {}) {
     })
     listBox.replaceChildren(...(out.length ? out : [h('p', { class: 'muted gp-empty' }, k ? `没有叫「${mq.trim()}」的成员` : '还没有成员')]))
   }
+  let ready=false
+  const title=h('h2'),count=h('span',{class:'muted'}),partial=h('p',{class:'gp-note muted'}),outsideBox=h('div')
   const draw = () => {
-    const online = d.members.filter((u) => seenText(u.last_seen, d.now)[1]).length
+    const online=d.members.filter(u=>seenText(u.last_seen,d.now)[1]).length
     drawList()
-    const name = h('input', { class: 'input', maxlength: 20, value: d.group.name })
-    const picker = userPicker()
-    panel.replaceChildren(...nodes(
-      h('header', { class: 'compose-head' }, h('h2', null, d.group.name, h('span', { class: 'muted' }, ` · ${d.total} 人 · ${online} 人在线`)),
-        h('button', { class: 'btn-icon', 'aria-label': '关闭', onclick: close }, icon('close'))),
-      h('div', { class: 'gp-body' },
-        noticeSec(),
-        admin && h('div', { class: 'gp-sec' },
-          field('群名', h('div', { class: 'gp-inline' }, name, h('button', { class: 'btn btn-ghost sm', onclick: async () => {
-            try {
-              await api(`/chat/groups/${g.id}`, { method: 'PATCH', body: { name: name.value } })
-              d.group.name = name.value.trim()
-              toast('已改名', 'ok')
-              draw()
-              loadGroups()
-            } catch (e) { toast(e.message, 'err') }
-          } }, '保存')))),
-        admin && h('div', { class: 'gp-sec' },
-          field('拉人进群', h('div', { class: 'gp-inline' }, picker.el, h('button', { class: 'btn btn-primary sm', onclick: async () => {
-            const names = picker.value()
-            if (!names.length) return toast('先搜索并选几个人')
-            try {
-              const r = await api(`/chat/groups/${g.id}/members`, { method: 'POST', body: { usernames: names } })
-              toast(`拉进 ${r.added} 人${r.missing.length ? `，没找到：${r.missing.join('、')}` : ''}`, r.added ? 'ok' : '')
-              changed()
-            } catch (e) { toast(e.message, 'err') }
-          } }, '拉进群')), d.group.is_default ? '被移出或自己退群的人，也可以在这里拉回来' : '只能拉登录过本站的人')),
-        outSec(),
-        h('div', { class: 'gp-sec' }, h('h3', { class: 'gp-h' }, '我的设置'),
-          h('label', { class: 'set-check' }, h('input', { type: 'checkbox', checked: !!findGroup(g.id)?.muted, onchange: async (e) => {
-            const muted = e.target.checked
-            try {
-              await api(`/chat/groups/${g.id}/mute`, { method: 'PUT', body: { muted } })
-              const x = findGroup(g.id)
-              if (x) x.muted = muted
-              syncChatBadges()
-              loadGroups()
-              toast(muted ? '已开免打扰：只有 @ 你的消息才算未读' : '已取消免打扰', 'ok')
-            } catch (err) { e.target.checked = !muted; toast(err.message, 'err') }
-          } }), '消息免打扰（只有 @ 我的才计数、才提醒）'),
-          awaySettings(),
-          chatAutoSettings(),
-          decoHideSettings()),
-        h('div', { class: 'gp-sec gp-msec' },
-          h('div', { class: 'gp-mhead' }, h('h3', { class: 'gp-h' }, '群成员', h('span', { class: 'muted' }, ` ${d.total} 人 · ${online} 在线`)), msearch),
-          listBox),
-        d.total > d.members.length && h('p', { class: 'gp-note muted' }, `只显示前 ${d.members.length} 位（在线的排前面）`),
-        h('div', { class: 'gp-danger' },
-          h('button', { class: 'btn-text danger', onclick: leave }, '退出群聊'),
-          S.me.is_admin && !d.group.is_default && h('button', { class: 'btn-text danger', onclick: async () => {
-            if (!confirm(`解散「${d.group.name}」？聊天记录和图片会一起删除，不能恢复。`)) return
-            try {
-              await api(`/chat/groups/${g.id}`, { method: 'DELETE' })
-              toast('群已解散')
-              close()
-              await loadGroups()
-              afterGroupGone(g.id)
-            } catch (e) { toast(e.message, 'err') }
-          } }, '解散这个群')))))
+    title.replaceChildren(d.group.name,h('span',{class:'muted'},` · ${d.total} 人 · ${online} 人在线`))
+    count.textContent=` ${d.total} 人 · ${online} 在线`
+    partial.hidden=d.total<=d.members.length
+    partial.textContent=`只显示前 ${d.members.length} 位（在线的排前面）`
+    outsideBox.replaceChildren(...nodes(outSec()))
+    if(ready)return
+    ready=true
+    const name=h('input',{class:'input',maxlength:20,value:d.group.name,'aria-label':'群名'})
+    const picker=userPicker()
+    const rename=admin&&field('群名',h('div',{class:'gp-inline'},name,h('button',{class:'btn btn-ghost sm',type:'button',onclick:async e=>{
+      const button=e.currentTarget;button.disabled=true
+      try{await api(`/chat/groups/${g.id}`,{method:'PATCH',body:{name:name.value}});d.group.name=name.value.trim();toast('已改名','ok');if(current())draw();loadGroups()}
+      catch(err){toast(err.message,'err')}finally{button.disabled=false}
+    }},'保存群名')))
+    const add=admin&&field('拉人进群',h('div',{class:'gp-inline'},picker.el,h('button',{class:'btn btn-primary sm',type:'button',onclick:async e=>{
+      const names=picker.value();if(!names.length)return toast('先搜索并选几个人')
+      const button=e.currentTarget;button.disabled=true
+      try{const r=await api(`/chat/groups/${g.id}/members`,{method:'POST',body:{usernames:names}});toast(`拉进 ${r.added} 人${r.missing.length?`，没找到：${r.missing.join('、')}`:''}`,r.added?'ok':'');await changed()}
+      catch(err){toast(err.message,'err')}finally{button.disabled=false}
+    }},'拉进群')),d.group.is_default?'被移出或自己退群的人，也可以在这里拉回来':'只能拉登录过本站的人')
+    const mutedState=h('span',{class:'deco-pref-state'},findGroup(g.id)?.muted?'已开启':'已关闭')
+    const mutedInput=h('input',{type:'checkbox',checked:!!findGroup(g.id)?.muted,onchange:async e=>{
+      const input=e.currentTarget,muted=input.checked;input.disabled=true;mutedState.textContent='保存中…'
+      try{await api(`/chat/groups/${g.id}/mute`,{method:'PUT',body:{muted}});const x=findGroup(g.id);if(x)x.muted=muted;syncChatBadges();loadGroups();toast(muted?'已开免打扰：只有 @ 你的消息才算未读':'已取消免打扰','ok')}
+      catch(err){input.checked=!muted;toast(err.message,'err')}
+      finally{input.disabled=false;mutedState.textContent=input.checked?'已开启':'已关闭'}
+    }})
+    const danger=h('div',{class:'gp-danger'},h('p',{class:'muted sm'},'退出只影响自己；解散会删除整个群，仅站点管理员可操作非默认群。'),
+      h('button',{class:'btn-text danger',type:'button',onclick:leave},'退出群聊'),
+      S.me.is_admin&&!d.group.is_default&&h('button',{class:'btn-text danger',type:'button',onclick:async()=>{
+        if(!confirm(`解散「${d.group.name}」？聊天记录和图片会一起删除，不能恢复。`))return
+        try{await api(`/chat/groups/${g.id}`,{method:'DELETE'});toast('群已解散');close();await loadGroups();afterGroupGone(g.id)}catch(e){toast(e.message,'err')}
+      }},'解散这个群'))
+    const categories=settingsSections({h,label:'群设置分类',sections:[
+      {id:'members',label:'群成员',keywords:'人员 搜索 昵称 用户名 拉人 限制 移出',nodes:[add,h('div',{class:'gp-mhead'},h('h4',{class:'gp-h'},'成员',count),msearch),listBox,partial]},
+      {id:'info',label:'群资料',keywords:'群名 改名 公告 群规 引用',nodes:[rename,noticeSec()]},
+      {id:'requests',label:'入群申请',keywords:'审批 同意 拒绝 退出 移出 拉回',available:()=>admin,nodes:[outsideBox]},
+      {id:'resources',label:'文件与榜单',keywords:'下载 历史 文件 水群 早起 夜聊 排名',nodes:[filesSection,h('button',{class:'btn sm',type:'button',onclick:()=>chatRankPanel(g)},'水群榜 · 消息 / 早起 / 夜聊')]},
+      {id:'preferences',label:'我的偏好',keywords:'免打扰 红包 提醒 离开 滚动 气泡 动画 装扮 隐藏',nodes:[
+        h('label',{class:'deco-pref-toggle'},mutedInput,h('span',null,'消息免打扰'),mutedState),
+        h('p',{class:'muted sm'},'只影响当前账号在本群的提醒，跨设备同步；开启后只有 @ 我的消息计数和提醒。'),packetBagReminderSettings(g.id),
+        h('h4',null,'本浏览器的阅读与装扮显示'),h('p',{class:'muted sm'},'下列设置立即生效，仅保存在本浏览器。阅读设置用于全部群聊，装扮屏蔽也用于帖子。'),awaySettings(),chatAutoSettings(),decoHideSettings()]},
+      {id:'manage',label:'退出与管理',keywords:'退出 退群 解散 删除',nodes:[danger]},
+    ]})
+    if(section)categories.select(section)
+    if(outside&&admin)categories.select('requests')
+    panel.replaceChildren(h('header',{class:'compose-head'},title,h('button',{class:'btn-icon','aria-label':'关闭',onclick:close},icon('close'))),h('div',{class:'gp-body'},categories.element))
   }
   draw()
+  if(admin&&outOpen)loadOut()
 }
 
 // 搜用户名选人：回车也能直接加一个名字
@@ -9815,9 +10779,25 @@ async function forwardMeme(m, anchor) {
 
 // ---------- 群聊小窗 ----------
 // 弹出：单独一个浏览器小窗口，只有消息区，标题就是群名；和主页面共用登录、表情、看图等
-const focusedDoc = () => [...PIPS].find((w) => !w.closed && w.document.hasFocus())?.document || document
+function popupDocument(win) {
+  try { return win && !win.closed ? win.document : null } catch { return null }
+}
+const focusedDoc = () => [...PIPS].map(popupDocument).find((doc) => doc?.hasFocus()) || document
 // 画中画：Chrome / Edge 116+ 的「文档画中画」窗口永远浮在最上面，切到别的网页、别的软件都看得见
-const canPip = () => 'documentPictureInPicture' in window
+const canPip = () => typeof window.documentPictureInPicture?.requestWindow === 'function'
+const popoutCleanups = new WeakMap()
+let pipOpening = false
+function pipFallback(g) {
+  const dialog = h('dialog', { class: 'bubble-dialog', 'aria-label': '置顶浮窗暂不可用' },
+    h('h2', null, '置顶浮窗暂不可用'),
+    h('p', null, '可以改用普通小窗继续聊天。'),
+    h('div', { class: 'bubble-options-actions' },
+      h('button', { class: 'btn', type: 'button', onclick: () => { dialog.close(); return chatPopout(g) } }, '打开普通小窗'),
+      h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => dialog.close() }, '关闭')))
+  dialog.addEventListener('close', () => dialog.remove(), { once: true })
+  document.body.append(dialog)
+  dialog.showModal()
+}
 async function chatPopout(g0, { pip = false } = {}) {
   const g = findGroup(g0.id) || g0
   const name = 'jhchat' + g.id
@@ -9825,12 +10805,24 @@ async function chatPopout(g0, { pip = false } = {}) {
   const ht = Math.min(680, screen.availHeight - 80)
   let win
   if (pip && canPip()) {
-    if (documentPictureInPicture.window) { documentPictureInPicture.window.close() }
-    try { win = await documentPictureInPicture.requestWindow({ width: w, height: Math.min(ht, 560) }) } catch (e) { return toast('浮窗没打开：' + e.message, 'err') }
+    if (pipOpening) return toast('浮窗正在打开，请稍候')
+    pipOpening = true
+    try {
+      const old = documentPictureInPicture.window
+      if (old) { popoutCleanups.get(old)?.(); old.close() }
+      win = await documentPictureInPicture.requestWindow({ width: w, height: Math.min(ht, 560) })
+    } catch { return pipFallback(g) }
+    finally { pipOpening = false }
+    if (win.closed) return
     win.document.documentElement.lang = 'zh-CN'
     win.document.body.className = 'chat-pip'
   } else {
-    win = open('', name, `popup=yes,width=${w},height=${ht},left=${screen.availWidth - w - 24},top=${Math.max(0, screen.availHeight - ht - 60)}`)
+    const existing = [...PIPS].find((x) => popupDocument(x) && x.__jhGroup === g.id && !x.__jhPip)
+    if (existing) { existing.focus(); return }
+    const features = `popup=yes,width=${w},height=${ht},left=${screen.availWidth - w - 24},top=${Math.max(0, screen.availHeight - ht - 60)}`
+    win = open('', name, features)
+    // 用户可能已把同名小窗导航到外站；保留它，另开本站窗口。
+    if (win && !popupDocument(win)) win = open('', '_blank', features)
     if (!win) return toast('浏览器拦住了弹窗，允许本站弹出窗口后再试', 'err')
     if (win.__jh && !win.closed) { win.focus(); return }
     const d = win.document
@@ -9840,6 +10832,8 @@ async function chatPopout(g0, { pip = false } = {}) {
   }
   const doc = win.document
   win.__jh = true
+  win.__jhGroup = g.id
+  win.__jhPip = pip && canPip()
   // 小窗顶上一条：不透明度 + 置顶。浏览器自己做不到，跟摸鱼窗一样把状态写进标题，本机的摸鱼助手按标题去调透明 / 置顶
   const cp = (() => { try { return { op: 0.95, top: false, ...JSON.parse(localStorage.getItem('chatPip') || '{}') } } catch { return { op: 0.95, top: false } } })()
   const gname = () => findGroup(g.id)?.name || g.name
@@ -9859,7 +10853,9 @@ async function chatPopout(g0, { pip = false } = {}) {
   document.querySelectorAll('link[rel="stylesheet"], style').forEach((l) => doc.head.append(l.cloneNode(true)))
   const icoEl = document.querySelector('link[rel~="icon"]')
   if (icoEl) doc.head.append(icoEl.cloneNode(true))
-  const pane = chatPane(g)
+  const releaseResources = observeResourceDocument(doc)
+  const releaseTextGuard = textGuard(doc)
+  const pane = chatPane(g, { targetDocument: doc })
   doc.body.append(bar, pane.el, h('div', { id: 'toast', class: 'toast', role: 'status', 'aria-live': 'polite' }))
   saveCp()
   bindMsgTools(doc)
@@ -9868,11 +10864,16 @@ async function chatPopout(g0, { pip = false } = {}) {
   pane.st.ownPoll = win.setInterval(() => {
     if (doc.hidden) return
     pane.poll()
-    if (Date.now() - CHAT.at > 30000) loadGroups()
+    if (Date.now() - CHAT.at > 30000) loadGroups({ background: true })
   }, 3000)
-  doc.addEventListener('visibilitychange', () => { if (!doc.hidden) pane.poll() })
+  // 计时器编号只在创建它的窗口内有效，不能让主页面误清同号计时器。
+  pane.st.stopOwnPoll = () => { win.clearInterval(pane.st.ownPoll); pane.st.ownPoll = 0 }
+  syncPageMotion(doc)
+  initializeTitleEffects(doc)
+  doc.addEventListener('visibilitychange', () => { syncPageMotion(doc); if (!doc.hidden) pane.poll() })
   doc.addEventListener('pointerdown', popOutside)
-  win.addEventListener('resize', closePop)
+  const closeOwnPop = () => { if (POP?.el.ownerDocument === doc) closePop() }
+  win.addEventListener('resize', closeOwnPop)
   doc.addEventListener('click', (e) => {
     const a = e.target.closest('a[data-link]')
     if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
@@ -9890,21 +10891,35 @@ async function chatPopout(g0, { pip = false } = {}) {
       else if (e.key === 'ArrowRight') S.viewer.go(1)
       return
     }
-    if (e.key === 'Escape' && POP) closePop()
+    if (e.key === 'Escape') closeOwnPop()
   })
   // 群名改了跟着改标题；被移出 / 群没了就提示
   const off = onChat(() => {
-    if (win.closed) return off()
+    if (win.closed) return cleanup()
     const x = findGroup(g.id)
     if (x) { setTitle(); bar.querySelector('.pip-name').textContent = x.name }
     else if (CHAT.loaded) bar.querySelector('.pip-name').textContent = g.name + '（已不在群里）'
   })
-  win.addEventListener('pagehide', () => { if (S.viewer?.doc === doc) S.viewer.close(true); pane.destroy(); PIPS.delete(win); off() })
+  let disposed = false
+  function cleanup() {
+    if (disposed) return
+    disposed = true
+    closeOwnPop()
+    if (S.viewer?.doc === doc) S.viewer.close(true)
+    pane.destroy()
+    releaseTextGuard()
+    releaseResources()
+    PIPS.delete(win)
+    popoutCleanups.delete(win)
+    off()
+  }
+  popoutCleanups.set(win, cleanup)
+  win.addEventListener('pagehide', cleanup, { once: true })
   win.focus()
   pane.focus()
   dockMin()
 }
-addEventListener('pagehide', () => PIPS.forEach((w) => w.close()))
+addEventListener('pagehide', () => PIPS.forEach((w) => { popoutCleanups.get(w)?.(); w.close() }))
 
 // ---------- 站内悬浮群聊 ----------
 // 右下角一个气泡（带未读数），点开是一个小聊天框；换页面不断开。/chat 页、伪装、老板键时不显示
@@ -10778,26 +11793,107 @@ function disguiseBtn(skin, mark, name, desc) {
 // ---------- 路由 ----------
 
 let dmRouteSeq = 0
+function createDmComposer(){
+  const input=richInput({placeholder:'发一条私信',label:'私信消息'}),tray=attachSlot('dm'),files=[],controllers=new Set()
+  const form=h('form',{class:'cm-compose dm-rich-compose'}),send=h('button',{type:'submit',class:'cm-ibtn dm-send',title:'发送','aria-label':'发送私信'},icon('send'))
+  const fileList=h('div',{class:'dm-file-drafts'}),fileInput=h('input',{type:'file',multiple:true,class:'sr-only',tabindex:-1,'aria-hidden':'true'})
+  let alive=true,enabled=false,editing=false
+  const drawFiles=()=>fileList.replaceChildren(...files.map(f=>h('div',{class:'dm-file-draft'},h('span',null,f.file.name),h('button',{type:'button',class:'btn-text',onclick:()=>{files.splice(files.indexOf(f),1);drawFiles()}},'移除'))))
+  const pickFiles=list=>{for(const file of list){if(files.length+tray.items.length>=12){toast('每条消息最多12个附件','err');break}if(file.size>MAX_FILE){toast('单个文件不能超过20MB','err');continue}files.push({file})}drawFiles()}
+  fileInput.addEventListener('change',()=>{pickFiles([...fileInput.files]);fileInput.value=''})
+  const toolbar=h('div',{class:'cm-bar'},
+    h('button',{type:'button',class:'cm-ibtn',title:'表情','aria-label':'私信表情',onclick:e=>openPop(form,emojiBoard(k=>{closePop();insertAtCursor(input,k.includes(':')?`[${k}]`:k)},{onMediaPick:async item=>{
+      if(editing){toast('编辑消息时只能修改文字和表情代码','err');return}const current=(await api(`/chat/stickers/${item.message_id}/${item.index}`)).item,response=await fetch(current.url,{signal:AbortSignal.timeout(20000)})
+      if(!response.ok)throw Error('收藏图片暂时无法读取');const blob=await response.blob()
+      if(!alive||!form.isConnected)throw Error('私信窗口已关闭')
+      if(!/^image\/(png|jpeg|gif|webp)$/.test(blob.type)||!blob.size||blob.size>MAX_FILE)throw Error('图片格式或大小不可用')
+      closePop();tray.add([new File([blob],'收藏表情.'+blob.type.split('/')[1],{type:blob.type})])
+    }}),{key:'dm-emoji',cls:'pop-stk',up:true})},icon('smile')),
+    h('button',{type:'button',class:'cm-ibtn dm-attach-button',title:'图片 / 视频','aria-label':'私信图片或视频',onclick:()=>tray.pick()},icon('image')),
+    h('button',{type:'button',class:'cm-ibtn dm-attach-button',title:'文件（20MB以内）','aria-label':'私信文件',onclick:()=>fileInput.click()},icon('doc')),
+    h('button',{type:'button',class:'cm-ibtn',title:'引用帖子','aria-label':'私信引用帖子',onclick:()=>postPicker(form,m=>insertAtCursor(input,`No.${m.id} `),'dmpost')},icon('link')),
+    h('span',{class:'grow'}),send)
+  form.append(tray.el,tray.input,fileInput,fileList,input,toolbar)
+  acceptImages(form,input,{add:items=>{if(editing||!enabled){toast('请结束编辑或等待发送完成后添加附件','err');return}tray.add(items)}});sendOnEnter(input,()=>{if(enabled)form.requestSubmit()})
+  input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(160,input.scrollHeight)+'px'})
+  return {form,input,send,hasMedia:()=>files.length+tray.items.length>0,
+    async media(){const result=await tray.media();for(const f of files){if(!f.key){const controller=new AbortController();controllers.add(controller);try{f.key=(await uploadFile(f.file,'dm','file',controller.signal)).key}finally{controllers.delete(controller)}}result.push({key:f.key,name:f.file.name})}if(!alive)throw Error('窗口已关闭');if(result.length>12)throw Error('每条消息最多12个附件');return result},
+    clear(){tray.clear();files.length=0;drawFiles();input.value='';input.style.height=''},
+    setEnabled(value){enabled=value;input.contentEditable=String(value);form.classList.toggle('is-disabled',!value);toolbar.querySelectorAll('button').forEach(b=>b.disabled=!value||(editing&&b.classList.contains('dm-attach-button')))},
+    setEditing(value){editing=value;form.classList.toggle('is-editing',value);toolbar.querySelectorAll('.dm-attach-button').forEach(b=>b.disabled=!enabled||value)},
+    destroy(){alive=false;controllers.forEach(c=>c.abort());tray.clear()}}
+}
+function dmMedia(items){
+ const photos=items.filter(x=>x.k!=='f'),view={id:-1,images:photos,seen_at:1,title:''}
+ return h('div',{class:'dm-media'},items.map(it=>it.k==='f'?h('a',{class:'dm-file',href:it.u+'?n='+encodeURIComponent(it.n||'文件'),download:it.n||'文件'},icon('doc'),it.n||'文件'):
+  it.v?mediaVideo(it):h('button',{type:'button',class:'dm-image','aria-label':'查看私信大图',onclick:()=>openViewer(view,photos.indexOf(it))},h('img',{src:it.u,alt:'私信图片',loading:'lazy',width:it.w||null,height:it.h||null}))))
+}
 async function renderDmRoute() {
   const seq = ++dmRouteSeq
   const path = location.pathname
   main.replaceChildren(loadingBox())
   try {
-    const { renderDmPage } = await import('/dm.js')
+    const { renderDmPage } = await import('/dm.js?v=98ddcc7d')
     if (seq !== dmRouteSeq || location.pathname !== path) return
-    renderDmPage(main, { path, me: S.me, navigate, onLeave: onPageLeave })
+    if(S.me)await renderChat(null,{dmPath:path,mountDm:renderDmPage})
+    else renderDmPage(main, { path, me: S.me, navigate, onLeave: onPageLeave })
   } catch {
     if (seq === dmRouteSeq && location.pathname === path) main.replaceChildren(emptyState('私信暂时打不开', '请重试',
       h('button', { class: 'btn btn-primary sm', type: 'button', onclick: renderDmRoute }, '重试')))
   }
 }
+async function renderFarmRoute(){
+  if(!S.me){main.replaceChildren(pageHead('欢欢农场','登录后拥有自己的田园，进度随账号保存。'),h('a',{class:'btn btn-primary',href:loginHref()},'登录并进入农场'));return}
+  let left=false
+  onPageLeave(()=>{left=true})
+  main.replaceChildren(loadingBox())
+  try{
+    const farewell=await api('/farm/farewell'),{farewellPanel}=await import('/farm-farewell.js?v=98ddcc7d')
+    if(left)return
+    const farewellBanner=farewellPanel(farewell,{reload:()=>route(),onLeave:onPageLeave})
+    if(farewell.closed){main.replaceChildren(farewellBanner);return}
+    const css=new Promise((resolve,reject)=>{
+      let link=document.getElementById('farm-styles')
+      if(link?.sheet){resolve();return}
+      link?.remove();link=h('link',{id:'farm-styles',rel:'stylesheet',href:'/farm.css?v=98ddcc7d',onload:resolve,onerror:()=>{link.remove();reject(Error('农场样式加载失败'))}});document.head.append(link)
+    })
+    const [{mountFarm}]=await Promise.all([import('/farm.js?v=98ddcc7d'),css])
+    if(left)return
+    mountFarm(main,{userId:S.me.id,onLeave:onPageLeave})
+    main.prepend(farewellBanner)
+  }catch{if(!left)main.replaceChildren(emptyState('农场暂时打不开','请重试，云端进度仍然保留',h('button',{class:'btn btn-primary',type:'button',onclick:renderFarmRoute},'重试')))}
+}
+async function renderNovelRoute(){
+  let left=false;onPageLeave(()=>{left=true})
+  main.replaceChildren(loadingBox())
+  try{
+    if(!document.getElementById('novel-styles'))document.head.append(h('link',{id:'novel-styles',rel:'stylesheet',href:'/novels.css?v=98ddcc7d'}))
+    const {mountNovels}=await import('/novels.js?v=98ddcc7d');if(left)return
+    await mountNovels(main,{user:S.me,api,onLeave:onPageLeave,navigate})
+  }catch(e){if(!left)main.replaceChildren(emptyState('书房暂时无法打开',e.message,h('button',{class:'btn',onclick:renderNovelRoute},'重试')))}
+}
+function renderNsfw(){
+  main.replaceChildren(emptyState('RZP 暂停开放','已有内容已保留。',h('button',{class:'btn',onclick:()=>navigate('/')},'返回图廊')))
+}
+async function renderResourceRoute(){
+  let left=false;onPageLeave(()=>{left=true});main.replaceChildren(loadingBox())
+  try{if(!document.getElementById('resource-styles'))document.head.append(h('link',{id:'resource-styles',rel:'stylesheet',href:'/resources.css?v=98ddcc7d'}));const {mountResources}=await import('/resources.js?v=98ddcc7d');if(!left)await mountResources(main,{user:S.me,api,h,onLeave:onPageLeave,navigate,mediaTray,toast,icon})}catch(e){if(!left)main.replaceChildren(emptyState('资源社区暂时无法打开',e.message,h('button',{class:'btn',onclick:renderResourceRoute},'重试')))}
+}
+async function renderMusicRoute(){
+ let left=false;onPageLeave(()=>{left=true});main.replaceChildren(loadingBox())
+ try{const {mountMusic}=await import('/music.js?v=98ddcc7d');if(!left)await mountMusic(main,{user:S.me,onLeave:onPageLeave})}catch(e){if(!left)main.replaceChildren(emptyState('音乐暂时无法打开',e.message,h('button',{class:'btn',onclick:renderMusicRoute},'重试')))}
+}
 const ROUTES = [
+  [/^\/music$/, () => renderMusicRoute()],
+  [/^\/novels(?:\/[-a-zA-Z0-9]+){0,2}$/, () => renderNovelRoute()],
+  [/^\/nsfw(?:\/(?:new|settings|\d+))?$/, () => renderNsfw()],
   [/^\/$/, () => renderWall({})],
   [/^\/series$/, () => renderSeries()],
   [/^\/s\/(.+)$/, (m) => renderWall({ series: decodeURIComponent(m[1]) })],
   [/^\/(puzzles|tools)$/, () => navigate('/', { replace: true })],
   [/^\/me$/, () => renderMe()],
   [/^\/road$/, () => renderRoad()],
+  [/^\/farm$/, () => renderFarmRoute()],
   [/^\/dm(?:\/(?:\d+|new\/-?\d+))?$/, () => renderDmRoute()],
   [/^\/chat(?:\/(\d+))?$/, (m) => renderChat(Number(m[1]) || 0)],
   [/^\/u\/(.+)$/, (m) => renderWall({ author: decodeURIComponent(m[1]) })],
@@ -10812,13 +11908,14 @@ function navigate(path, { replace = false } = {}) {
 }
 
 function route() {
+  document.dispatchEvent(new Event('bubbleeffectreset'))
   dockSync()
-  if (location.pathname.startsWith('/dm') && S.skin) {
+  if ((location.pathname.startsWith('/dm') || location.pathname==='/farm') && S.skin) {
     sessionStorage.setItem('dmReturnSkin',S.skin)
     setSkin('')
     return
   }
-  if (!location.pathname.startsWith('/dm') && !S.skin) {
+  if (!location.pathname.startsWith('/dm') && location.pathname!=='/farm' && !S.skin) {
     const previousSkin=sessionStorage.getItem('dmReturnSkin')
     if (previousSkin) { sessionStorage.removeItem('dmReturnSkin'); setSkin(previousSkin); return }
   }
@@ -10880,6 +11977,9 @@ function pageTitle(path, search) {
   const q = new URLSearchParams(search).get('q')
   const dec = (x) => { try { return decodeURIComponent(x) } catch { return x } }
   if (q) return `搜索：${q}`
+  if (path.startsWith('/music')) return '音乐'
+  if (path.startsWith('/novels')) return '小说'
+  if (path.startsWith('/nsfw')) return 'RZP'
   if (path.startsWith('/series')) return '图集'
   if (path.startsWith('/s/')) return dec(path.slice(3)) + ' · 图集'
   if (path.startsWith('/puzzles')) return '解密'
@@ -10888,6 +11988,7 @@ function pageTitle(path, search) {
   if (path.startsWith('/dm')) return '私信'
   if (path.startsWith('/me')) return '我的'
   if (path.startsWith('/road')) return '鞭打模块'
+  if (path.startsWith('/farm')) return '欢欢农场'
   if (path.startsWith('/u/')) return '@' + dec(path.slice(3))
   if (path.startsWith('/t/')) return '#' + dec(path.slice(3))
   return ''
@@ -10926,6 +12027,8 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keyup', (e) => { FISH?.onKey(e, false) })
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    // 原生弹窗优先处理关闭，不能被双击 Escape 的老板键截走。
+    if (document.querySelector('dialog[open]')) { escAt = -Infinity; return }
     const t = performance.now()
     if (t - escAt < 450) { escAt = -Infinity; toggleBoss(); e.preventDefault(); return }
     escAt = t
@@ -10997,6 +12100,10 @@ async function loadNotices() {
       return row
     }))
   } catch {}
+}
+function releaseNoticeDetail(body,title='系统更新',refresh=true) {
+  const panel=openModalShell('notice-detail');S.modal.kind='notice-detail'
+  panel.replaceChildren(h('header',{class:'compose-head'},h('h2',null,title),closeBtn()),h('div',{class:'ma-body notice-detail-body'},h('p',{style:'white-space:pre-line;overflow-wrap:anywhere'},body),refresh&&h('button',{class:'btn',type:'button',onclick:()=>location.reload()},'已保存，刷新当前界面')))
 }
 function noticeDetail(n) {
   const panel = openModalShell('notice-detail')
@@ -11195,7 +12302,7 @@ async function officialTitleManager(username) {
     const has = raffleGranted.has(id)
     return h('article', { class:'ot-card rt-' + id },
       h('div', { class:'ot-card-heading' }, raffleArt(id), h('div', null, h('strong', null, t.name), h('p', null, (t.rarity==='SSR'?'SSR':'普通')+' · '+t.mood))),
-      h('div', { class:'ot-demo' }, h('span', { class:'cm-text'+(t.bubbleEnabled===false?'':' rt-bubble rt-'+id+(t.collection?' rt-collection':'')) },h('span',{class:'rt-copy'},'今天也要开心呀'))),
+      h('div', { class:'ot-demo' }, h('span', { class:'cm-text'+(t.bubbleEnabled===false?'':' rt-bubble '+titleVisualClass(id,1)) },h('span',{class:'rt-copy'},'今天也要开心呀'))),
       h('button', { class:'btn btn-ghost sm ot-grant', type:'button', disabled:busy, onclick:async () => {
         if (busy) return
         busy=true; status.textContent='正在' + (has ? '收回' : '授予') + t.name; draw()
@@ -11369,10 +12476,31 @@ function imageAiSettings() {
     h('div', { class: 'set-save' }, save, retry), status)
 }
 
-function meSettings(section) {
+function meSettings(section, initialTrial=null) {
   const panel = openModalShell('me-settings')
   S.modal.kind = 'settings'
   const close = () => closeModal(false)
+  const avatarHost=h('div',null,h('button',{type:'button',class:'btn btn-ghost sm',onclick:loadAvatarEditor},'更换头像 · 支持动图'))
+  let avatarLoading=false
+  async function loadAvatarEditor(){
+    if(avatarLoading)return;avatarLoading=true
+    const controller=new AbortController()
+    ;(S.modal.clean??=[]).push(()=>controller.abort())
+    avatarHost.querySelector('button').disabled=true
+    try{
+      if(!document.querySelector('link[data-avatar-editor]'))document.head.append(h('link',{rel:'stylesheet',href:'/avatar-editor.css?v=98ddcc7d','data-avatar-editor':'1'}))
+      const {createAvatarEditor}=await import('/avatar-editor.js?v=98ddcc7d')
+      if(controller.signal.aborted)return
+      const editor=createAvatarEditor({h,api,current:S.me.avatar,name:S.me.name||S.me.username,signal:controller.signal,onSaved:url=>{
+        const old=S.me.avatar;S.me.avatar=url;USERS.delete(S.me.username);refreshAvatar(h,old,url,S.me.name||S.me.username)
+        const mine=main.querySelector('.me-head > .avatar');if(mine)mine.replaceWith(avatar(url,S.me.name||S.me.username,60))
+        renderActions()
+        if(LD?.header?.isConnected)ldHeader()
+        toast('头像已保存','ok')
+      }})
+      avatarHost.replaceChildren(editor.element)
+    }catch(e){if(!controller.signal.aborted){avatarLoading=false;avatarHost.querySelector('button').disabled=false;toast(e.message,'err')}}
+  }
   const nick = h('input', { class: 'input', maxlength: 20, value: S.me.nick || '', placeholder: S.me.username })
   const bio = h('textarea', { class: 'input', rows: 2, maxlength: 80, placeholder: '一句话介绍自己（80 字以内）' }, S.me.bio || '')
   const boss = h('input', { class: 'input', type: 'url', value: localStorage.getItem('bossUrl') || '', placeholder: '留空就用站内的假文档，比如 https://www.baidu.com' })
@@ -11390,6 +12518,7 @@ function meSettings(section) {
   // 左边导航、右边一次只看一块；手机上导航变成顶上一排可横滑的标签
   const secs = [
     ['profile', '资料', 'user', () => h('section', { class: 'set-sec' }, h('h3', null, '资料'),
+      avatarHost,
       field('站内昵称', nick, '留空就用 linux.do 的名字'),
       field('个签', bio),
       h('div', { class: 'set-save' }, h('button', { class: 'btn btn-primary sm', type: 'button', onclick: async () => {
@@ -11400,12 +12529,12 @@ function meSettings(section) {
           toast('资料已保存', 'ok')
         } catch (e) { toast(e.message, 'err') }
       } }, '保存资料')))],
-    ['deco', '装扮', 'sparkle', () => decoEditor()],
+    ['deco', '装扮', 'sparkle', () => decoEditor(initialTrial)],
     ['appearance', '外观', 'palette', () => h('section', { class: 'set-sec' }, h('h3', null, '深浅色'), themeControl())],
     ['ai', 'AI 小伙伴', 'sparkle', () => imageAiSettings()],
     ['badges', '徽章墙', 'trophy', () => h('section', { class: 'set-sec' }, h('h3', null, '徽章墙'),
       h('p', { class: 'muted sm' }, '每日徽章次日结算，可以反复拿，拿得越多等级越高；想佩戴哪个去「装扮」里选'),
-      badgeWall(S.me.badges))],
+      badgeWall(S.me.badges,null,null,S.me.cosmetic_access==='all',S.me.farm_badge_progress))],
     ['moyu', '摸鱼助手', 'fish', () => moyuSettings()],
     ['remind', '下班 / 提醒', 'clock', () => offworkSettings()],
     ['boss', '老板键', 'eyeOff', () => h('section', { class: 'set-sec' }, h('h3', null, '老板键'),
@@ -11477,7 +12606,7 @@ const GUIDE = [
   ['刷梗图', '首页是瀑布流，点图看大图，双击或滚轮放大。上面的标签和作者可以多选筛选。'],
   ['回应', '每帖都能点表情、喜欢，或者来一句 12 字以内的回应；点回应上的数字能看是谁回的。'],
   ['发帖', '右上角「发布」，能一次发多张图、视频或纯文字，局部打码会自动打上「打码」标签。'],
-  ['群聊', '登录就在默认群里。右下角是悬浮群聊，能弹出成小窗；PC 右键消息、手机左滑消息都能快速回复。'],
+  ['群聊', '群聊自愿申请，管理员通过后加入。右下角是悬浮群聊，能弹出成小窗；PC 右键消息、手机左滑消息都能快速回复。'],
   ['摸鱼', '连按两下 Esc 是老板键；在「我的 → 设置」里能改成直接跳到别的网址。'],
 ]
 function startGuide(force) {
@@ -11755,21 +12884,22 @@ function moyuEdit() {
 
 // 文字选择：群消息、帖子正文、评论里能长按 / 拖选复制；Ctrl+A 和手机上的「全选」只选当前这段，不把整个网页选上
 const TEXT_SEL = '.cm-text, .im-bubble, .card-desc, .detail-content, .comment-body, .rd-body, .rd-c-body, .notice-detail-body, .card-title, .detail-title'
-let LAST_TEXT = null
 function textGuard(doc) {
-  doc.addEventListener('pointerdown', (e) => { LAST_TEXT = e.target.closest?.(TEXT_SEL) || null }, true)
-  doc.addEventListener('keydown', (e) => {
+  let lastText = null, busy = false, resetTimer
+  const clock = doc.defaultView
+  const pointerdown = (e) => { lastText = e.target.closest?.(TEXT_SEL) || null }
+  const keydown = (e) => {
     if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'a' || e.altKey || e.shiftKey) return
     const t = e.target
     if (t.closest?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) return
     e.preventDefault()
     const sel = doc.getSelection()
-    const block = sel.anchorNode?.parentElement?.closest(TEXT_SEL) || (LAST_TEXT?.isConnected && LAST_TEXT)
+    if (!sel) return
+    const block = sel.anchorNode?.parentElement?.closest(TEXT_SEL) || (lastText?.isConnected && lastText)
     if (block) sel.selectAllChildren(block)
-  })
+  }
   // 手机上点「全选」会把整页选上：选区跨了好几段 / 跑出正文，就收回到起点那一段
-  let busy = false
-  doc.addEventListener('selectionchange', () => {
+  const selectionchange = () => {
     if (busy) return
     const sel = doc.getSelection()
     if (!sel || sel.isCollapsed || !sel.rangeCount) return
@@ -11781,12 +12911,22 @@ function textGuard(doc) {
     const anc = r.commonAncestorContainer.nodeType === 1 ? r.commonAncestorContainer : r.commonAncestorContainer.parentElement
     // 只在一小块普通文字里选（标题、简介等）不管；一下罩住一大片（含两段以上正文或整个主区）才收
     if (!a && !f && anc && anc.querySelectorAll(TEXT_SEL).length < 2 && !anc.matches('body, main, #main')) return
-    const keep = a || f || (LAST_TEXT?.isConnected && LAST_TEXT)
+    const keep = a || f || (lastText?.isConnected && lastText)
     busy = true
     if (keep) sel.selectAllChildren(keep)
     else sel.removeAllRanges()
-    setTimeout(() => { busy = false })
-  })
+    resetTimer = clock.setTimeout(() => { busy = false })
+  }
+  doc.addEventListener('pointerdown', pointerdown, true)
+  doc.addEventListener('keydown', keydown)
+  doc.addEventListener('selectionchange', selectionchange)
+  return () => {
+    doc.removeEventListener('pointerdown', pointerdown, true)
+    doc.removeEventListener('keydown', keydown)
+    doc.removeEventListener('selectionchange', selectionchange)
+    clock.clearTimeout(resetTimer)
+    lastText = null
+  }
 }
 textGuard(document)
 
@@ -11845,12 +12985,21 @@ if (location.pathname === '/' && !S.skin && !SEEN.local.size) {
 ;(async () => {
   try {
     const me = await api('/me')
+    if(me.main_activation_required){location.replace('/activate');return}
     S.me = me.user
     if (S.me) {
       restorePendingSeen()
       if (SEEN.queue.size) flushSeen().catch(() => {})
     }
     S.officialTitles = me.official_titles || []
+    S.guessRewards = me.guess_rewards || []
+    S.luckRewards = me.luck_rewards || []
+    S.rankRewards = me.rank_rewards || []
+    S.activityRewards = me.activity_rewards || []
+    for(const r of S.activityRewards.filter(r=>r.level===1)){BADGES[r.series]={name:r.label,tier:'epic',g:r.symbol,desc:r.desc+(r.series.startsWith('guess_')?'；1 / 3 / 10 / 30 / 100 次升级':'')};if(!BADGE_ORDER.includes(r.series))BADGE_ORDER.push(r.series)}
+    S.farmBadges = me.farm_badges || []
+    for(const b of S.farmBadges){BADGES[b.id]={...b,g:'✿'};if(!BADGE_ORDER.includes(b.id))BADGE_ORDER.push(b.id)}
+    for(const r of S.rankRewards.filter(r=>r.level===1)){BADGES[r.series]={name:r.label,tier:'epic',g:r.symbol,desc:'日榜、总榜各自每日前三 +3 / +2 / +1 经验，1 / 3 / 10 / 30 / 100 经验升级'};if(!BADGE_ORDER.includes(r.series))BADGE_ORDER.push(r.series)}
     S.limits = me.limits || []
     S.emojis = me.emojis
     S.emojiGroups = me.emoji_groups

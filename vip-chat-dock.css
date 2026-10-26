@@ -1,0 +1,24 @@
+.chat-workspace{min-width:0;min-height:0}
+.vc-panel{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:var(--surface,#fffef8);color:var(--text,#20382d);border:1px solid var(--line,#d4ded0);border-radius:12px}
+.vc-panel[hidden]{display:none}
+.vc-head{display:flex;align-items:center;gap:8px;flex:none;padding:10px 12px;border-bottom:1px solid var(--line,#d4ded0)}
+.vc-head strong{font-size:14px}.vc-head a{margin-left:auto;font-size:12px;white-space:nowrap}.vc-head button{display:grid;place-items:center;width:30px;height:30px;border:0;border-radius:6px;background:transparent;color:inherit;font-size:24px;cursor:pointer}.vc-head button:hover{background:var(--surface-2,#edf3e9)}
+.vc-head :focus-visible{outline:2px solid var(--primary,#2a7259);outline-offset:2px}
+.vc-note{flex:none;margin:0;padding:6px 12px;font-size:11px;color:var(--text-3,#66766b);border-bottom:1px solid var(--line,#d4ded0)}
+.vc-body{flex:1;min-height:0;min-width:0;display:flex;overflow:hidden}.vc-body>.shared-chat{flex:1;height:100%;min-height:0;min-width:0}.vc-panel .sc-scroll{padding:10px}.vc-panel .sc-compose{padding:10px}.vc-panel .sc-message header{gap:6px}.vc-panel .sc-text{font-size:13px;line-height:1.6}.vc-panel .sc-entry{margin-bottom:12px}
+@media(min-width:761px){
+ body.chat-mode #main:has(.chat-workspace.vip-open){max-width:2160px}
+ .chat-workspace.vip-open{display:grid;grid-template-columns:minmax(0,1fr) clamp(280px,21vw,340px);grid-template-rows:minmax(0,1fr);gap:12px;align-items:stretch}
+ .chat-workspace.vip-open>.chat-page{grid-column:1;grid-row:1;min-width:0}
+ .chat-workspace.vip-open>.vc-panel{grid-column:2;grid-row:1;margin-top:16px}
+ .vc-floating{position:fixed;z-index:55;right:12px;top:72px;bottom:16px;width:320px;max-width:calc(100vw - 24px);box-shadow:0 8px 28px #0002}
+}
+@media(min-width:761px) and (max-width:1440px){
+ .chat-workspace.vip-open>.chat-page:not(.side-collapsed){grid-template-columns:180px minmax(0,1fr)}
+ .chat-workspace.vip-open .chat-side-resizer{display:none}
+}
+@media(max-width:760px){
+ .cm-pane.vc-mobile-open{display:flex!important;flex-direction:column}
+ .cm-pane.vc-mobile-open>:not(.vc-panel){display:none!important}
+ .vc-mobile-open>.vc-panel{flex:1;grid-column:1/-1;width:100%;margin:0;border-radius:0}
+}

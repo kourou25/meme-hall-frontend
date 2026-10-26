@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         尽欢红包连接器
 // @namespace    https://52dmeme.com/
-// @version      1.4.0
+// @version      1.5.2
 // @downloadURL  https://52dmeme.com/meme-redpacket.user.js
 // @updateURL    https://52dmeme.com/meme-redpacket.user.js
 // @description  用本人登录态查询领取 HB/Credit/fish；Credit 发包仅在其来源页本人确认，不托管积分或登录凭据。
@@ -9,12 +9,13 @@
 // @match        https://credit.linux.do/*
 // @connect      hb.unsnow.org
 // @connect      credit.linux.do
-// @connect      meme.442224.xyz
+// @connect      hb.lafi.sh
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @run-at       document-end
-// @license      MIT
+// @license      MIT AND Apache-2.0
+// Ecoji V2 映射许可见 https://52dmeme.com/ecoji-LICENSE.txt
 // ==/UserScript==
 
 (()=>{
@@ -87,18 +88,23 @@ function fishSnapshot(raw) {
   if(registration?.status==='won')state='payment_pending'
   const claimed=claim?.rewardType==='ldc' && claim.payment?.mode==='real' && claim.payment?.status==='confirmed'
   if(claim?.rewardType==='ldc'&&!claimed)state=claim.payment?.mode==='simulation'?'simulation':'payment_pending'
-  const list=raw?.roster,visible=p.showRecipientList===true&&list?.enabled!==false
+  // 新版公开活动省略旧显示开关，名单接口自身控制可见性；显式false继续尊重。
+  const list=raw?.roster,visible=p.showRecipientList!==false&&list?.enabled!==false
+  const high=Array.isArray(list?.titles?.highestClaimIds)?list.titles.highestClaimIds.slice(0,100):[]
+  const low=Array.isArray(list?.titles?.lowestClaimIds)?list.titles.lowestClaimIds.slice(0,100):[]
   const people=visible?packetPeople(list?.items,row=>{
     const user=row.claimant||row.participant||row
+    const king=typeof row.id==='string'&&high.includes(row.id),last=typeof row.id==='string'&&low.includes(row.id)
     return {...packetPerson({...user,amount:p.showRecipientAmount!==false?row.amount:null}),
       ...(p.showRecipientUsername===false?{name:'匿名用户',username:''}:{}),
+      luck:p.reward?.mode==='random'&&king!==last?(king?'king':'last'):undefined,
       result:['registered','drawing','won','not_won'].includes(row.status)?row.status:undefined}
   }):[]
   return {id:p.id,state,kind:p.rewardType==='text'?'text':String(p.reward?.mode || 'unknown'),claimed,amount:claimed?packetMoney(claim.amount):null,
     total,remaining,claimed_count:count,participant_count:packetCount(p.draw?.registeredCount),winner_count:completed?packetCount(p.draw?.winnerCount):null,
     draw_at:p.draw?(packetDate(registration?.drawAt)||expires):null,draw_deadline:!!p.draw,draw_complete:completed,
     winners:p.draw&&completed?people:[],participants:p.draw&&!completed?people:[],recipients:!p.draw?people:[],
-    roster_more:visible&&(!!list?.nextCursor||(list?.items?.length||0)>100),roster_error:raw?.roster_error===true,
+    roster_more:visible&&(!!list?.nextCursor||list?.truncated===true||(list?.items?.length||0)>100),roster_error:raw?.roster_error===true,
     expires_at:expires,requires_password:p.participationMode!=='direct',creator:String(p.author?.displayName || p.author?.username || '').slice(0,100),wish:String(p.title || '').slice(0,120)}
 }
 function claimReceipt(provider, raw) {
@@ -108,6 +114,37 @@ function claimReceipt(provider, raw) {
   const amount = packetMoney(d?.amount)
   if (amount === null) throw Error('领取结果尚未确认，请先重新查询或到原站核对，不要连续领取')
   return { claimed: true, amount }
+}
+
+// Ecoji V2 字母表来自 keith-turner/ecoji (Apache-2.0)。
+// https://github.com/keith-turner/ecoji/blob/main/emojisV2.txt
+// 许可全文：/ecoji-LICENSE.txt
+// Fish 使用 128 位 UUID 左移 2 位，取 13 个 10 位字母，末尾补 ☕。
+const FISH_EMOJI = Object.freeze(Array.from(`🀄🃏⏰⏳☔♈♉♊♋♌♍♎♏♐♑♒♓♿⚓⚡⚽⚾⛄⛅⛎⛔⛪⛲⛳⛵⛺⛽✊✋✨⭐🛕🛖🛗🛝🛞🛟🛺🈁🛻🤌🤏🤿🥱🥲🥸🥹🥻🦣🦤🦥🦦🦧🌀🌁🌂🌃🌄🌅🌆🌇🌈🌉🌊🌋🌌🌍🌎🌏🌐🌑🌒🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜🌝🌞🌟🌠🦨🦩🦪🦫🦬🦭🦮🦯🦺🦻🌭🌮🌯🌰🌱🌲🌳🌴🌵🦼🌷🌸🌹🌺🌻🌼🌽🌾🌿🍀🍁🍂🍃🍄🍅🍆🍇🍈🍉🍊🍋🍌🍍🍎🍏🍐🍑🍒🍓🍔🍕🍖🍗🍘🍙🍚🍛🍜🍝🍞🍟🍠🍡🍢🍣🍤🍥🍦🍧🍨🍩🍪🍫🍬🍭🍮🍯🍰🍱🍲🍳🍴🍵🍶🍷🍸🍹🍺🍻🍼🦽🍾🍿🎀🎁🎂🎃🎄🎅🎆🎇🎈🎉🎊🎋🎌🎍🎎🎏🎐🎑🎒🎓🦾🦿🧃🧄🧅🧆🧇🎠🎡🎢🎣🎤🎥🧈🎧🎨🎩🎪🎫🎬🎭🎮🎯🎰🎱🎲🎳🎴🎵🎶🎷🎸🎹🎺🎻🎼🎽🎾🎿🏀🏁🏂🏃🏄🏅🏆🏇🏈🏉🏊🧉🧊🧋🏏🏐🏑🏒🏓🧌🧍🧎🧏🧖🧗🧘🧙🧚🧛🧜🧝🏠🏡🏢🏣🏤🏥🏦🧞🏨🏩🏪🏫🏬🏭🏮🏯🏰🧟🏴🧠🧢🏸🏹🏺🧣🧤🧥🧦🧧🐀🐁🐂🐃🐄🐅🐆🐇🐈🐉🐊🐋🐌🐍🐎🐏🐐🐑🐒🐓🐔🐕🐖🐗🐘🐙🐚🐛🐜🐝🐞🐟🐠🐡🐢🐣🐤🐥🐦🐧🐨🐩🐪🐫🐬🐭🐮🐯🐰🐱🐲🐳🐴🐵🐶🐷🐸🐹🐺🐻🐼🐽🐾🧨👀🧩👂👃👄👅👆👇👈👉👊👋👌👍👎👏👐👑👒👓👔👕👖👗👘👙👚👛👜👝👞👟👠👡👢👣👤👥👦👧👨👩👪👫👬👭👮👯👰👱👲👳👴👵👶👷👸👹👺👻👼👽👾👿💀💁💂💃💄💅💆💇💈💉💊💋💌💍💎💏💐💑💒💓💔💕💖💗💘💙💚💛💜💝💞💟💠💡💢💣💤💥💦💧💨💩💪💫💬💭💮💯💰💱💲💳💴💵💶💷💸🧪💺💻💼💽💾💿📀🧫📂📃📄🧬📆📇📈📉📊📋📌📍📎📏📐📒📓📔📕📖📗📘📙📚📛📜📝📞📟📠📡📢📣📤📥📦📧📨📩📪📫📬📭📮📯📰📱📲📳🧭📵📶📷📸📹📺📻📼🧮📿🧯🧰🧱🧲🧳🔅🔆🔇🔈🔉🔊🔋🔌🔍🔎🔏🔐🔑🔒🔓🔔🔕🔖🔗🔘🧴🧵🧶🧷🧸🧹🧺🧻🧼🧽🧾🧿🔥🔦🔧🔨🔩🔪🔫🔬🔭🔮🔯🔰🔱🔲🔳🩰🩱🩲🩳🩴🩸🩹🩺🩻🩼🪀🪁🕋🕌🕍🕎🪂🪃🪄🪅🪆🪐🪑🪒🪓🪔🪕🪖🪗🪘🪙🪚🪛🪜🪝🪞🪟🪠🪡🪢🪣🪤🪥🪦🪧🪨🪩🪪🪫🕺🪬🪰🪱🪲🪳🪴🖕🖖🖤🪵🪶🪷🪸🪹🪺🫀🫁🫂🫃🫄🫅🫐🫑🫒🫓🫔🫕🫖🫗🗻🗼🗽🗾🗿😀😁😂😃😄😅😆😇😈😉😊😋😌😍😎😏😐😑😒😓😔😕😖😗😘😙😚😛😜😝😞😟😠😡😢😣😤😥😦😧😨😩😪😫😬😭😮😯😰😱😲😳😴😵😶😷😸😹😺😻😼😽😾😿🙀🙁🙂🙃🙄🙅🙆🙇🙈🙉🙊🙌🙍🙎🙏🚀🚁🚂🚃🚄🚅🚆🚇🚈🚉🚊🚋🚌🚍🚎🚏🚐🚑🚒🚓🚔🚕🚖🚗🚘🚙🚚🚛🚜🚝🚞🚟🚠🚡🚢🚣🚤🚥🚦🚧🚨🚩🚪🚫🚬🚭🚮🚯🚰🚱🚲🚳🚴🚵🚶🚷🚸🚹🚺🚻🚼🚽🚾🚿🛀🛁🛂🛃🛄🛅🫘🛌🫙🫠🫡🛐🛑🛒🫢🫣🫤🫥🫦🫧🫰🛫🛬🫱🫲🛴🛵🛶🛷🛸🛹🤐🤑🤒🤓🤔🤕🤖🤗🤘🤙🤚🤛🤜🤝🤞🤟🤠🤡🤢🤣🤤🤥🤦🤧🤨🤩🤪🤫🤬🤭🤮🤯🤰🤱🤲🤳🤴🤵🤶🤷🤸🤹🤺🤼🤽🤾🥀🥁🥂🥃🥄🥅🥇🥈🥉🥊🥋🥌🥍🥎🥏🥐🥑🥒🥓🥔🥕🥖🥗🥘🥙🥚🥛🥜🥝🥞🥟🥠🥡🥢🥣🥤🥥🥦🥧🥨🥩🥪🥫🥬🥭🥮🥯🥰🥳🥴🥵🥶🥺🥼🥽🥾🥿🦀🦁🦂🦃🦄🦅🦆🦇🦈🦉🦊🦋🦌🦍🦎🦏🦐🦑🦒🦓🦔🦕🦖🦗🦘🦙🦚🦛🦜🦝🦞🦟🦠🦡🦢🫳🫴🫵🫶🦴🦵🦶🦷🦸🦹🧀🧁🧂🧐🧑🧒🧓🧔🧕`))
+const FISH_LOOKUP = new Map(FISH_EMOJI.map((symbol,index)=>[symbol,index]))
+const FISH_UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
+
+function fishShareCode(id) {
+  if(!FISH_UUID.test(id))return null
+  const bits=BigInt('0x'+id.replaceAll('-',''))<<2n
+  let code=''
+  for(let position=12;position>=0;position--)code+=FISH_EMOJI[Number((bits>>BigInt(position*10))&1023n)]
+  return code+'☕'
+}
+function fishActivityId(value) {
+  const code=String(value||'').normalize('NFC').replaceAll('️','')
+  const chars=Array.from(code)
+  if(chars.length!==14||chars[13]!=='☕')return null
+  let bits=0n
+  for(const symbol of chars.slice(0,13)){
+    const index=FISH_LOOKUP.get(symbol)
+    if(index===undefined)return null
+    bits=(bits<<10n)|BigInt(index)
+  }
+  if((bits&3n)!==0n)return null
+  const hex=(bits>>2n).toString(16).padStart(32,'0')
+  const id=`${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`
+  return fishShareCode(id)===code?id:null
 }
 
 const operationPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
@@ -334,7 +371,7 @@ async function platformCreateAttempt(action,ext,request){
  const provider=ext?.provider
  if(!['hb','fish'].includes(provider))throw Error('创建平台无效')
  if(typeof GM_getValue!=='function'||typeof GM_setValue!=='function')throw Error('请允许连接器存储待确认操作')
- const origin=provider==='hb'?'https://hb.unsnow.org':'https://meme.442224.xyz'
+ const origin=provider==='hb'?'https://hb.unsnow.org':'https://hb.lafi.sh'
  const session=await request(origin+(provider==='hb'?'/api/me':'/api/session'))
  const account=String(provider==='hb'?session.user?.linuxdo_id??'':session.user?.id??'')
  if(!account)throw Error('请先登录 '+(provider==='hb'?'HB':'Fish')+'，再回本站检测账户')
@@ -428,7 +465,7 @@ async function platformCreateAttempt(action,ext,request){
  }
  const complete=activity=>{
   if(!activity.openedAt)throw Error('Fish草稿已保存，尚未开放，请继续原操作')
-  record.status='opened';record.result={id:record.id,url:origin+'/activities/'+record.id,
+  record.status='opened';record.result={id:record.id,url:origin+'/🧧/'+fishShareCode(record.id),
    code:params.payload.passwords?.[0]||null,kind:params.payload.money?.mode,
    draw_at:activity.deadlineAt?Math.floor(Date.parse(activity.deadlineAt)/1000):null};save();return record.result
  }
@@ -444,14 +481,25 @@ async function platformCreateAttempt(action,ext,request){
  return complete(await readActivity())
 }
 
+function packetRequestError(provider,url,r){
+ const platform=({hb:'HB',credit:'Credit',fish:'Fish'})[provider]||'红包平台'
+ if(provider==='fish'&&r.status===403){
+  const path=new URL(url).pathname,stage=path==='/api/session'?'登录状态':path.startsWith('/api/me/merchants')?'商户权限':'红包操作'
+  const code=typeof r.response?.error?.code==='string'&&/^[A-Z0-9_]{1,64}$/.test(r.response.error.code)?r.response.error.code:''
+  const json=r.response&&typeof r.response==='object'
+  const error=Error(`Fish 拒绝${stage}请求（403${code?' · '+code:''}）。${json?'请到 Fish 核对当前账号的登录与操作权限。':'原站返回非接口页面，请在同一浏览器打开 Fish 完成访问验证后重试。'}`)
+  error.status=403;return error
+ }
+ const error=Error(r.status===401?'请先登录 '+platform:String(r.response?.error?.message||r.response?.error||platform+' 返回 '+r.status).slice(0,180));error.status=r.status;return error
+}
 function packetPlatformRequest(provider){
- const platform=({hb:'HB',credit:'Credit',fish:'Fish'})[provider],origin=({hb:'https://hb.unsnow.org',credit:'https://credit.linux.do',fish:'https://meme.442224.xyz'})[provider]
+ const platform=({hb:'HB',credit:'Credit',fish:'Fish'})[provider],origin=({hb:'https://hb.unsnow.org',credit:'https://credit.linux.do',fish:'https://hb.lafi.sh'})[provider]
  return (url,method='GET',body,extraHeaders={})=>new Promise((resolve,reject)=>{
   if(!origin||!url.startsWith(origin+'/api/')||!['GET','POST'].includes(method)){reject(Error('红包请求目标无效'));return}
   GM_xmlhttpRequest({url,method,responseType:'json',timeout:20000,anonymous:false,
    headers:{Accept:'application/json',...(provider==='credit'?{'X-Requested-With':'XMLHttpRequest'}:{}),...(method==='POST'?{'Content-Type':'application/json'}:{}),...extraHeaders},...(body?{data:JSON.stringify(body)}:{}),
    onload:r=>{
-    if(r.status<200||r.status>=300){const error=Error(r.status===401?'请先登录 '+platform:String(r.response?.error?.message||r.response?.error||platform+' 返回 '+r.status).slice(0,180));error.status=r.status;reject(error);return}
+    if(r.status<200||r.status>=300){reject(packetRequestError(provider,url,r));return}
     if(!r.response||typeof r.response!=='object'){reject(Error(platform+'需要验证或返回格式变化，请打开平台核对'));return}
     resolve(r.response)
    },onerror:()=>reject(Error(platform+'连接失败，请核对原操作')),ontimeout:()=>reject(Error(platform+'请求超时，请核对原操作'))
@@ -464,20 +512,37 @@ mountCreditCreatePage()
 const fishUuid = value => /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value)
 const fishCode = value => [...value].length>=6 && [...value].length<=18 && /^[\p{Script=Han}A-Za-z0-9]+$/u.test(value)
 async function fishPacket(action,ext,request) {
-  const origin='https://meme.442224.xyz',session=await request(origin+'/api/session')
+  const origin='https://hb.lafi.sh',session=await request(origin+'/api/session')
   if(!session.user || typeof session.csrfToken!=='string')throw Error('请先在 fish 登录自己的账号，再回群里继续')
   const accountKey='memeFish:'+String(session.user.id)+':'
   const key=accountKey+ext.ref, discoveryKey=key+':discovery'
   let id=ext.ref_kind==='id'?ext.ref:localStorage.getItem(key)
   let discoveredClaim=false
-  const read=async activityId=>{
+  const read=async (activityId,includeRoster=action==='query')=>{
     if(!fishUuid(activityId))throw Error('fish 活动标识无效')
     const data=await request(origin+'/api/activities/'+activityId)
     const own=data.activity?.rewardType==='ldc'?await request(origin+'/api/activities/'+activityId+'/participation'):{}
     let roster,roster_error=false
-    if(data.activity?.showRecipientList===true){
+    if(includeRoster&&data.activity?.rewardType==='ldc'&&data.activity.showRecipientList!==false){
       const kind=data.activity.draw&&!['completed','empty'].includes(data.activity.draw.state)?'registrations':'recipients'
-      try{roster=await request(origin+'/api/activities/'+activityId+'/'+kind)}catch{roster_error=true}
+      try{
+        const url=origin+'/api/activities/'+activityId+'/'+kind,deadline=Date.now()+5000,seen=new Set()
+        roster=await request(url)
+        if(roster.enabled!==false&&!Array.isArray(roster.items))throw Error('名单格式变化')
+        // 仅主动查询补齐分页，最多100人/5页；领取前不为名单增加请求，失败保留已读部分。
+        for(let page=1;action==='query'&&roster.enabled!==false&&roster.nextCursor&&roster.items.length<100&&page<5&&Date.now()<deadline;page++){
+          const cursor=roster.nextCursor
+          if(typeof cursor!=='string'||cursor.length>2048||seen.has(cursor))throw Error('名单分页异常')
+          seen.add(cursor)
+          const next=await request(url+'?cursor='+encodeURIComponent(cursor))
+          if(next.enabled===false){roster={enabled:false,items:[]};break}
+          if(!Array.isArray(next.items))throw Error('名单格式变化')
+          const ids=new Set(roster.items.map(row=>row?.id).filter(id=>typeof id==='string'))
+          const rows=next.items.filter(row=>{if(!row||typeof row!=='object'||row.id&&ids.has(row.id))return false;if(typeof row.id==='string')ids.add(row.id);return true})
+          const items=[...roster.items,...rows]
+          roster={...roster,...next,items:items.slice(0,100),titles:next.titles||roster.titles,truncated:roster.truncated||items.length>100}
+        }
+      }catch{roster_error=true}
     }
     return {data,snapshot:packetSnapshot('fish',{...data,...own,roster,roster_error})}
   }
@@ -496,7 +561,7 @@ async function fishPacket(action,ext,request) {
     id=result.selectedActivityId || result.items[0].id
     if(!fishUuid(result.claimSubmissionId || '') || !fishUuid(result.id || ''))throw Error('fish 返回的兑奖标识无法确认，请到原站核对')
     localStorage.setItem(key,id)
-    localStorage.setItem(accountKey+id+':submission',JSON.stringify({submissionId:result.claimSubmissionId,password:ext.ref,discoveryId:result.id}))
+    localStorage.setItem(accountKey+id+':submission',JSON.stringify({submissionId:result.claimSubmissionId,password:ext.ref,discoveryId:result.id,participationMode:'password'}))
     discoveredClaim=!!result.claimResult
     localStorage.setItem(discoveryKey,'')
   }
@@ -512,7 +577,7 @@ async function fishPacket(action,ext,request) {
       const password=ext.ref_kind==='text'?ext.ref:String(ext.password || '')
       if(!password)return {...snapshot,requires_password:true}
       if(!fishCode(password))throw Error('这个 fish 活动需要6–18字原站口令，请填写后再领取')
-      submission={submissionId:crypto.randomUUID(),password}
+      submission={submissionId:crypto.randomUUID(),password,participationMode:'password'}
     }
   }
   if(!fishUuid(submission.submissionId || ''))throw Error('fish 返回的兑奖标识无法确认，请到原站核对')
@@ -521,7 +586,7 @@ async function fishPacket(action,ext,request) {
   try{result=await request(origin+'/api/activities/'+id+'/claim','POST',submission,{'X-CSRF-Token':session.csrfToken})}
   catch(e){if(e.status>=400&&e.status<500&&e.status!==429)localStorage.setItem(pendingKey,'');throw e}
   if(result.result==='incorrect'){localStorage.setItem(pendingKey,'');throw Error('fish 原站口令不正确')}
-  const refreshed=await read(id)
+  const refreshed=await read(id,true)
   if(refreshed.snapshot.claimed || ['registered','drawing','not_won','payment_pending','simulation','expired','exhausted'].includes(refreshed.snapshot.state))localStorage.setItem(pendingKey,'')
   return refreshed.snapshot
 }
@@ -533,7 +598,7 @@ window.addEventListener('message', async event => {
   const data=event.data
   if(data?.type!=='meme-redpacket-request' || !/^[a-f0-9-]{36}$/i.test(data.id))return
   const reply=(result,error,creation)=>pageWindow.postMessage({type:'meme-redpacket-result',id:data.id,result,error,creation},location.origin)
-  if(data.action==='ping'){reply({version:'1.4.0',creditCreate:true,participationV2:true,platformCreateV1:true,creationRecoveryV1:true,packetDetailsV1:true});return}
+  if(data.action==='ping'){reply({version:'1.5.2',creditCreate:true,participationV2:true,platformCreateV1:true,creationRecoveryV1:true,packetDetailsV1:true,fishV2:true,fishRosterV2:true,fishErrorsV1:true});return}
   if(['creationOptions','platformCreate','releaseCreation'].includes(data.action)){
     try{
       if(!['hb','fish'].includes(data.external?.provider))throw Error('创建平台无效')
@@ -588,7 +653,7 @@ window.addEventListener('message', async event => {
     if(provider==='credit' && /^[1-9][0-9]{0,19}$/.test(ref))lookup='https://credit.linux.do/api/v1/redenvelope/'+ref
     else if(provider==='hb'&&ext.ref_kind==='id'&&/^[A-Za-z0-9]{1,100}$/.test(ref))lookup='https://hb.unsnow.org/api/hongbao/'+ref
     else if(provider==='hb' && ((ext.ref_kind==='numeric' && /^[0-9]{8}$/.test(ref)) || (ext.ref_kind==='text' && fishCode(ref))))lookup='https://hb.unsnow.org/api/hongbao/'+(ext.ref_kind==='numeric'?'code/':'text-code/')+encodeURIComponent(ref)
-    else if(provider==='fish' && (ext.ref_kind==='id'&&fishUuid(ref) || ext.ref_kind==='text'&&fishCode(ref)))lookup='https://meme.442224.xyz/api/session'
+    else if(provider==='fish' && (ext.ref_kind==='id'&&fishUuid(ref) || ext.ref_kind==='text'&&fishCode(ref)))lookup='https://hb.lafi.sh/api/session'
     else throw Error('红包来源或口令无效，未发送请求')
     if(!navigator.locks?.request)throw Error('浏览器不支持领取锁，请前往原站')
     await navigator.locks.request('meme-redpacket-'+provider,{ifAvailable:true},async lock=>{
@@ -605,7 +670,7 @@ window.addEventListener('message', async event => {
         headers:{Accept:'application/json',...(provider==='credit'?{'X-Requested-With':'XMLHttpRequest'}:{}),...(method==='POST'?{'Content-Type':'application/json'}:{}),...extraHeaders},
         ...(body?{data:JSON.stringify(body)}:{}),
         onload:r=>{
-          if(r.status<200 || r.status>=300){const error=Error(r.status===401?'请先登录 '+platform+'，再回群里刷新状态':String(r.response?.error?.message || r.response?.error || `${platform} 返回 ${r.status}，请打开平台核对`).slice(0,180));error.status=r.status;reject(error);return}
+          if(r.status<200 || r.status>=300){reject(packetRequestError(provider,url,r));return}
           if(!r.response || typeof r.response!=='object'){reject(Error(platform+' 需要验证或返回格式变化，请打开平台核对'));return}
           resolve(r.response)
         },onerror:()=>reject(Error(platform+' 连接失败，请打开平台核对')),ontimeout:()=>reject(Error(platform+' 请求超时，请打开平台核对')),

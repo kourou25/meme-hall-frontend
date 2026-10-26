@@ -1,0 +1,6955 @@
+{
+  "book": {
+    "id": "dianzi-jianxian",
+    "title": "不是，我电子女友咋修成剑仙了",
+    "author": "宇宙无敌暴龙烧鹅",
+    "description": "一次电子女友游戏中的充值，连接了两个世界。陈怀安与李清然的修仙故事。",
+    "chapters": 1157,
+    "words": 2580763,
+    "version": "d0171a59d2bba763"
+  },
+  "chapters": [
+    {
+      "id": 1,
+      "title": "第1章小作坊下料就是猛",
+      "words": 2308,
+      "paragraphs": 79
+    },
+    {
+      "id": 2,
+      "title": "第2章只要充值就能变强",
+      "words": 2306,
+      "paragraphs": 85
+    },
+    {
+      "id": 3,
+      "title": "第3章这游戏居然有独立cv？",
+      "words": 2153,
+      "paragraphs": 78
+    },
+    {
+      "id": 4,
+      "title": "第4章全都给你炸完",
+      "words": 2452,
+      "paragraphs": 98
+    },
+    {
+      "id": 5,
+      "title": "第5章疯狂星期四特惠",
+      "words": 2964,
+      "paragraphs": 103
+    },
+    {
+      "id": 6,
+      "title": "第6章什么？？还有月卡？！",
+      "words": 2186,
+      "paragraphs": 66
+    },
+    {
+      "id": 7,
+      "title": "第7章这何尝不是一种血赚",
+      "words": 2399,
+      "paragraphs": 90
+    },
+    {
+      "id": 8,
+      "title": "第8章好感不足，不给看",
+      "words": 2118,
+      "paragraphs": 95
+    },
+    {
+      "id": 9,
+      "title": "第9章正在推演天机",
+      "words": 2299,
+      "paragraphs": 101
+    },
+    {
+      "id": 10,
+      "title": "第10章您电子女友的小礼物已送达",
+      "words": 2278,
+      "paragraphs": 96
+    },
+    {
+      "id": 11,
+      "title": "第11章是李清然的味道！",
+      "words": 2048,
+      "paragraphs": 80
+    },
+    {
+      "id": 12,
+      "title": "第12章我们是来真实你的（单女主叠甲）",
+      "words": 2444,
+      "paragraphs": 86
+    },
+    {
+      "id": 13,
+      "title": "第13章狂兽引",
+      "words": 2165,
+      "paragraphs": 88
+    },
+    {
+      "id": 14,
+      "title": "第14章海市蜃楼？",
+      "words": 2660,
+      "paragraphs": 113
+    },
+    {
+      "id": 15,
+      "title": "第15章若有来世？",
+      "words": 2238,
+      "paragraphs": 109
+    },
+    {
+      "id": 16,
+      "title": "第16章就想扎点什么〈本章由塔尼娅独家冠名〉",
+      "words": 2518,
+      "paragraphs": 114
+    },
+    {
+      "id": 17,
+      "title": "第17章难道陈怀安是天才？！",
+      "words": 2225,
+      "paragraphs": 99
+    },
+    {
+      "id": 18,
+      "title": "第18章这是很重要的东西",
+      "words": 2313,
+      "paragraphs": 85
+    },
+    {
+      "id": 19,
+      "title": "第19章神药出世",
+      "words": 2405,
+      "paragraphs": 82
+    },
+    {
+      "id": 20,
+      "title": "第20章对天发誓（由爱吃星辰的榴莲独家冠名-首秀后再补加更）",
+      "words": 2169,
+      "paragraphs": 77
+    },
+    {
+      "id": 21,
+      "title": "第21章剑典",
+      "words": 2140,
+      "paragraphs": 91
+    },
+    {
+      "id": 22,
+      "title": "第22章你与本尊有缘！",
+      "words": 2603,
+      "paragraphs": 84
+    },
+    {
+      "id": 23,
+      "title": "第23章阶段性战令开启",
+      "words": 2606,
+      "paragraphs": 87
+    },
+    {
+      "id": 24,
+      "title": "第24章护法套餐",
+      "words": 3188,
+      "paragraphs": 132
+    },
+    {
+      "id": 25,
+      "title": "第25章天魔门-夜伏天",
+      "words": 2087,
+      "paragraphs": 81
+    },
+    {
+      "id": 26,
+      "title": "第26章188直接秒，有什么好说的？",
+      "words": 2831,
+      "paragraphs": 108
+    },
+    {
+      "id": 27,
+      "title": "第27章有人向您索求机缘",
+      "words": 2544,
+      "paragraphs": 87
+    },
+    {
+      "id": 28,
+      "title": "第28章又有小礼物了？",
+      "words": 2424,
+      "paragraphs": 100
+    },
+    {
+      "id": 29,
+      "title": "第29章好剑、好剑！",
+      "words": 2538,
+      "paragraphs": 100
+    },
+    {
+      "id": 30,
+      "title": "第30章黑鳞剑",
+      "words": 2078,
+      "paragraphs": 81
+    },
+    {
+      "id": 31,
+      "title": "第31章请选择目标",
+      "words": 2888,
+      "paragraphs": 91
+    },
+    {
+      "id": 32,
+      "title": "第32章心魔滋生（本章由书空空冠名）",
+      "words": 2830,
+      "paragraphs": 101
+    },
+    {
+      "id": 33,
+      "title": "第33章良心发现",
+      "words": 2327,
+      "paragraphs": 90
+    },
+    {
+      "id": 34,
+      "title": "第34章李清然，你真蠢",
+      "words": 2413,
+      "paragraphs": 99
+    },
+    {
+      "id": 35,
+      "title": "第35章做个了断（天行地止+1）",
+      "words": 2132,
+      "paragraphs": 71
+    },
+    {
+      "id": 36,
+      "title": "第36章综艺节目〈二合一〉",
+      "words": 3041,
+      "paragraphs": 87
+    },
+    {
+      "id": 37,
+      "title": "第37章上青云宗〈心海♂+1〉",
+      "words": 2078,
+      "paragraphs": 76
+    },
+    {
+      "id": 38,
+      "title": "第38章我看谁敢",
+      "words": 2374,
+      "paragraphs": 97
+    },
+    {
+      "id": 39,
+      "title": "第39章就插手，如何？",
+      "words": 2668,
+      "paragraphs": 81
+    },
+    {
+      "id": 40,
+      "title": "第40章战张寒啸（本章由＜乔色夫乔斯哒＞独家冠名）",
+      "words": 2188,
+      "paragraphs": 71
+    },
+    {
+      "id": 41,
+      "title": "第41章继续清算",
+      "words": 2107,
+      "paragraphs": 75
+    },
+    {
+      "id": 42,
+      "title": "第42章万剑穿心（给老板加一章）",
+      "words": 2257,
+      "paragraphs": 62
+    },
+    {
+      "id": 43,
+      "title": "第43章可还满意？",
+      "words": 2448,
+      "paragraphs": 90
+    },
+    {
+      "id": 44,
+      "title": "第44章斩立决",
+      "words": 1847,
+      "paragraphs": 59
+    },
+    {
+      "id": 45,
+      "title": "第45章辩上一辩（ERR.OR冠名加更）",
+      "words": 2309,
+      "paragraphs": 78
+    },
+    {
+      "id": 46,
+      "title": "第46章选好了",
+      "words": 1698,
+      "paragraphs": 61
+    },
+    {
+      "id": 47,
+      "title": "第47章不妨试试",
+      "words": 2358,
+      "paragraphs": 85
+    },
+    {
+      "id": 48,
+      "title": "第48章战陆长天（前途无亮+1）",
+      "words": 1734,
+      "paragraphs": 78
+    },
+    {
+      "id": 49,
+      "title": "第49章游戏头盔？",
+      "words": 1732,
+      "paragraphs": 76
+    },
+    {
+      "id": 50,
+      "title": "第50章月出天山",
+      "words": 1892,
+      "paragraphs": 80
+    },
+    {
+      "id": 51,
+      "title": "第51章这也是个隐藏老妖怪（爱吃麻辣皮蛋的慕风+1）",
+      "words": 2237,
+      "paragraphs": 109
+    },
+    {
+      "id": 52,
+      "title": "第52章直接就是全选",
+      "words": 2240,
+      "paragraphs": 107
+    },
+    {
+      "id": 53,
+      "title": "第53章托管所",
+      "words": 2310,
+      "paragraphs": 101
+    },
+    {
+      "id": 54,
+      "title": "第54章散功（爱吃星辰的榴莲+1）",
+      "words": 2420,
+      "paragraphs": 96
+    },
+    {
+      "id": 55,
+      "title": "第55章师尊请受徒儿一拜",
+      "words": 2406,
+      "paragraphs": 108
+    },
+    {
+      "id": 56,
+      "title": "第56章哥们儿你长得真牛逼",
+      "words": 1875,
+      "paragraphs": 82
+    },
+    {
+      "id": 57,
+      "title": "第57章滚出去（塔尼娅+2）",
+      "words": 2092,
+      "paragraphs": 83
+    },
+    {
+      "id": 58,
+      "title": "第58章慢着~",
+      "words": 2004,
+      "paragraphs": 67
+    },
+    {
+      "id": 59,
+      "title": "第59章我们是青云宗的人",
+      "words": 1818,
+      "paragraphs": 80
+    },
+    {
+      "id": 60,
+      "title": "第60章本尊果然是超人（二合一，爱吃星辰的榴莲+1）",
+      "words": 2895,
+      "paragraphs": 110
+    },
+    {
+      "id": 61,
+      "title": "第61章谁能有我们家哥哥帅？",
+      "words": 1773,
+      "paragraphs": 75
+    },
+    {
+      "id": 62,
+      "title": "第62章你药剂把干啥",
+      "words": 2155,
+      "paragraphs": 87
+    },
+    {
+      "id": 63,
+      "title": "第63章要让你穿帮（小yo.O冠名加更）",
+      "words": 2469,
+      "paragraphs": 110
+    },
+    {
+      "id": 64,
+      "title": "第64章拍肩",
+      "words": 1761,
+      "paragraphs": 75
+    },
+    {
+      "id": 65,
+      "title": "第65章难道他有什么办法？",
+      "words": 1985,
+      "paragraphs": 82
+    },
+    {
+      "id": 66,
+      "title": "第66章有大佬（肥大金贱层+1）",
+      "words": 2142,
+      "paragraphs": 109
+    },
+    {
+      "id": 67,
+      "title": "第67章我这儿还有",
+      "words": 1892,
+      "paragraphs": 81
+    },
+    {
+      "id": 68,
+      "title": "第68章您的电子女友已加入剑阁",
+      "words": 1934,
+      "paragraphs": 84
+    },
+    {
+      "id": 69,
+      "title": "第69章陈怀安是太上长老？（爱吃四喜豆的楚辰+1）",
+      "words": 2184,
+      "paragraphs": 71
+    },
+    {
+      "id": 70,
+      "title": "第70章选洞府",
+      "words": 1637,
+      "paragraphs": 59
+    },
+    {
+      "id": 71,
+      "title": "第71章扣？扣扣农场？",
+      "words": 2174,
+      "paragraphs": 95
+    },
+    {
+      "id": 72,
+      "title": "第72章真就发个草？（无未之未非吾思未+1）",
+      "words": 2093,
+      "paragraphs": 96
+    },
+    {
+      "id": 73,
+      "title": "第73章这不会是真符箓吧？",
+      "words": 2093,
+      "paragraphs": 86
+    },
+    {
+      "id": 74,
+      "title": "第74章这植物真有问题？",
+      "words": 2126,
+      "paragraphs": 91
+    },
+    {
+      "id": 75,
+      "title": "第75章难道是姿势不对？（喜欢小管仲的王耀冠名加更）",
+      "words": 1996,
+      "paragraphs": 85
+    },
+    {
+      "id": 76,
+      "title": "第76章什么？剑气？！",
+      "words": 2177,
+      "paragraphs": 86
+    },
+    {
+      "id": 77,
+      "title": "第77章陈怀安是定时炸弹？",
+      "words": 2709,
+      "paragraphs": 105
+    },
+    {
+      "id": 78,
+      "title": "第78章娘的，这儿是灵犀谷吧？（枫雨清叶+1）",
+      "words": 2031,
+      "paragraphs": 82
+    },
+    {
+      "id": 79,
+      "title": "第79章不会要霸占房子吧？",
+      "words": 2057,
+      "paragraphs": 93
+    },
+    {
+      "id": 80,
+      "title": "第80章剑阁的传统？",
+      "words": 2443,
+      "paragraphs": 88
+    },
+    {
+      "id": 81,
+      "title": "第81章吐纳法与暗流（二合一）（简单Q一下）",
+      "words": 2889,
+      "paragraphs": 92
+    },
+    {
+      "id": 82,
+      "title": "第82章来真的啊？？",
+      "words": 2120,
+      "paragraphs": 81
+    },
+    {
+      "id": 83,
+      "title": "第83章找到牌位了？",
+      "words": 1415,
+      "paragraphs": 49
+    },
+    {
+      "id": 84,
+      "title": "第84章这不是三个零吗？（肥叮+1）",
+      "words": 2129,
+      "paragraphs": 82
+    },
+    {
+      "id": 85,
+      "title": "第85章各怀鬼胎",
+      "words": 2396,
+      "paragraphs": 121
+    },
+    {
+      "id": 86,
+      "title": "第86章心之所向的恋爱脑",
+      "words": 2153,
+      "paragraphs": 76
+    },
+    {
+      "id": 87,
+      "title": "第87章给我看看？（爱吃星辰的榴莲+1）",
+      "words": 1995,
+      "paragraphs": 79
+    },
+    {
+      "id": 88,
+      "title": "第88章所以他到底知不知道？？",
+      "words": 2117,
+      "paragraphs": 90
+    },
+    {
+      "id": 89,
+      "title": "第89章徒儿不会让您死的！",
+      "words": 2295,
+      "paragraphs": 96
+    },
+    {
+      "id": 90,
+      "title": "第90章你也要推演天机？（元旦+1）",
+      "words": 2181,
+      "paragraphs": 100
+    },
+    {
+      "id": 91,
+      "title": "第91章不负所望",
+      "words": 2099,
+      "paragraphs": 65
+    },
+    {
+      "id": 92,
+      "title": "第92章换谁谁不急眼？",
+      "words": 2333,
+      "paragraphs": 95
+    },
+    {
+      "id": 93,
+      "title": "第93章让你cos！！（花子绫野+1）",
+      "words": 2181,
+      "paragraphs": 105
+    },
+    {
+      "id": 94,
+      "title": "第94章怎样的代价？",
+      "words": 2186,
+      "paragraphs": 84
+    },
+    {
+      "id": 95,
+      "title": "第95章芸芸众生",
+      "words": 2337,
+      "paragraphs": 83
+    },
+    {
+      "id": 96,
+      "title": "第96章都是真的（雪荷楼的佘太君+1）",
+      "words": 2158,
+      "paragraphs": 94
+    },
+    {
+      "id": 97,
+      "title": "第97章师妹，我们下山！",
+      "words": 2087,
+      "paragraphs": 84
+    },
+    {
+      "id": 98,
+      "title": "第98章我陈仙尊想活！",
+      "words": 2376,
+      "paragraphs": 99
+    },
+    {
+      "id": 99,
+      "title": "第99章好好招待（豚豹家长吴火华+1）",
+      "words": 2231,
+      "paragraphs": 90
+    },
+    {
+      "id": 100,
+      "title": "第100章或许会被看到？",
+      "words": 2196,
+      "paragraphs": 82
+    },
+    {
+      "id": 101,
+      "title": "第101章赚钱！",
+      "words": 2408,
+      "paragraphs": 91
+    },
+    {
+      "id": 102,
+      "title": "第102章这玩意儿对我没用！（look不拿拿+1）",
+      "words": 2005,
+      "paragraphs": 90
+    },
+    {
+      "id": 103,
+      "title": "第103章通了，都通了！",
+      "words": 2304,
+      "paragraphs": 85
+    },
+    {
+      "id": 104,
+      "title": "第104章桀桀！就你了！（二合一）",
+      "words": 2836,
+      "paragraphs": 118
+    },
+    {
+      "id": 105,
+      "title": "第105章这就是大须弥手？？（娜焰+1）",
+      "words": 2035,
+      "paragraphs": 91
+    },
+    {
+      "id": 106,
+      "title": "第106章幻阵上插了个飞舟？？",
+      "words": 2255,
+      "paragraphs": 74
+    },
+    {
+      "id": 107,
+      "title": "第107章将以此剑，斩诸天！（二合一）",
+      "words": 3564,
+      "paragraphs": 166
+    },
+    {
+      "id": 108,
+      "title": "第108章很有缘分啊（青关漫漫+1）",
+      "words": 1725,
+      "paragraphs": 79
+    },
+    {
+      "id": 109,
+      "title": "第109章飞流直下三千尺",
+      "words": 2146,
+      "paragraphs": 103
+    },
+    {
+      "id": 110,
+      "title": "第110章你别管",
+      "words": 2331,
+      "paragraphs": 89
+    },
+    {
+      "id": 111,
+      "title": "第111章都转修剑了？（上善、+1）",
+      "words": 2336,
+      "paragraphs": 100
+    },
+    {
+      "id": 112,
+      "title": "第112章：它是饕餮啊！",
+      "words": 2181,
+      "paragraphs": 96
+    },
+    {
+      "id": 113,
+      "title": "第113章：得试探一下",
+      "words": 2263,
+      "paragraphs": 98
+    },
+    {
+      "id": 114,
+      "title": "第114章：彻底芭比Q了（看俺表情+1）",
+      "words": 2049,
+      "paragraphs": 97
+    },
+    {
+      "id": 115,
+      "title": "第115章：本王也想吃四海包子",
+      "words": 2086,
+      "paragraphs": 99
+    },
+    {
+      "id": 116,
+      "title": "第116章：考教考教",
+      "words": 2219,
+      "paragraphs": 92
+    },
+    {
+      "id": 117,
+      "title": "第117章：那还等什么？（战双露西亚大王+1）",
+      "words": 2326,
+      "paragraphs": 88
+    },
+    {
+      "id": 118,
+      "title": "第118章：那个家伙",
+      "words": 2185,
+      "paragraphs": 98
+    },
+    {
+      "id": 119,
+      "title": "第119章：残卷",
+      "words": 2491,
+      "paragraphs": 93
+    },
+    {
+      "id": 120,
+      "title": "第120章：就决定是你了！（当我打出？的时候+1）",
+      "words": 2503,
+      "paragraphs": 110
+    },
+    {
+      "id": 121,
+      "title": "第121章：灵根盲盒",
+      "words": 2115,
+      "paragraphs": 81
+    },
+    {
+      "id": 122,
+      "title": "第122章：闹鬼工地？",
+      "words": 2240,
+      "paragraphs": 85
+    },
+    {
+      "id": 123,
+      "title": "第123章：有话好好说（起名比论文难+1）",
+      "words": 2186,
+      "paragraphs": 111
+    },
+    {
+      "id": 124,
+      "title": "第124章：你就是陈怀安？",
+      "words": 2043,
+      "paragraphs": 92
+    },
+    {
+      "id": 125,
+      "title": "第125章：谨慎选择",
+      "words": 2023,
+      "paragraphs": 86
+    },
+    {
+      "id": 126,
+      "title": "第126章：直接打上去（过客℡.+1）",
+      "words": 2206,
+      "paragraphs": 84
+    },
+    {
+      "id": 127,
+      "title": "第127章：先礼后兵",
+      "words": 2082,
+      "paragraphs": 71
+    },
+    {
+      "id": 128,
+      "title": "第128章：动一下试试？",
+      "words": 2230,
+      "paragraphs": 91
+    },
+    {
+      "id": 129,
+      "title": "第129章：你只是觉得你要死了！（QC.Z大佬冠名）",
+      "words": 2075,
+      "paragraphs": 104
+    },
+    {
+      "id": 130,
+      "title": "第130章：缘，都是机缘！",
+      "words": 2306,
+      "paragraphs": 87
+    },
+    {
+      "id": 131,
+      "title": "第131章：请师尊责罚",
+      "words": 2076,
+      "paragraphs": 94
+    },
+    {
+      "id": 132,
+      "title": "第132章：贴心的材料（QCZ+1）",
+      "words": 1722,
+      "paragraphs": 76
+    },
+    {
+      "id": 133,
+      "title": "第133章：真的还是假的？要不问客服？（花子凌野+1）",
+      "words": 1872,
+      "paragraphs": 86
+    },
+    {
+      "id": 134,
+      "title": "第134章围魏救赵",
+      "words": 2047,
+      "paragraphs": 98
+    },
+    {
+      "id": 135,
+      "title": "第135章治疗的希望",
+      "words": 2252,
+      "paragraphs": 86
+    },
+    {
+      "id": 136,
+      "title": "第136章妖化！（花子凌野+1）",
+      "words": 1977,
+      "paragraphs": 79
+    },
+    {
+      "id": 137,
+      "title": "第137章：从那小子身上滚出来！",
+      "words": 2214,
+      "paragraphs": 107
+    },
+    {
+      "id": 138,
+      "title": "第138章：场外支援与本命法器",
+      "words": 2088,
+      "paragraphs": 109
+    },
+    {
+      "id": 139,
+      "title": "第139章：神游太虚（云藏剑+1）",
+      "words": 2225,
+      "paragraphs": 104
+    },
+    {
+      "id": 140,
+      "title": "第140章：揭棺而起",
+      "words": 2089,
+      "paragraphs": 106
+    },
+    {
+      "id": 141,
+      "title": "第141章：将级收容物——陈怀安",
+      "words": 2131,
+      "paragraphs": 100
+    },
+    {
+      "id": 142,
+      "title": "第142章：陈怀安，你很重要！（用户28701564+1）",
+      "words": 2334,
+      "paragraphs": 83
+    },
+    {
+      "id": 143,
+      "title": "第143章：邻里和睦",
+      "words": 2219,
+      "paragraphs": 91
+    },
+    {
+      "id": 144,
+      "title": "第144章：你等本尊算算",
+      "words": 2103,
+      "paragraphs": 95
+    },
+    {
+      "id": 145,
+      "title": "第145章：遍地魔修！（岗里风+1）",
+      "words": 1943,
+      "paragraphs": 73
+    },
+    {
+      "id": 146,
+      "title": "第146章：你探查的不算，让本尊来！",
+      "words": 2586,
+      "paragraphs": 106
+    },
+    {
+      "id": 147,
+      "title": "第147章：徒儿，随为师进屋一叙",
+      "words": 2121,
+      "paragraphs": 87
+    },
+    {
+      "id": 148,
+      "title": "第148章：找徒弟要丹药（枯燥乏味的燕门孤雪+1）",
+      "words": 1777,
+      "paragraphs": 90
+    },
+    {
+      "id": 149,
+      "title": "第149章：它点头了！",
+      "words": 2095,
+      "paragraphs": 76
+    },
+    {
+      "id": 150,
+      "title": "第150章：有些账该算算了",
+      "words": 2523,
+      "paragraphs": 84
+    },
+    {
+      "id": 151,
+      "title": "第151章：阿猫阿狗（肥叮+1）",
+      "words": 2237,
+      "paragraphs": 87
+    },
+    {
+      "id": 152,
+      "title": "第152章：你也推演天机？",
+      "words": 2218,
+      "paragraphs": 71
+    },
+    {
+      "id": 153,
+      "title": "第153章：怎么还是你？！",
+      "words": 2070,
+      "paragraphs": 100
+    },
+    {
+      "id": 154,
+      "title": "第154章：金钱不足恐惧症（tijin+1）",
+      "words": 2377,
+      "paragraphs": 115
+    },
+    {
+      "id": 155,
+      "title": "第155章：帅到了",
+      "words": 2042,
+      "paragraphs": 85
+    },
+    {
+      "id": 156,
+      "title": "第156章：暴君你好，暴君再见",
+      "words": 2035,
+      "paragraphs": 69
+    },
+    {
+      "id": 157,
+      "title": "第157章：我可就用嘴巴堵住你的嘴咯（荆山玉+1）",
+      "words": 2146,
+      "paragraphs": 85
+    },
+    {
+      "id": 158,
+      "title": "第158章：杀夜鸦",
+      "words": 2319,
+      "paragraphs": 99
+    },
+    {
+      "id": 159,
+      "title": "第159章：斩鬼魉",
+      "words": 2161,
+      "paragraphs": 92
+    },
+    {
+      "id": 160,
+      "title": "第160章：黑棺凌天（法拉牛冠名加更）",
+      "words": 2018,
+      "paragraphs": 75
+    },
+    {
+      "id": 161,
+      "title": "第161章：尸王复苏",
+      "words": 2108,
+      "paragraphs": 83
+    },
+    {
+      "id": 162,
+      "title": "第162章：美腿小青",
+      "words": 2001,
+      "paragraphs": 90
+    },
+    {
+      "id": 163,
+      "title": "第163章：把夜烧出个窟窿（tijin冠名加更）",
+      "words": 2188,
+      "paragraphs": 94
+    },
+    {
+      "id": 164,
+      "title": "第164章：神雷诛邪",
+      "words": 2036,
+      "paragraphs": 96
+    },
+    {
+      "id": 165,
+      "title": "第165章：我知道",
+      "words": 2336,
+      "paragraphs": 69
+    },
+    {
+      "id": 166,
+      "title": "第166章：你们有钱吗？（法拉牛+1）",
+      "words": 2102,
+      "paragraphs": 75
+    },
+    {
+      "id": 167,
+      "title": "第167章：好你个络腮胡，真狗啊",
+      "words": 2141,
+      "paragraphs": 64
+    },
+    {
+      "id": 168,
+      "title": "第168章：神秘数字",
+      "words": 2057,
+      "paragraphs": 65
+    },
+    {
+      "id": 169,
+      "title": "第169章：找到你了（tijin+1）",
+      "words": 2054,
+      "paragraphs": 76
+    },
+    {
+      "id": 170,
+      "title": "第170章：确实很大",
+      "words": 2008,
+      "paragraphs": 76
+    },
+    {
+      "id": 171,
+      "title": "第171章：到头来还得老子氪金",
+      "words": 2078,
+      "paragraphs": 71
+    },
+    {
+      "id": 172,
+      "title": "第172章：一脚踩碎你的梦想（法拉牛+1）",
+      "words": 2016,
+      "paragraphs": 81
+    },
+    {
+      "id": 173,
+      "title": "第173章：那…你去试试？",
+      "words": 2017,
+      "paragraphs": 77
+    },
+    {
+      "id": 174,
+      "title": "第174章：你可以走了",
+      "words": 2196,
+      "paragraphs": 87
+    },
+    {
+      "id": 175,
+      "title": "第175章：有违人伦啊！！（新年加更！）",
+      "words": 2053,
+      "paragraphs": 85
+    },
+    {
+      "id": 176,
+      "title": "第176章：难道说陈怀安是气运之子？",
+      "words": 2108,
+      "paragraphs": 76
+    },
+    {
+      "id": 177,
+      "title": "第177章：剑修风骨",
+      "words": 2026,
+      "paragraphs": 80
+    },
+    {
+      "id": 178,
+      "title": "第178章修改器（感谢QC.Z老板+1）",
+      "words": 1945,
+      "paragraphs": 90
+    },
+    {
+      "id": 179,
+      "title": "第179章：雷大伤风化",
+      "words": 2158,
+      "paragraphs": 70
+    },
+    {
+      "id": 180,
+      "title": "第180章：消失的他她它",
+      "words": 2074,
+      "paragraphs": 66
+    },
+    {
+      "id": 181,
+      "title": "第181章：血瓷（法拉牛+1）",
+      "words": 2013,
+      "paragraphs": 75
+    },
+    {
+      "id": 182,
+      "title": "第182章：直接进攻",
+      "words": 2138,
+      "paragraphs": 72
+    },
+    {
+      "id": 183,
+      "title": "第183章：给为师演示演示",
+      "words": 2255,
+      "paragraphs": 87
+    },
+    {
+      "id": 184,
+      "title": "第184章：顷刻炼化（tijin+1）",
+      "words": 2383,
+      "paragraphs": 92
+    },
+    {
+      "id": 185,
+      "title": "第185章：再干点啥好呢？",
+      "words": 2191,
+      "paragraphs": 82
+    },
+    {
+      "id": 186,
+      "title": "第186章：你，也想跟本尊有缘",
+      "words": 2246,
+      "paragraphs": 89
+    },
+    {
+      "id": 187,
+      "title": "第187章：来让为师考考你（斗武场的味吉阳一+1）",
+      "words": 2079,
+      "paragraphs": 71
+    },
+    {
+      "id": 188,
+      "title": "第188章：又顿悟？！",
+      "words": 2259,
+      "paragraphs": 91
+    },
+    {
+      "id": 189,
+      "title": "第189章：且慢！让为师凑近些！",
+      "words": 2135,
+      "paragraphs": 84
+    },
+    {
+      "id": 190,
+      "title": "第190章：铠甲合体！（紊瑬+1）",
+      "words": 2171,
+      "paragraphs": 87
+    },
+    {
+      "id": 191,
+      "title": "第191章噔噔噔噔！",
+      "words": 2104,
+      "paragraphs": 75
+    },
+    {
+      "id": 192,
+      "title": "第192章老阴比",
+      "words": 2218,
+      "paragraphs": 83
+    },
+    {
+      "id": 193,
+      "title": "第193章剑丸（红烧螺丝+1）",
+      "words": 2058,
+      "paragraphs": 86
+    },
+    {
+      "id": 194,
+      "title": "第194章：战利品",
+      "words": 2035,
+      "paragraphs": 77
+    },
+    {
+      "id": 195,
+      "title": "第195章：老子是魔",
+      "words": 2182,
+      "paragraphs": 77
+    },
+    {
+      "id": 196,
+      "title": "第196章：很有本钱（安静的看书机器+1）",
+      "words": 2470,
+      "paragraphs": 97
+    },
+    {
+      "id": 197,
+      "title": "第197章：准备一份大礼~",
+      "words": 2039,
+      "paragraphs": 62
+    },
+    {
+      "id": 198,
+      "title": "第198章：五千斤",
+      "words": 2272,
+      "paragraphs": 68
+    },
+    {
+      "id": 199,
+      "title": "第199章：杀无赦（tijin+1）",
+      "words": 2400,
+      "paragraphs": 97
+    },
+    {
+      "id": 200,
+      "title": "第200章：本尊如此天纵奇才",
+      "words": 2081,
+      "paragraphs": 83
+    },
+    {
+      "id": 201,
+      "title": "第201章：总督你悟的是什么道",
+      "words": 2105,
+      "paragraphs": 64
+    },
+    {
+      "id": 202,
+      "title": "第202章：比之鱼妖如何？（星星逝+1）",
+      "words": 2269,
+      "paragraphs": 89
+    },
+    {
+      "id": 203,
+      "title": "第203章：中洲秘境",
+      "words": 2036,
+      "paragraphs": 77
+    },
+    {
+      "id": 204,
+      "title": "第204章：劈了吧",
+      "words": 2014,
+      "paragraphs": 77
+    },
+    {
+      "id": 205,
+      "title": "第204章：我娘喜欢那剑阁老祖（tijin+1）",
+      "words": 2076,
+      "paragraphs": 67
+    },
+    {
+      "id": 206,
+      "title": "第205章三大圣地",
+      "words": 2234,
+      "paragraphs": 81
+    },
+    {
+      "id": 207,
+      "title": "第206章：剑灵根",
+      "words": 2213,
+      "paragraphs": 84
+    },
+    {
+      "id": 208,
+      "title": "第207章：安全指数百分百（冻柠_+1）",
+      "words": 2562,
+      "paragraphs": 104
+    },
+    {
+      "id": 209,
+      "title": "第208章：圣女急召",
+      "words": 2168,
+      "paragraphs": 65
+    },
+    {
+      "id": 210,
+      "title": "第209章：联合行动",
+      "words": 2345,
+      "paragraphs": 82
+    },
+    {
+      "id": 211,
+      "title": "第209章：魔阵（39天真男人+1）",
+      "words": 2027,
+      "paragraphs": 84
+    },
+    {
+      "id": 212,
+      "title": "第210章：找到你了！",
+      "words": 2053,
+      "paragraphs": 78
+    },
+    {
+      "id": 213,
+      "title": "第211章：剑杀三境",
+      "words": 2243,
+      "paragraphs": 111
+    },
+    {
+      "id": 214,
+      "title": "第212章：调虎离山？（tijin+1）",
+      "words": 2186,
+      "paragraphs": 79
+    },
+    {
+      "id": 215,
+      "title": "第213章：赵臻龙的身份",
+      "words": 2322,
+      "paragraphs": 67
+    },
+    {
+      "id": 216,
+      "title": "第214章：阁下再说一遍？",
+      "words": 2161,
+      "paragraphs": 86
+    },
+    {
+      "id": 217,
+      "title": "第215章：懂就点头（吹泡泡的小海绵+1）",
+      "words": 2494,
+      "paragraphs": 92
+    },
+    {
+      "id": 218,
+      "title": "第216章突变",
+      "words": 2429,
+      "paragraphs": 63
+    },
+    {
+      "id": 219,
+      "title": "第217章阵法反噬",
+      "words": 2509,
+      "paragraphs": 73
+    },
+    {
+      "id": 220,
+      "title": "第218章背刺（tijin+1）",
+      "words": 2494,
+      "paragraphs": 82
+    },
+    {
+      "id": 221,
+      "title": "第219章玉瑶真人肯定很伤心吧？",
+      "words": 2073,
+      "paragraphs": 77
+    },
+    {
+      "id": 222,
+      "title": "第220章破阵！",
+      "words": 2161,
+      "paragraphs": 87
+    },
+    {
+      "id": 223,
+      "title": "第221章剑骨（月祷霖无+1）",
+      "words": 2283,
+      "paragraphs": 91
+    },
+    {
+      "id": 224,
+      "title": "第222章好快的刀",
+      "words": 2083,
+      "paragraphs": 69
+    },
+    {
+      "id": 225,
+      "title": "第223章一群笨蛋",
+      "words": 2041,
+      "paragraphs": 68
+    },
+    {
+      "id": 226,
+      "title": "第224章我相信你（月祷霖无+1）",
+      "words": 2296,
+      "paragraphs": 71
+    },
+    {
+      "id": 227,
+      "title": "第225章：疑云",
+      "words": 2406,
+      "paragraphs": 95
+    },
+    {
+      "id": 228,
+      "title": "第226章真-调虎离山",
+      "words": 2225,
+      "paragraphs": 96
+    },
+    {
+      "id": 229,
+      "title": "第227章你谁都带不走！（tijin+1）",
+      "words": 1984,
+      "paragraphs": 96
+    },
+    {
+      "id": 230,
+      "title": "第228章李-大爱清然",
+      "words": 2073,
+      "paragraphs": 82
+    },
+    {
+      "id": 231,
+      "title": "第229章新的战令",
+      "words": 2247,
+      "paragraphs": 92
+    },
+    {
+      "id": 232,
+      "title": "第230章去死！（喜欢斯卡蒂+1）",
+      "words": 2049,
+      "paragraphs": 92
+    },
+    {
+      "id": 233,
+      "title": "第231章：今日我必杀你",
+      "words": 2106,
+      "paragraphs": 95
+    },
+    {
+      "id": 234,
+      "title": "第232章：大仇得报",
+      "words": 2090,
+      "paragraphs": 96
+    },
+    {
+      "id": 235,
+      "title": "第233章秘境大开（慕雨卿言+1）",
+      "words": 2192,
+      "paragraphs": 89
+    },
+    {
+      "id": 236,
+      "title": "第234章现在，本尊可能杀你了？",
+      "words": 2120,
+      "paragraphs": 72
+    },
+    {
+      "id": 237,
+      "title": "第235章三千无量劫，尽在此剑中",
+      "words": 2098,
+      "paragraphs": 97
+    },
+    {
+      "id": 238,
+      "title": "第236章：我岳千池说过的（小坑xk+1）",
+      "words": 2698,
+      "paragraphs": 83
+    },
+    {
+      "id": 239,
+      "title": "第237章：血流成河",
+      "words": 2173,
+      "paragraphs": 99
+    },
+    {
+      "id": 240,
+      "title": "第238章：勿谓言之不预也",
+      "words": 2063,
+      "paragraphs": 88
+    },
+    {
+      "id": 241,
+      "title": "第239章：小世界系统（tijin+1）",
+      "words": 2122,
+      "paragraphs": 102
+    },
+    {
+      "id": 242,
+      "title": "第240章：大鱼吃小鱼",
+      "words": 2060,
+      "paragraphs": 75
+    },
+    {
+      "id": 243,
+      "title": "第241章：你留不住剑阁的人",
+      "words": 2208,
+      "paragraphs": 76
+    },
+    {
+      "id": 244,
+      "title": "第242章：瑶池的目的（长风吹度九万里+1）",
+      "words": 2037,
+      "paragraphs": 75
+    },
+    {
+      "id": 245,
+      "title": "第243章：隐秘",
+      "words": 2029,
+      "paragraphs": 59
+    },
+    {
+      "id": 246,
+      "title": "第244章：婉拒",
+      "words": 2168,
+      "paragraphs": 82
+    },
+    {
+      "id": 247,
+      "title": "第245章：妖龙之死（tijin+1）",
+      "words": 2125,
+      "paragraphs": 87
+    },
+    {
+      "id": 248,
+      "title": "第246章天赋暴涨",
+      "words": 2052,
+      "paragraphs": 75
+    },
+    {
+      "id": 249,
+      "title": "第247章：查！全力去查！",
+      "words": 2424,
+      "paragraphs": 96
+    },
+    {
+      "id": 250,
+      "title": "第248章等他们出来（药Jun+1）",
+      "words": 2477,
+      "paragraphs": 85
+    },
+    {
+      "id": 251,
+      "title": "第249章：锁妖匣",
+      "words": 2543,
+      "paragraphs": 97
+    },
+    {
+      "id": 252,
+      "title": "第250章：洗髓丹要试试么？",
+      "words": 2537,
+      "paragraphs": 85
+    },
+    {
+      "id": 253,
+      "title": "第251章风中残烛（晴生+1）",
+      "words": 2135,
+      "paragraphs": 72
+    },
+    {
+      "id": 254,
+      "title": "第252章奔现恐惧",
+      "words": 2208,
+      "paragraphs": 78
+    },
+    {
+      "id": 255,
+      "title": "第253章：目标——混元补天丹",
+      "words": 2264,
+      "paragraphs": 85
+    },
+    {
+      "id": 256,
+      "title": "第254章丹云之女（吊毛达尔巴+1大哥牛批！！）",
+      "words": 2125,
+      "paragraphs": 75
+    },
+    {
+      "id": 257,
+      "title": "第255章强行破解",
+      "words": 2133,
+      "paragraphs": 92
+    },
+    {
+      "id": 258,
+      "title": "第256章镇杀玉凝",
+      "words": 2316,
+      "paragraphs": 107
+    },
+    {
+      "id": 259,
+      "title": "第257章去把丹白带回来（吊毛达尔巴+1）",
+      "words": 2116,
+      "paragraphs": 67
+    },
+    {
+      "id": 260,
+      "title": "第258章起阵",
+      "words": 2030,
+      "paragraphs": 90
+    },
+    {
+      "id": 261,
+      "title": "第259章月下剑客",
+      "words": 2009,
+      "paragraphs": 84
+    },
+    {
+      "id": 262,
+      "title": "第260章：本尊与你有缘！（璟铧+1）",
+      "words": 2381,
+      "paragraphs": 111
+    },
+    {
+      "id": 263,
+      "title": "第261章：分而食之",
+      "words": 2161,
+      "paragraphs": 82
+    },
+    {
+      "id": 264,
+      "title": "第262章他陈怀安，一肩挑之！",
+      "words": 2348,
+      "paragraphs": 80
+    },
+    {
+      "id": 265,
+      "title": "第263章：想跟师尊多待一会儿（tijin）",
+      "words": 2618,
+      "paragraphs": 104
+    },
+    {
+      "id": 266,
+      "title": "第264章手把手",
+      "words": 3358,
+      "paragraphs": 161
+    },
+    {
+      "id": 267,
+      "title": "第265章：猎妖大会？",
+      "words": 2239,
+      "paragraphs": 108
+    },
+    {
+      "id": 268,
+      "title": "第266章：赌了（黑sai灯泡）",
+      "words": 2254,
+      "paragraphs": 89
+    },
+    {
+      "id": 269,
+      "title": "第267章：对不起，请您详细描述您的问题呢？",
+      "words": 2161,
+      "paragraphs": 92
+    },
+    {
+      "id": 270,
+      "title": "第268章：复活的希望",
+      "words": 2249,
+      "paragraphs": 93
+    },
+    {
+      "id": 271,
+      "title": "第269章：终相见？（tijin）",
+      "words": 2129,
+      "paragraphs": 93
+    },
+    {
+      "id": 272,
+      "title": "第270章仙人抚顶",
+      "words": 2079,
+      "paragraphs": 77
+    },
+    {
+      "id": 273,
+      "title": "第271章：呛口水了",
+      "words": 2078,
+      "paragraphs": 96
+    },
+    {
+      "id": 274,
+      "title": "第272章：大佬就是大佬（爱吃乳鸽鲍鱼汤的龙影+1）",
+      "words": 2313,
+      "paragraphs": 123
+    },
+    {
+      "id": 275,
+      "title": "第273章：龙魂残缺",
+      "words": 2064,
+      "paragraphs": 110
+    },
+    {
+      "id": 276,
+      "title": "第274章小丑竟是他自己？",
+      "words": 2156,
+      "paragraphs": 88
+    },
+    {
+      "id": 277,
+      "title": "第275章：升仙者（爱吃团茶的莫擎+1）",
+      "words": 2068,
+      "paragraphs": 103
+    },
+    {
+      "id": 278,
+      "title": "第276章：喜欢的人",
+      "words": 2394,
+      "paragraphs": 100
+    },
+    {
+      "id": 279,
+      "title": "第277章：这位便是师娘？",
+      "words": 2070,
+      "paragraphs": 110
+    },
+    {
+      "id": 280,
+      "title": "第278章：古风版师生恋？（爱看书的tohka+1）",
+      "words": 2436,
+      "paragraphs": 111
+    },
+    {
+      "id": 281,
+      "title": "第279章：有虫子",
+      "words": 2351,
+      "paragraphs": 119
+    },
+    {
+      "id": 282,
+      "title": "第280章：火云",
+      "words": 2191,
+      "paragraphs": 105
+    },
+    {
+      "id": 283,
+      "title": "第281章：清然要做苦修士（tijin+1）",
+      "words": 2420,
+      "paragraphs": 111
+    },
+    {
+      "id": 284,
+      "title": "第282章：湖面",
+      "words": 2070,
+      "paragraphs": 88
+    },
+    {
+      "id": 285,
+      "title": "第283章：这糟糕的世界还是爆炸算了",
+      "words": 2232,
+      "paragraphs": 107
+    },
+    {
+      "id": 286,
+      "title": "第284章：天魔功，开！（用户88395559+1）",
+      "words": 2528,
+      "paragraphs": 118
+    },
+    {
+      "id": 287,
+      "title": "第285章：宗门召集",
+      "words": 2114,
+      "paragraphs": 112
+    },
+    {
+      "id": 288,
+      "title": "第286章：蛟龙",
+      "words": 2144,
+      "paragraphs": 93
+    },
+    {
+      "id": 289,
+      "title": "第287章：千变万化的老祖（天羽Tenyo+1）",
+      "words": 2227,
+      "paragraphs": 102
+    },
+    {
+      "id": 290,
+      "title": "第288章：徒儿不这么认为",
+      "words": 2386,
+      "paragraphs": 106
+    },
+    {
+      "id": 291,
+      "title": "第289章：那师尊也不要找道侣",
+      "words": 2271,
+      "paragraphs": 106
+    },
+    {
+      "id": 292,
+      "title": "第290章：尊上（张少(??＞??＜)☆+1）",
+      "words": 2316,
+      "paragraphs": 93
+    },
+    {
+      "id": 293,
+      "title": "第291章：查无此人",
+      "words": 2041,
+      "paragraphs": 79
+    },
+    {
+      "id": 294,
+      "title": "第292章：你确定她是你徒弟？",
+      "words": 2151,
+      "paragraphs": 86
+    },
+    {
+      "id": 295,
+      "title": "第293章：本尊要钱！（用户名23227731+1）",
+      "words": 2132,
+      "paragraphs": 78
+    },
+    {
+      "id": 296,
+      "title": "第294章：卖身契",
+      "words": 2274,
+      "paragraphs": 89
+    },
+    {
+      "id": 297,
+      "title": "第295章：升仙柱",
+      "words": 2145,
+      "paragraphs": 89
+    },
+    {
+      "id": 298,
+      "title": "第294章：就要穿过的（tijin+1）",
+      "words": 2578,
+      "paragraphs": 109
+    },
+    {
+      "id": 299,
+      "title": "第295章：茨木童子",
+      "words": 2094,
+      "paragraphs": 83
+    },
+    {
+      "id": 300,
+      "title": "第296章：也敢在我地盘撒野？",
+      "words": 2198,
+      "paragraphs": 105
+    },
+    {
+      "id": 301,
+      "title": "第297章：叫陈董（tijin）",
+      "words": 2269,
+      "paragraphs": 117
+    },
+    {
+      "id": 302,
+      "title": "第298章：双标系统",
+      "words": 2529,
+      "paragraphs": 91
+    },
+    {
+      "id": 303,
+      "title": "第299章：缺失的一味灵草",
+      "words": 2339,
+      "paragraphs": 90
+    },
+    {
+      "id": 304,
+      "title": "第300章：先来一千吨吧（用户名23227731+1）",
+      "words": 2250,
+      "paragraphs": 87
+    },
+    {
+      "id": 305,
+      "title": "第301章：梦初道人",
+      "words": 2097,
+      "paragraphs": 71
+    },
+    {
+      "id": 306,
+      "title": "第302章：席卷苍云界",
+      "words": 2213,
+      "paragraphs": 84
+    },
+    {
+      "id": 307,
+      "title": "第303章：他说的都是真的？（不想打龚+1）",
+      "words": 2155,
+      "paragraphs": 83
+    },
+    {
+      "id": 308,
+      "title": "第304章：丹解大法",
+      "words": 2037,
+      "paragraphs": 85
+    },
+    {
+      "id": 309,
+      "title": "第305章：股东大会？",
+      "words": 2113,
+      "paragraphs": 75
+    },
+    {
+      "id": 310,
+      "title": "第307章：瑶池来敌（人生导师Kenn+1）",
+      "words": 2307,
+      "paragraphs": 92
+    },
+    {
+      "id": 311,
+      "title": "第308章：又有缘分了",
+      "words": 2078,
+      "paragraphs": 81
+    },
+    {
+      "id": 312,
+      "title": "第309章：剑破八境",
+      "words": 2020,
+      "paragraphs": 99
+    },
+    {
+      "id": 313,
+      "title": "第310章：炼化灵犀谷（tijin+1）",
+      "words": 2100,
+      "paragraphs": 80
+    },
+    {
+      "id": 314,
+      "title": "第311章：以身入局",
+      "words": 2069,
+      "paragraphs": 91
+    },
+    {
+      "id": 315,
+      "title": "第312章：剑杀红莲",
+      "words": 2123,
+      "paragraphs": 70
+    },
+    {
+      "id": 316,
+      "title": "第313章：咋是一个人？（冲师逆徒真君+1）",
+      "words": 2111,
+      "paragraphs": 85
+    },
+    {
+      "id": 317,
+      "title": "第314章：要不结盟吧",
+      "words": 2044,
+      "paragraphs": 90
+    },
+    {
+      "id": 318,
+      "title": "第315章：使不得",
+      "words": 2056,
+      "paragraphs": 70
+    },
+    {
+      "id": 319,
+      "title": "第316章：玉瑶真人也有道侣？（碧维维弟飞马+1）",
+      "words": 2042,
+      "paragraphs": 65
+    },
+    {
+      "id": 320,
+      "title": "第317章：说人话",
+      "words": 2305,
+      "paragraphs": 66
+    },
+    {
+      "id": 321,
+      "title": "第318章：风萧萧兮",
+      "words": 2102,
+      "paragraphs": 87
+    },
+    {
+      "id": 322,
+      "title": "第319章：谋士入瓮（不想打龚+1）",
+      "words": 2061,
+      "paragraphs": 79
+    },
+    {
+      "id": 323,
+      "title": "第320章：绝品混元补天丹出世",
+      "words": 2182,
+      "paragraphs": 70
+    },
+    {
+      "id": 324,
+      "title": "第321章：对暗号",
+      "words": 2056,
+      "paragraphs": 83
+    },
+    {
+      "id": 325,
+      "title": "第322章：诱骗（Mrzzzzz。+1）",
+      "words": 2263,
+      "paragraphs": 82
+    },
+    {
+      "id": 326,
+      "title": "第323章：择日不如撞日",
+      "words": 2250,
+      "paragraphs": 87
+    },
+    {
+      "id": 327,
+      "title": "第324章：山君",
+      "words": 2078,
+      "paragraphs": 62
+    },
+    {
+      "id": 328,
+      "title": "第325章：锁妖塔（tijin+1）",
+      "words": 2013,
+      "paragraphs": 81
+    },
+    {
+      "id": 329,
+      "title": "第326章：瑶你太美",
+      "words": 2090,
+      "paragraphs": 80
+    },
+    {
+      "id": 330,
+      "title": "第327章：剑上淬毒",
+      "words": 2127,
+      "paragraphs": 91
+    },
+    {
+      "id": 331,
+      "title": "第328章：可杀（爱吃乳鸽鲍鱼汤的龙影+1）",
+      "words": 2067,
+      "paragraphs": 100
+    },
+    {
+      "id": 332,
+      "title": "第329章：真正的富婆",
+      "words": 2046,
+      "paragraphs": 84
+    },
+    {
+      "id": 333,
+      "title": "第330章：额滴剑啊",
+      "words": 2210,
+      "paragraphs": 93
+    },
+    {
+      "id": 334,
+      "title": "第331章：又在做梦了？（tijin+1）",
+      "words": 2578,
+      "paragraphs": 100
+    },
+    {
+      "id": 335,
+      "title": "第332章：祭拜？",
+      "words": 2341,
+      "paragraphs": 84
+    },
+    {
+      "id": 336,
+      "title": "第333章：元尊道体",
+      "words": 2057,
+      "paragraphs": 70
+    },
+    {
+      "id": 337,
+      "title": "第334章：日月可鉴（饿了433+1）",
+      "words": 2119,
+      "paragraphs": 68
+    },
+    {
+      "id": 338,
+      "title": "第335章：杀人的剑",
+      "words": 2057,
+      "paragraphs": 93
+    },
+    {
+      "id": 339,
+      "title": "第336章：无字玉简",
+      "words": 2417,
+      "paragraphs": 105
+    },
+    {
+      "id": 340,
+      "title": "第337章：清水潭前（风口迹+1）",
+      "words": 2046,
+      "paragraphs": 79
+    },
+    {
+      "id": 341,
+      "title": "第338章：原来是老乡",
+      "words": 2033,
+      "paragraphs": 88
+    },
+    {
+      "id": 342,
+      "title": "第339章：何解？",
+      "words": 2053,
+      "paragraphs": 87
+    },
+    {
+      "id": 343,
+      "title": "第340章：完美的解答！（tijin+1）",
+      "words": 2073,
+      "paragraphs": 73
+    },
+    {
+      "id": 344,
+      "title": "第341章：他乡遇故知",
+      "words": 2187,
+      "paragraphs": 76
+    },
+    {
+      "id": 345,
+      "title": "第342章：转守为攻",
+      "words": 2085,
+      "paragraphs": 78
+    },
+    {
+      "id": 346,
+      "title": "第343章：全部还给你（7岁退休老阿姨+1）",
+      "words": 2167,
+      "paragraphs": 77
+    },
+    {
+      "id": 347,
+      "title": "第344章：看破你的一生",
+      "words": 2138,
+      "paragraphs": 82
+    },
+    {
+      "id": 348,
+      "title": "第345章死要面子",
+      "words": 2153,
+      "paragraphs": 78
+    },
+    {
+      "id": 349,
+      "title": "第346章：没了，全都没了！（Mana_+1）",
+      "words": 2130,
+      "paragraphs": 90
+    },
+    {
+      "id": 350,
+      "title": "第347章：真武剑阵",
+      "words": 2068,
+      "paragraphs": 70
+    },
+    {
+      "id": 351,
+      "title": "第348章：私生子？",
+      "words": 2032,
+      "paragraphs": 83
+    },
+    {
+      "id": 352,
+      "title": "第349章：玉瑶真人的种子（白幽荼+1）",
+      "words": 2124,
+      "paragraphs": 103
+    },
+    {
+      "id": 353,
+      "title": "第350章：暴毙",
+      "words": 2006,
+      "paragraphs": 92
+    },
+    {
+      "id": 354,
+      "title": "第351章：剑阁后山，来喝阔落",
+      "words": 2169,
+      "paragraphs": 90
+    },
+    {
+      "id": 355,
+      "title": "第352章：回家（喜欢蚂蚁卵的赵耘烽+1）",
+      "words": 2119,
+      "paragraphs": 95
+    },
+    {
+      "id": 356,
+      "title": "第353章：黑潮",
+      "words": 2080,
+      "paragraphs": 95
+    },
+    {
+      "id": 357,
+      "title": "第354章：黑刀门",
+      "words": 2151,
+      "paragraphs": 105
+    },
+    {
+      "id": 358,
+      "title": "第355章：杀无赦（不想打龚+1）",
+      "words": 2089,
+      "paragraphs": 87
+    },
+    {
+      "id": 359,
+      "title": "第356章：你该死",
+      "words": 2077,
+      "paragraphs": 90
+    },
+    {
+      "id": 360,
+      "title": "第357章：传道",
+      "words": 2081,
+      "paragraphs": 85
+    },
+    {
+      "id": 361,
+      "title": "第358章：整点儿薯条？【tijin+1】",
+      "words": 2313,
+      "paragraphs": 87
+    },
+    {
+      "id": 362,
+      "title": "第359章前辈就是高！",
+      "words": 2242,
+      "paragraphs": 79
+    },
+    {
+      "id": 363,
+      "title": "第360章：王守一要守护陈仙尊",
+      "words": 2080,
+      "paragraphs": 79
+    },
+    {
+      "id": 364,
+      "title": "第361章：比试比试【白幽荼】",
+      "words": 2174,
+      "paragraphs": 105
+    },
+    {
+      "id": 365,
+      "title": "第362章心灵感应",
+      "words": 2118,
+      "paragraphs": 99
+    },
+    {
+      "id": 366,
+      "title": "第363章瞧不起谁呢！",
+      "words": 2079,
+      "paragraphs": 73
+    },
+    {
+      "id": 367,
+      "title": "第364章本尊看好你（巴拉纳特将军）",
+      "words": 2278,
+      "paragraphs": 97
+    },
+    {
+      "id": 368,
+      "title": "第365章：霸肌异常",
+      "words": 2099,
+      "paragraphs": 71
+    },
+    {
+      "id": 369,
+      "title": "第366章：霸肌要雄起",
+      "words": 2016,
+      "paragraphs": 100
+    },
+    {
+      "id": 370,
+      "title": "第367章：重回巅峰【tijin+1】",
+      "words": 2404,
+      "paragraphs": 103
+    },
+    {
+      "id": 371,
+      "title": "第368章契约",
+      "words": 2063,
+      "paragraphs": 74
+    },
+    {
+      "id": 372,
+      "title": "第369章稳妥！",
+      "words": 2009,
+      "paragraphs": 79
+    },
+    {
+      "id": 373,
+      "title": "第370章前辈被吃了？！（希灵单兵）",
+      "words": 2248,
+      "paragraphs": 79
+    },
+    {
+      "id": 374,
+      "title": "第371章：你就是来找茬的！",
+      "words": 2063,
+      "paragraphs": 75
+    },
+    {
+      "id": 375,
+      "title": "第372章：白鹿青崖",
+      "words": 2013,
+      "paragraphs": 90
+    },
+    {
+      "id": 376,
+      "title": "第373章：熟人【希灵单兵】",
+      "words": 2237,
+      "paragraphs": 94
+    },
+    {
+      "id": 377,
+      "title": "第374章还有熟人？",
+      "words": 2033,
+      "paragraphs": 73
+    },
+    {
+      "id": 378,
+      "title": "第375章：陈怀安必然是昆仑仙宫高徒！",
+      "words": 2211,
+      "paragraphs": 92
+    },
+    {
+      "id": 379,
+      "title": "第376章他们来了（tijin+1）",
+      "words": 2197,
+      "paragraphs": 89
+    },
+    {
+      "id": 380,
+      "title": "第377章我为刀俎",
+      "words": 2112,
+      "paragraphs": 89
+    },
+    {
+      "id": 381,
+      "title": "第378章遭遇战",
+      "words": 2088,
+      "paragraphs": 78
+    },
+    {
+      "id": 382,
+      "title": "第379章：师尊您可得跟紧（感谢收割者勒个人大佬）",
+      "words": 2583,
+      "paragraphs": 101
+    },
+    {
+      "id": 383,
+      "title": "第380章为虎作伥",
+      "words": 2052,
+      "paragraphs": 82
+    },
+    {
+      "id": 384,
+      "title": "第381章你就变这个！",
+      "words": 2103,
+      "paragraphs": 98
+    },
+    {
+      "id": 385,
+      "title": "第382章先来打过！（收割者勒个人+1）",
+      "words": 2025,
+      "paragraphs": 84
+    },
+    {
+      "id": 386,
+      "title": "第383章一切都是循环",
+      "words": 2047,
+      "paragraphs": 67
+    },
+    {
+      "id": 387,
+      "title": "第384章你过来，靠近些",
+      "words": 2064,
+      "paragraphs": 84
+    },
+    {
+      "id": 388,
+      "title": "第385章：不准放手【紊瑬+1】",
+      "words": 2249,
+      "paragraphs": 96
+    },
+    {
+      "id": 389,
+      "title": "第386章：特殊金丹",
+      "words": 2095,
+      "paragraphs": 94
+    },
+    {
+      "id": 390,
+      "title": "第387章：做，做，做，做我女朋友，欧耶～",
+      "words": 2019,
+      "paragraphs": 78
+    },
+    {
+      "id": 391,
+      "title": "第388章：团结就是力量【tijin】",
+      "words": 2150,
+      "paragraphs": 90
+    },
+    {
+      "id": 392,
+      "title": "第389章：当康",
+      "words": 2173,
+      "paragraphs": 99
+    },
+    {
+      "id": 393,
+      "title": "第390章：哥，错了！别搞！",
+      "words": 2014,
+      "paragraphs": 81
+    },
+    {
+      "id": 394,
+      "title": "第391章大气层（紊瑬+1）",
+      "words": 2148,
+      "paragraphs": 89
+    },
+    {
+      "id": 395,
+      "title": "第392章：本王带你走",
+      "words": 2068,
+      "paragraphs": 91
+    },
+    {
+      "id": 396,
+      "title": "第393章：何为剑",
+      "words": 2039,
+      "paragraphs": 106
+    },
+    {
+      "id": 397,
+      "title": "第394章：天井开【ilike1811】",
+      "words": 2151,
+      "paragraphs": 74
+    },
+    {
+      "id": 398,
+      "title": "第395章：神降",
+      "words": 2015,
+      "paragraphs": 80
+    },
+    {
+      "id": 399,
+      "title": "第396章：既定的命运",
+      "words": 2444,
+      "paragraphs": 110
+    },
+    {
+      "id": 400,
+      "title": "第397章：打上门来（是空白a～+1）",
+      "words": 2094,
+      "paragraphs": 84
+    },
+    {
+      "id": 401,
+      "title": "第398章：本尊给你一息",
+      "words": 2148,
+      "paragraphs": 83
+    },
+    {
+      "id": 402,
+      "title": "第399章：暗度陈仓",
+      "words": 2044,
+      "paragraphs": 82
+    },
+    {
+      "id": 403,
+      "title": "第400章：破天命（##Y6E+1）",
+      "words": 2180,
+      "paragraphs": 98
+    },
+    {
+      "id": 404,
+      "title": "第401章：前后夹击",
+      "words": 2100,
+      "paragraphs": 88
+    },
+    {
+      "id": 405,
+      "title": "第402章：伴君如伴虎",
+      "words": 2201,
+      "paragraphs": 87
+    },
+    {
+      "id": 406,
+      "title": "第403章：来打！（tijin+1）",
+      "words": 2197,
+      "paragraphs": 91
+    },
+    {
+      "id": 407,
+      "title": "第404章：想要更多",
+      "words": 2021,
+      "paragraphs": 95
+    },
+    {
+      "id": 408,
+      "title": "第305章：这……这不对吧？",
+      "words": 2056,
+      "paragraphs": 98
+    },
+    {
+      "id": 409,
+      "title": "第306章：张一白的野望【星若殇雪】",
+      "words": 2093,
+      "paragraphs": 83
+    },
+    {
+      "id": 410,
+      "title": "第407章：哈哈哈，好玩儿！",
+      "words": 2048,
+      "paragraphs": 98
+    },
+    {
+      "id": 411,
+      "title": "第408章：大乘",
+      "words": 2095,
+      "paragraphs": 88
+    },
+    {
+      "id": 412,
+      "title": "第409章：有问题【魏财神03】",
+      "words": 2122,
+      "paragraphs": 92
+    },
+    {
+      "id": 413,
+      "title": "第410章：近在眼前",
+      "words": 2090,
+      "paragraphs": 97
+    },
+    {
+      "id": 414,
+      "title": "第411章：当世第一？",
+      "words": 2139,
+      "paragraphs": 86
+    },
+    {
+      "id": 415,
+      "title": "第412章：两极反转（美人倾城蔡徐坤+1）",
+      "words": 2228,
+      "paragraphs": 81
+    },
+    {
+      "id": 416,
+      "title": "第413章：本尊的九天星辰铁呢？！",
+      "words": 2080,
+      "paragraphs": 90
+    },
+    {
+      "id": 417,
+      "title": "第414章：也不是不行",
+      "words": 2122,
+      "paragraphs": 87
+    },
+    {
+      "id": 418,
+      "title": "第415章：剑杀焚光【赤蛊】",
+      "words": 2088,
+      "paragraphs": 91
+    },
+    {
+      "id": 419,
+      "title": "第416章：似曾相识",
+      "words": 2098,
+      "paragraphs": 82
+    },
+    {
+      "id": 420,
+      "title": "第417章：我剑未尝不利",
+      "words": 2252,
+      "paragraphs": 95
+    },
+    {
+      "id": 421,
+      "title": "第418章：强制采购（我爱着一只猫+1）",
+      "words": 2052,
+      "paragraphs": 88
+    },
+    {
+      "id": 422,
+      "title": "第419章：引天劫",
+      "words": 2264,
+      "paragraphs": 87
+    },
+    {
+      "id": 423,
+      "title": "第420章：不对劲！这很不对劲！",
+      "words": 2188,
+      "paragraphs": 83
+    },
+    {
+      "id": 424,
+      "title": "第421章：想成仙？我帮你！（奔跑吧荷兰猪+1）",
+      "words": 2020,
+      "paragraphs": 89
+    },
+    {
+      "id": 425,
+      "title": "第422章：狮子吼",
+      "words": 2156,
+      "paragraphs": 87
+    },
+    {
+      "id": 426,
+      "title": "第423章：不许动我的朋友",
+      "words": 2038,
+      "paragraphs": 98
+    },
+    {
+      "id": 427,
+      "title": "第424章：战利品剥夺（天爱9538515+1）",
+      "words": 2091,
+      "paragraphs": 83
+    },
+    {
+      "id": 428,
+      "title": "第425章魔气反噬",
+      "words": 2163,
+      "paragraphs": 77
+    },
+    {
+      "id": 429,
+      "title": "第426章屈辱，无比的屈辱！",
+      "words": 2230,
+      "paragraphs": 82
+    },
+    {
+      "id": 430,
+      "title": "第427章宣鹤门【tijin】",
+      "words": 2117,
+      "paragraphs": 98
+    },
+    {
+      "id": 431,
+      "title": "第428章天魔门太上长老",
+      "words": 2221,
+      "paragraphs": 74
+    },
+    {
+      "id": 432,
+      "title": "第429章一定会回来的",
+      "words": 2232,
+      "paragraphs": 95
+    },
+    {
+      "id": 433,
+      "title": "第430章老夫的天魔门呢？！【收割者勒个人】",
+      "words": 2155,
+      "paragraphs": 94
+    },
+    {
+      "id": 434,
+      "title": "第431章一网打尽",
+      "words": 2346,
+      "paragraphs": 102
+    },
+    {
+      "id": 435,
+      "title": "第432章速速放下你们手里的机缘",
+      "words": 2172,
+      "paragraphs": 83
+    },
+    {
+      "id": 436,
+      "title": "第433章点子王张梦初（魏财神03+1）",
+      "words": 2259,
+      "paragraphs": 86
+    },
+    {
+      "id": 437,
+      "title": "第434章：玉慈",
+      "words": 2023,
+      "paragraphs": 77
+    },
+    {
+      "id": 438,
+      "title": "第435章：11号技师为您服务",
+      "words": 2098,
+      "paragraphs": 87
+    },
+    {
+      "id": 439,
+      "title": "第436章你来当宗主！（##Y6E+1）",
+      "words": 2236,
+      "paragraphs": 104
+    },
+    {
+      "id": 440,
+      "title": "第437章：给本宗主老实点！",
+      "words": 2607,
+      "paragraphs": 97
+    },
+    {
+      "id": 441,
+      "title": "第438章：看上了",
+      "words": 2024,
+      "paragraphs": 83
+    },
+    {
+      "id": 442,
+      "title": "第439章斜月三星洞（奔跑吧荷兰猪+1）",
+      "words": 2042,
+      "paragraphs": 83
+    },
+    {
+      "id": 443,
+      "title": "第440章：月影宗",
+      "words": 2304,
+      "paragraphs": 93
+    },
+    {
+      "id": 444,
+      "title": "第441章：这是火枪",
+      "words": 2127,
+      "paragraphs": 70
+    },
+    {
+      "id": 445,
+      "title": "第442章：好消息和坏消息（我爱着一只猫+1）",
+      "words": 2298,
+      "paragraphs": 90
+    },
+    {
+      "id": 446,
+      "title": "第443章：变态发育",
+      "words": 2165,
+      "paragraphs": 83
+    },
+    {
+      "id": 447,
+      "title": "第444章：按摩奇术",
+      "words": 2053,
+      "paragraphs": 78
+    },
+    {
+      "id": 448,
+      "title": "第445章：拜山的猴头儿（希灵单兵+1）",
+      "words": 2064,
+      "paragraphs": 91
+    },
+    {
+      "id": 449,
+      "title": "第446章：康庄大道？",
+      "words": 2069,
+      "paragraphs": 82
+    },
+    {
+      "id": 450,
+      "title": "第447章：检测到新的货币",
+      "words": 2164,
+      "paragraphs": 85
+    },
+    {
+      "id": 451,
+      "title": "第448章：爱情的烈火【隐居的塔妮娅～】",
+      "words": 2160,
+      "paragraphs": 86
+    },
+    {
+      "id": 452,
+      "title": "第449章：全都散功！",
+      "words": 2123,
+      "paragraphs": 92
+    },
+    {
+      "id": 453,
+      "title": "第450章：就用气旋丹",
+      "words": 2021,
+      "paragraphs": 73
+    },
+    {
+      "id": 454,
+      "title": "第451章：都去炼天魔功【tijin】",
+      "words": 2171,
+      "paragraphs": 81
+    },
+    {
+      "id": 455,
+      "title": "第452章：霸王拳与王霸心经",
+      "words": 2024,
+      "paragraphs": 80
+    },
+    {
+      "id": 456,
+      "title": "第453章：切记绕着走",
+      "words": 2181,
+      "paragraphs": 83
+    },
+    {
+      "id": 457,
+      "title": "第454章：神秘少女【柒+1】",
+      "words": 2171,
+      "paragraphs": 95
+    },
+    {
+      "id": 458,
+      "title": "第455章：蹊跷",
+      "words": 2071,
+      "paragraphs": 74
+    },
+    {
+      "id": 459,
+      "title": "第456章：心悦君兮君不知",
+      "words": 2399,
+      "paragraphs": 93
+    },
+    {
+      "id": 460,
+      "title": "第457章：宝贝（叶广霖）",
+      "words": 2058,
+      "paragraphs": 81
+    },
+    {
+      "id": 461,
+      "title": "第458章：仙长果然料事如神",
+      "words": 2010,
+      "paragraphs": 76
+    },
+    {
+      "id": 462,
+      "title": "第459章：荷花池？",
+      "words": 2349,
+      "paragraphs": 98
+    },
+    {
+      "id": 463,
+      "title": "第460章：这就是上进【柒+1】",
+      "words": 2466,
+      "paragraphs": 89
+    },
+    {
+      "id": 464,
+      "title": "第461章：星子各悬两岸枝",
+      "words": 2261,
+      "paragraphs": 76
+    },
+    {
+      "id": 465,
+      "title": "第462章：所求为何",
+      "words": 2724,
+      "paragraphs": 113
+    },
+    {
+      "id": 466,
+      "title": "第463章：所谓斩三尸【tijin+1】",
+      "words": 2308,
+      "paragraphs": 54
+    },
+    {
+      "id": 467,
+      "title": "第464章：出、出大事了",
+      "words": 2216,
+      "paragraphs": 77
+    },
+    {
+      "id": 468,
+      "title": "第465章：本尊要看到一百台印钞机！",
+      "words": 2060,
+      "paragraphs": 67
+    },
+    {
+      "id": 469,
+      "title": "第466章：又被偷了？(@佐助、re+1)",
+      "words": 2105,
+      "paragraphs": 71
+    },
+    {
+      "id": 470,
+      "title": "第467章：重建天魔门",
+      "words": 2176,
+      "paragraphs": 67
+    },
+    {
+      "id": 471,
+      "title": "第468章：天精玉髓",
+      "words": 2142,
+      "paragraphs": 80
+    },
+    {
+      "id": 472,
+      "title": "第469章：卦象（用户名21053045+1）",
+      "words": 2539,
+      "paragraphs": 96
+    },
+    {
+      "id": 473,
+      "title": "第470章：武装风灵宗",
+      "words": 2165,
+      "paragraphs": 70
+    },
+    {
+      "id": 474,
+      "title": "第471章：整装待发",
+      "words": 2154,
+      "paragraphs": 89
+    },
+    {
+      "id": 475,
+      "title": "第472章：有内鬼？（QC.Z）",
+      "words": 2104,
+      "paragraphs": 88
+    },
+    {
+      "id": 476,
+      "title": "第473章：战前准备",
+      "words": 2262,
+      "paragraphs": 83
+    },
+    {
+      "id": 477,
+      "title": "第474章：随本尊出战",
+      "words": 2462,
+      "paragraphs": 81
+    },
+    {
+      "id": 478,
+      "title": "第475章：错觉么【珂学家ovo+1】",
+      "words": 2023,
+      "paragraphs": 88
+    },
+    {
+      "id": 479,
+      "title": "第476章：风灵宗秘技……",
+      "words": 2657,
+      "paragraphs": 100
+    },
+    {
+      "id": 480,
+      "title": "第477章：这叫体育科学",
+      "words": 2134,
+      "paragraphs": 78
+    },
+    {
+      "id": 481,
+      "title": "第478章：只管桀桀桀（MTF-辛未-10燕蹴飞花+1）",
+      "words": 2444,
+      "paragraphs": 108
+    },
+    {
+      "id": 482,
+      "title": "第479章：本色出演",
+      "words": 2211,
+      "paragraphs": 82
+    },
+    {
+      "id": 483,
+      "title": "第480章：您，收手吧！",
+      "words": 2258,
+      "paragraphs": 81
+    },
+    {
+      "id": 484,
+      "title": "第481章：九重春色（tijin+1）",
+      "words": 2815,
+      "paragraphs": 100
+    },
+    {
+      "id": 485,
+      "title": "第482章：爱就要马上行动",
+      "words": 2046,
+      "paragraphs": 79
+    },
+    {
+      "id": 486,
+      "title": "第483章：药效发作",
+      "words": 2294,
+      "paragraphs": 90
+    },
+    {
+      "id": 487,
+      "title": "第384章：老夫真拿走了！（不想打龚+1）",
+      "words": 2329,
+      "paragraphs": 83
+    },
+    {
+      "id": 488,
+      "title": "第485章：上品天精玉髓到手",
+      "words": 2112,
+      "paragraphs": 86
+    },
+    {
+      "id": 489,
+      "title": "第486章：搏命",
+      "words": 2588,
+      "paragraphs": 119
+    },
+    {
+      "id": 490,
+      "title": "第487章：还撒起娇了？（梦魂中）",
+      "words": 2585,
+      "paragraphs": 102
+    },
+    {
+      "id": 491,
+      "title": "第488章：使不得啊",
+      "words": 2101,
+      "paragraphs": 88
+    },
+    {
+      "id": 492,
+      "title": "第489章：风雨欲来？",
+      "words": 2172,
+      "paragraphs": 94
+    },
+    {
+      "id": 493,
+      "title": "第490章：对策（出差中的卑微CRA）",
+      "words": 2086,
+      "paragraphs": 80
+    },
+    {
+      "id": 494,
+      "title": "第491章：活了，又活了！",
+      "words": 3100,
+      "paragraphs": 112
+    },
+    {
+      "id": 495,
+      "title": "第492章：黄粱一梦",
+      "words": 2288,
+      "paragraphs": 87
+    },
+    {
+      "id": 496,
+      "title": "第493章：还有两个脑袋(一只长翅膀的鱼)",
+      "words": 2257,
+      "paragraphs": 109
+    },
+    {
+      "id": 497,
+      "title": "第494章：健体神功？",
+      "words": 2067,
+      "paragraphs": 100
+    },
+    {
+      "id": 498,
+      "title": "第495章：宴请大戏",
+      "words": 2571,
+      "paragraphs": 83
+    },
+    {
+      "id": 499,
+      "title": "第496章：念头通达【豚豹家长吴烨】",
+      "words": 2180,
+      "paragraphs": 84
+    },
+    {
+      "id": 500,
+      "title": "第497章：主动请缨",
+      "words": 2178,
+      "paragraphs": 82
+    },
+    {
+      "id": 501,
+      "title": "第498章：速成之法",
+      "words": 2278,
+      "paragraphs": 87
+    },
+    {
+      "id": 502,
+      "title": "第499章：任君采撷（才子佳人白衣卿相）",
+      "words": 2294,
+      "paragraphs": 101
+    },
+    {
+      "id": 503,
+      "title": "第500章：教了，但没全教",
+      "words": 2549,
+      "paragraphs": 100
+    },
+    {
+      "id": 504,
+      "title": "第501章：沧波山脉",
+      "words": 2216,
+      "paragraphs": 74
+    },
+    {
+      "id": 505,
+      "title": "第502章：要给他们喘息的机会么？（咕咕元初）",
+      "words": 2336,
+      "paragraphs": 104
+    },
+    {
+      "id": 506,
+      "title": "第503章：五圣破阵",
+      "words": 2028,
+      "paragraphs": 81
+    },
+    {
+      "id": 507,
+      "title": "第504章：千钧一发",
+      "words": 2109,
+      "paragraphs": 85
+    },
+    {
+      "id": 508,
+      "title": "第505章：剑对五圣（ILIKE1811）",
+      "words": 2490,
+      "paragraphs": 121
+    },
+    {
+      "id": 509,
+      "title": "第506章：五圣开环",
+      "words": 2187,
+      "paragraphs": 95
+    },
+    {
+      "id": 510,
+      "title": "第507章：渡劫",
+      "words": 2312,
+      "paragraphs": 110
+    },
+    {
+      "id": 511,
+      "title": "第508章：去你妈的天道（ilike1811）",
+      "words": 2478,
+      "paragraphs": 131
+    },
+    {
+      "id": 512,
+      "title": "第509章：塞翁失马",
+      "words": 2078,
+      "paragraphs": 97
+    },
+    {
+      "id": 513,
+      "title": "第510章：焚天、涂山月",
+      "words": 2077,
+      "paragraphs": 87
+    },
+    {
+      "id": 514,
+      "title": "第511章：饭桶的身份（3333333y）",
+      "words": 2123,
+      "paragraphs": 84
+    },
+    {
+      "id": 515,
+      "title": "第512章：回归",
+      "words": 2015,
+      "paragraphs": 80
+    },
+    {
+      "id": 516,
+      "title": "第513章：传授",
+      "words": 2405,
+      "paragraphs": 89
+    },
+    {
+      "id": 517,
+      "title": "第514章：大圣残躯（星若殇雪+1）",
+      "words": 2704,
+      "paragraphs": 113
+    },
+    {
+      "id": 518,
+      "title": "第515章：没差别",
+      "words": 2382,
+      "paragraphs": 95
+    },
+    {
+      "id": 519,
+      "title": "第516章：残躯之威",
+      "words": 2361,
+      "paragraphs": 107
+    },
+    {
+      "id": 520,
+      "title": "第517章：呼叫支援（星若殇雪）",
+      "words": 2190,
+      "paragraphs": 99
+    },
+    {
+      "id": 521,
+      "title": "第518章：道之内外",
+      "words": 2355,
+      "paragraphs": 103
+    },
+    {
+      "id": 522,
+      "title": "第519章：这是剑修？！",
+      "words": 2288,
+      "paragraphs": 107
+    },
+    {
+      "id": 523,
+      "title": "第520章：真圣之心（嘶溜嘶溜）",
+      "words": 2143,
+      "paragraphs": 104
+    },
+    {
+      "id": 524,
+      "title": "第521章：前辈又没了！",
+      "words": 2151,
+      "paragraphs": 92
+    },
+    {
+      "id": 525,
+      "title": "第522章：就它？",
+      "words": 2303,
+      "paragraphs": 92
+    },
+    {
+      "id": 526,
+      "title": "第523章：比试（tijin）",
+      "words": 2498,
+      "paragraphs": 101
+    },
+    {
+      "id": 527,
+      "title": "第524章：仙品九转返魂丹",
+      "words": 2165,
+      "paragraphs": 91
+    },
+    {
+      "id": 528,
+      "title": "第525章：道别",
+      "words": 2015,
+      "paragraphs": 86
+    },
+    {
+      "id": 529,
+      "title": "第526章：对峙（蝶恋花非舞）",
+      "words": 2076,
+      "paragraphs": 85
+    },
+    {
+      "id": 530,
+      "title": "第527章：动得了谁？！",
+      "words": 2111,
+      "paragraphs": 78
+    },
+    {
+      "id": 531,
+      "title": "第528章：情绪稳定",
+      "words": 2261,
+      "paragraphs": 118
+    },
+    {
+      "id": 532,
+      "title": "第529章：老祖我没打错人吧？（念花渡秋水）",
+      "words": 2232,
+      "paragraphs": 112
+    },
+    {
+      "id": 533,
+      "title": "第530章：检查身体",
+      "words": 2026,
+      "paragraphs": 76
+    },
+    {
+      "id": 534,
+      "title": "第531章：回不去了？",
+      "words": 2105,
+      "paragraphs": 109
+    },
+    {
+      "id": 535,
+      "title": "第532章：这是地星四神兽（夜乄影夜+1）",
+      "words": 2037,
+      "paragraphs": 74
+    },
+    {
+      "id": 536,
+      "title": "第533章永远不会",
+      "words": 2343,
+      "paragraphs": 81
+    },
+    {
+      "id": 537,
+      "title": "第534章别在里面生娃了！",
+      "words": 2071,
+      "paragraphs": 82
+    },
+    {
+      "id": 538,
+      "title": "第535章：观礼（猜冥）",
+      "words": 2065,
+      "paragraphs": 98
+    },
+    {
+      "id": 539,
+      "title": "第536章观礼（2）",
+      "words": 2139,
+      "paragraphs": 81
+    },
+    {
+      "id": 540,
+      "title": "第537章升仙劫至",
+      "words": 2186,
+      "paragraphs": 74
+    },
+    {
+      "id": 541,
+      "title": "第538章天要亡我（吃我一拳-）",
+      "words": 2775,
+      "paragraphs": 106
+    },
+    {
+      "id": 542,
+      "title": "第539章：横竖都是死",
+      "words": 2090,
+      "paragraphs": 89
+    },
+    {
+      "id": 543,
+      "title": "第540章：玉慈升仙（二合一，c，舟！）",
+      "words": 3493,
+      "paragraphs": 122
+    },
+    {
+      "id": 544,
+      "title": "第541章：一念生，一念死（明前云晓）",
+      "words": 2235,
+      "paragraphs": 71
+    },
+    {
+      "id": 545,
+      "title": "第542章那索性，就不包了",
+      "words": 2048,
+      "paragraphs": 94
+    },
+    {
+      "id": 546,
+      "title": "第543章群起而攻之",
+      "words": 2050,
+      "paragraphs": 76
+    },
+    {
+      "id": 547,
+      "title": "第544章亲老祖啊（明前云晓+2）",
+      "words": 2193,
+      "paragraphs": 109
+    },
+    {
+      "id": 548,
+      "title": "第545章：定魂珠",
+      "words": 2182,
+      "paragraphs": 106
+    },
+    {
+      "id": 549,
+      "title": "第546章混入其中",
+      "words": 2073,
+      "paragraphs": 94
+    },
+    {
+      "id": 550,
+      "title": "第547章你居然没有狐臭？（明前云晓+3）",
+      "words": 2512,
+      "paragraphs": 114
+    },
+    {
+      "id": 551,
+      "title": "第548章：逼退",
+      "words": 2120,
+      "paragraphs": 96
+    },
+    {
+      "id": 552,
+      "title": "第549章：你是哥哥？",
+      "words": 2063,
+      "paragraphs": 88
+    },
+    {
+      "id": 553,
+      "title": "第550章：兄弟相认？【明前云晓】",
+      "words": 2112,
+      "paragraphs": 75
+    },
+    {
+      "id": 554,
+      "title": "第551章：俺还得跟你学习",
+      "words": 2064,
+      "paragraphs": 85
+    },
+    {
+      "id": 555,
+      "title": "第552章：带老魔练天魔功",
+      "words": 2177,
+      "paragraphs": 89
+    },
+    {
+      "id": 556,
+      "title": "第553章：才艺展示（明前云晓）",
+      "words": 2419,
+      "paragraphs": 119
+    },
+    {
+      "id": 557,
+      "title": "第554章：箫声太闷，让人…心痛",
+      "words": 2038,
+      "paragraphs": 99
+    },
+    {
+      "id": 558,
+      "title": "第554章：血刀真人",
+      "words": 2836,
+      "paragraphs": 104
+    },
+    {
+      "id": 559,
+      "title": "第555章谁都不能拦（明前云晓）",
+      "words": 2164,
+      "paragraphs": 86
+    },
+    {
+      "id": 560,
+      "title": "第556章：所谓魔功",
+      "words": 2192,
+      "paragraphs": 90
+    },
+    {
+      "id": 561,
+      "title": "第557章：都想练魔功？",
+      "words": 2026,
+      "paragraphs": 76
+    },
+    {
+      "id": 562,
+      "title": "第558章：都是老魔〈明前云晓〉",
+      "words": 2398,
+      "paragraphs": 101
+    },
+    {
+      "id": 563,
+      "title": "第559章：问道大会？",
+      "words": 2073,
+      "paragraphs": 79
+    },
+    {
+      "id": 564,
+      "title": "第560章：你只有两个选择",
+      "words": 2216,
+      "paragraphs": 105
+    },
+    {
+      "id": 565,
+      "title": "第561章：要加钟么？〈明前云晓+7〉",
+      "words": 2656,
+      "paragraphs": 122
+    },
+    {
+      "id": 566,
+      "title": "第562章：加加加加到厌倦",
+      "words": 2172,
+      "paragraphs": 106
+    },
+    {
+      "id": 567,
+      "title": "第563章：新品发布会？",
+      "words": 2009,
+      "paragraphs": 87
+    },
+    {
+      "id": 568,
+      "title": "第564章：青瓷道姑？【明前云晓】",
+      "words": 2188,
+      "paragraphs": 105
+    },
+    {
+      "id": 569,
+      "title": "第565章：小艾智能按摩椅",
+      "words": 2017,
+      "paragraphs": 80
+    },
+    {
+      "id": 570,
+      "title": "第566章：这是妖兽和机关术的结合！",
+      "words": 2246,
+      "paragraphs": 91
+    },
+    {
+      "id": 571,
+      "title": "第567章：就像进了蛤蟆池【明前云晓】",
+      "words": 2187,
+      "paragraphs": 97
+    },
+    {
+      "id": 572,
+      "title": "第568章：心生一计",
+      "words": 2049,
+      "paragraphs": 95
+    },
+    {
+      "id": 573,
+      "title": "第569章：各怀鬼胎",
+      "words": 2040,
+      "paragraphs": 83
+    },
+    {
+      "id": 574,
+      "title": "第570章：艺高人胆大【明前云晓+10】",
+      "words": 2207,
+      "paragraphs": 105
+    },
+    {
+      "id": 575,
+      "title": "第571章：请君入瓮",
+      "words": 2155,
+      "paragraphs": 93
+    },
+    {
+      "id": 576,
+      "title": "第572章：还需要一些助攻",
+      "words": 2203,
+      "paragraphs": 96
+    },
+    {
+      "id": 577,
+      "title": "第573章魔音八窍（明前云晓+11）",
+      "words": 2048,
+      "paragraphs": 74
+    },
+    {
+      "id": 578,
+      "title": "第574章：火上浇油",
+      "words": 2052,
+      "paragraphs": 86
+    },
+    {
+      "id": 579,
+      "title": "第575章：果然这就是兄长么？！",
+      "words": 2103,
+      "paragraphs": 95
+    },
+    {
+      "id": 580,
+      "title": "第576章：摧枯拉朽（明前云晓+11）",
+      "words": 2223,
+      "paragraphs": 87
+    },
+    {
+      "id": 581,
+      "title": "第577章：家师只传我一人",
+      "words": 2479,
+      "paragraphs": 112
+    },
+    {
+      "id": 582,
+      "title": "第578章：焚丹诀",
+      "words": 2232,
+      "paragraphs": 101
+    },
+    {
+      "id": 583,
+      "title": "第579章：战中突破（明前云晓+12）",
+      "words": 2079,
+      "paragraphs": 100
+    },
+    {
+      "id": 584,
+      "title": "第580章：像死了老婆",
+      "words": 2027,
+      "paragraphs": 80
+    },
+    {
+      "id": 585,
+      "title": "第581章：再给你找个老婆",
+      "words": 2023,
+      "paragraphs": 87
+    },
+    {
+      "id": 586,
+      "title": "第582章：中州南朝（明前云晓+14）",
+      "words": 2331,
+      "paragraphs": 90
+    },
+    {
+      "id": 587,
+      "title": "第583章：平西镇",
+      "words": 2012,
+      "paragraphs": 82
+    },
+    {
+      "id": 588,
+      "title": "第583章：民女刘翠娥",
+      "words": 2077,
+      "paragraphs": 82
+    },
+    {
+      "id": 589,
+      "title": "第584章：前尘往事（明前云晓+15）",
+      "words": 2597,
+      "paragraphs": 82
+    },
+    {
+      "id": 590,
+      "title": "第585章：推演狗皇帝",
+      "words": 2092,
+      "paragraphs": 79
+    },
+    {
+      "id": 591,
+      "title": "第586章：可有想过修仙？",
+      "words": 2686,
+      "paragraphs": 88
+    },
+    {
+      "id": 592,
+      "title": "第587章：更重要的事（明前云晓+17）",
+      "words": 2336,
+      "paragraphs": 81
+    },
+    {
+      "id": 593,
+      "title": "第588章：那完犊子了",
+      "words": 2407,
+      "paragraphs": 92
+    },
+    {
+      "id": 594,
+      "title": "第589章：仇要亲自报",
+      "words": 2443,
+      "paragraphs": 95
+    },
+    {
+      "id": 595,
+      "title": "第590章：苍梧老人（二合一，明前云晓+19）",
+      "words": 3408,
+      "paragraphs": 125
+    },
+    {
+      "id": 596,
+      "title": "第591章：报仇雪恨",
+      "words": 2253,
+      "paragraphs": 91
+    },
+    {
+      "id": 597,
+      "title": "第592章：踮起脚尖",
+      "words": 2293,
+      "paragraphs": 101
+    },
+    {
+      "id": 598,
+      "title": "第593章：太上头了",
+      "words": 2135,
+      "paragraphs": 88
+    },
+    {
+      "id": 599,
+      "title": "第594章：就喜欢这种刺激？",
+      "words": 2193,
+      "paragraphs": 78
+    },
+    {
+      "id": 600,
+      "title": "第595章：华灯初上",
+      "words": 2130,
+      "paragraphs": 95
+    },
+    {
+      "id": 601,
+      "title": "第596章：夫君（明前云晓+22）",
+      "words": 2170,
+      "paragraphs": 103
+    },
+    {
+      "id": 602,
+      "title": "第597章：江湖话本？",
+      "words": 2078,
+      "paragraphs": 86
+    },
+    {
+      "id": 603,
+      "title": "第598章：找到你们了！",
+      "words": 2806,
+      "paragraphs": 132
+    },
+    {
+      "id": 604,
+      "title": "第599章：紧急情况（二合一）（明前+24）",
+      "words": 3354,
+      "paragraphs": 140
+    },
+    {
+      "id": 605,
+      "title": "第600章：垂死病中惊坐起，中尸竟是我自己？",
+      "words": 2089,
+      "paragraphs": 111
+    },
+    {
+      "id": 606,
+      "title": "第601章：想学时停的陈文远",
+      "words": 2122,
+      "paragraphs": 90
+    },
+    {
+      "id": 607,
+      "title": "第602章：这书不对劲【明前+25】",
+      "words": 2050,
+      "paragraphs": 98
+    },
+    {
+      "id": 608,
+      "title": "第603章：日后再说",
+      "words": 2634,
+      "paragraphs": 98
+    },
+    {
+      "id": 609,
+      "title": "第604章：看看腿",
+      "words": 2288,
+      "paragraphs": 98
+    },
+    {
+      "id": 610,
+      "title": "第605章：暂避锋芒？（明前+26）",
+      "words": 1904,
+      "paragraphs": 89
+    },
+    {
+      "id": 611,
+      "title": "第606章：血刀谋划",
+      "words": 2048,
+      "paragraphs": 91
+    },
+    {
+      "id": 612,
+      "title": "第607章：顾长生的阵",
+      "words": 2367,
+      "paragraphs": 93
+    },
+    {
+      "id": 613,
+      "title": "第608章：龙虎剑宗（明前+27）",
+      "words": 2272,
+      "paragraphs": 90
+    },
+    {
+      "id": 614,
+      "title": "第609章你是天才",
+      "words": 2156,
+      "paragraphs": 82
+    },
+    {
+      "id": 615,
+      "title": "第610章脱胎换骨",
+      "words": 2110,
+      "paragraphs": 96
+    },
+    {
+      "id": 616,
+      "title": "第611章：这就是力量的味道",
+      "words": 2123,
+      "paragraphs": 77
+    },
+    {
+      "id": 617,
+      "title": "第612章你们宗主还得喊我一声前辈（明前+29）",
+      "words": 2168,
+      "paragraphs": 104
+    },
+    {
+      "id": 618,
+      "title": "第613章你接不接？",
+      "words": 2124,
+      "paragraphs": 82
+    },
+    {
+      "id": 619,
+      "title": "第614章晚辈不认识啊！",
+      "words": 2294,
+      "paragraphs": 121
+    },
+    {
+      "id": 620,
+      "title": "第615章张梦初收徒（明前+30终于还完了）",
+      "words": 2405,
+      "paragraphs": 111
+    },
+    {
+      "id": 621,
+      "title": "第616章：有肉吃？",
+      "words": 2115,
+      "paragraphs": 85
+    },
+    {
+      "id": 622,
+      "title": "第617章先吃点油水",
+      "words": 2943,
+      "paragraphs": 119
+    },
+    {
+      "id": 623,
+      "title": "第618章：街中人（菊花脸+1）",
+      "words": 2658,
+      "paragraphs": 131
+    },
+    {
+      "id": 624,
+      "title": "第619章：顾长生调虎离山",
+      "words": 2075,
+      "paragraphs": 83
+    },
+    {
+      "id": 625,
+      "title": "第620章：被踢出游戏了？",
+      "words": 2076,
+      "paragraphs": 77
+    },
+    {
+      "id": 626,
+      "title": "第621章：开盲盒（菊花脸+2）",
+      "words": 2042,
+      "paragraphs": 92
+    },
+    {
+      "id": 627,
+      "title": "第622章：强攻",
+      "words": 2629,
+      "paragraphs": 113
+    },
+    {
+      "id": 628,
+      "title": "第623章：剑来",
+      "words": 2429,
+      "paragraphs": 104
+    },
+    {
+      "id": 629,
+      "title": "第624章：再次认识一下（菊花脸+3）",
+      "words": 2086,
+      "paragraphs": 82
+    },
+    {
+      "id": 630,
+      "title": "第625章：万物生灭，即是轮回",
+      "words": 2009,
+      "paragraphs": 81
+    },
+    {
+      "id": 631,
+      "title": "第626章：干脆全特娘的爆了？",
+      "words": 2291,
+      "paragraphs": 95
+    },
+    {
+      "id": 632,
+      "title": "第627章妖仙（菊花脸+4）",
+      "words": 1779,
+      "paragraphs": 59
+    },
+    {
+      "id": 633,
+      "title": "第628章灵魂深处（我永远喜欢阮如意+1）",
+      "words": 1784,
+      "paragraphs": 74
+    },
+    {
+      "id": 634,
+      "title": "第629章：本尊让你跑了？",
+      "words": 1826,
+      "paragraphs": 78
+    },
+    {
+      "id": 635,
+      "title": "第630章：大乘灌注",
+      "words": 2677,
+      "paragraphs": 121
+    },
+    {
+      "id": 636,
+      "title": "第631章什么垃圾玩意儿？（我永远喜欢阮如意+1）",
+      "words": 1523,
+      "paragraphs": 80
+    },
+    {
+      "id": 637,
+      "title": "第632章你以为你赢了？",
+      "words": 1746,
+      "paragraphs": 82
+    },
+    {
+      "id": 638,
+      "title": "第632章：没了！全都没了！",
+      "words": 2196,
+      "paragraphs": 100
+    },
+    {
+      "id": 639,
+      "title": "第633章难道我是本体？",
+      "words": 1927,
+      "paragraphs": 82
+    },
+    {
+      "id": 640,
+      "title": "第634章全部解锁（二合一）（我永远喜欢阮如意+3）",
+      "words": 3081,
+      "paragraphs": 123
+    },
+    {
+      "id": 641,
+      "title": "第635章突然袭击",
+      "words": 1516,
+      "paragraphs": 66
+    },
+    {
+      "id": 642,
+      "title": "第636章你确定？",
+      "words": 1668,
+      "paragraphs": 71
+    },
+    {
+      "id": 643,
+      "title": "第637章不许笑",
+      "words": 1513,
+      "paragraphs": 56
+    },
+    {
+      "id": 644,
+      "title": "第638章变数，找到了（路人谢xx+1）",
+      "words": 2043,
+      "paragraphs": 81
+    },
+    {
+      "id": 645,
+      "title": "第638章不准看",
+      "words": 2002,
+      "paragraphs": 85
+    },
+    {
+      "id": 646,
+      "title": "第639章：消失的邮件",
+      "words": 2140,
+      "paragraphs": 84
+    },
+    {
+      "id": 647,
+      "title": "第640章：谁被拿捏了？（路人谢+2）",
+      "words": 2012,
+      "paragraphs": 88
+    },
+    {
+      "id": 648,
+      "title": "第641章：也是吃上好的了",
+      "words": 2028,
+      "paragraphs": 80
+    },
+    {
+      "id": 649,
+      "title": "第642章：您走吧！（二合一，西八捞马+1）",
+      "words": 3025,
+      "paragraphs": 126
+    },
+    {
+      "id": 650,
+      "title": "第643章：格局突变（石皮+1）",
+      "words": 2878,
+      "paragraphs": 122
+    },
+    {
+      "id": 651,
+      "title": "第644章出走的霸肌",
+      "words": 1505,
+      "paragraphs": 56
+    },
+    {
+      "id": 652,
+      "title": "第645章预感不祥",
+      "words": 1716,
+      "paragraphs": 69
+    },
+    {
+      "id": 653,
+      "title": "第646章乌鳄",
+      "words": 2094,
+      "paragraphs": 83
+    },
+    {
+      "id": 654,
+      "title": "第647章妖魂自爆",
+      "words": 2064,
+      "paragraphs": 90
+    },
+    {
+      "id": 655,
+      "title": "第648章辰牛（二合一tijin+1）",
+      "words": 3016,
+      "paragraphs": 138
+    },
+    {
+      "id": 656,
+      "title": "第649章垃圾，都是垃圾",
+      "words": 2102,
+      "paragraphs": 95
+    },
+    {
+      "id": 657,
+      "title": "第650章原路返回",
+      "words": 2427,
+      "paragraphs": 92
+    },
+    {
+      "id": 658,
+      "title": "第651章：轻松识破（塔尼亚+1）",
+      "words": 2020,
+      "paragraphs": 98
+    },
+    {
+      "id": 659,
+      "title": "第651章对策",
+      "words": 2118,
+      "paragraphs": 98
+    },
+    {
+      "id": 660,
+      "title": "第652章来自苍云的窥视",
+      "words": 2280,
+      "paragraphs": 103
+    },
+    {
+      "id": 661,
+      "title": "第653章听心（不想打龚+1）",
+      "words": 2442,
+      "paragraphs": 113
+    },
+    {
+      "id": 662,
+      "title": "第654章来地宫",
+      "words": 2068,
+      "paragraphs": 91
+    },
+    {
+      "id": 663,
+      "title": "第655章让一切照旧",
+      "words": 2167,
+      "paragraphs": 102
+    },
+    {
+      "id": 664,
+      "title": "第656章：你很想成仙？",
+      "words": 2230,
+      "paragraphs": 91
+    },
+    {
+      "id": 665,
+      "title": "第657章：布阵！",
+      "words": 2007,
+      "paragraphs": 83
+    },
+    {
+      "id": 666,
+      "title": "第658章跟我的药说去吧！",
+      "words": 2187,
+      "paragraphs": 112
+    },
+    {
+      "id": 667,
+      "title": "第659章那咋了？（石皮+2）",
+      "words": 2024,
+      "paragraphs": 77
+    },
+    {
+      "id": 668,
+      "title": "第660章：你忍一下吧",
+      "words": 2046,
+      "paragraphs": 106
+    },
+    {
+      "id": 669,
+      "title": "第661章：茶水",
+      "words": 2167,
+      "paragraphs": 104
+    },
+    {
+      "id": 670,
+      "title": "第662章：猛攻〈石皮+3〉",
+      "words": 2104,
+      "paragraphs": 103
+    },
+    {
+      "id": 671,
+      "title": "第663章再来一次",
+      "words": 2240,
+      "paragraphs": 105
+    },
+    {
+      "id": 672,
+      "title": "第664章笑而不语",
+      "words": 2032,
+      "paragraphs": 102
+    },
+    {
+      "id": 673,
+      "title": "第665章一定是真的（石皮+4）",
+      "words": 2077,
+      "paragraphs": 83
+    },
+    {
+      "id": 674,
+      "title": "第666章：身份暴露",
+      "words": 2078,
+      "paragraphs": 84
+    },
+    {
+      "id": 675,
+      "title": "第667章混淆视听",
+      "words": 2087,
+      "paragraphs": 84
+    },
+    {
+      "id": 676,
+      "title": "第668章：迫不及待了（作者3zwxl8+1）",
+      "words": 2099,
+      "paragraphs": 90
+    },
+    {
+      "id": 677,
+      "title": "第669章：引荐引荐",
+      "words": 2080,
+      "paragraphs": 79
+    },
+    {
+      "id": 678,
+      "title": "第670章：要抢两个！",
+      "words": 2056,
+      "paragraphs": 77
+    },
+    {
+      "id": 679,
+      "title": "第671章：她行咱也行（你再水我就养属了+1）",
+      "words": 2038,
+      "paragraphs": 79
+    },
+    {
+      "id": 680,
+      "title": "第672章：人为财死",
+      "words": 2116,
+      "paragraphs": 80
+    },
+    {
+      "id": 681,
+      "title": "第673章：归我了！",
+      "words": 2054,
+      "paragraphs": 82
+    },
+    {
+      "id": 682,
+      "title": "第674章：好好奖励（吟游鲸鱼+1）",
+      "words": 2245,
+      "paragraphs": 94
+    },
+    {
+      "id": 683,
+      "title": "第675章：剑鸣声起",
+      "words": 2016,
+      "paragraphs": 88
+    },
+    {
+      "id": 684,
+      "title": "第676章：五十步笑百步",
+      "words": 2054,
+      "paragraphs": 81
+    },
+    {
+      "id": 685,
+      "title": "第677章：提头来见（天羽tenyo）",
+      "words": 2161,
+      "paragraphs": 81
+    },
+    {
+      "id": 686,
+      "title": "第678章：这是你小子的荣幸",
+      "words": 2025,
+      "paragraphs": 93
+    },
+    {
+      "id": 687,
+      "title": "第679章：万剑",
+      "words": 2319,
+      "paragraphs": 112
+    },
+    {
+      "id": 688,
+      "title": "第680章：爆（不睡觉追书看+1）",
+      "words": 2129,
+      "paragraphs": 109
+    },
+    {
+      "id": 689,
+      "title": "第681章：林凡vs辰牛",
+      "words": 2031,
+      "paragraphs": 98
+    },
+    {
+      "id": 690,
+      "title": "第682章：吾也会！",
+      "words": 2014,
+      "paragraphs": 97
+    },
+    {
+      "id": 691,
+      "title": "第683章：差点儿吓尿（用户1755851+1）",
+      "words": 2016,
+      "paragraphs": 107
+    },
+    {
+      "id": 692,
+      "title": "第684章：异兽出没",
+      "words": 2227,
+      "paragraphs": 77
+    },
+    {
+      "id": 693,
+      "title": "第685章：打脸了！",
+      "words": 2115,
+      "paragraphs": 83
+    },
+    {
+      "id": 694,
+      "title": "第686章：身份暴露（爱吃渣酥的阿里木+1）",
+      "words": 2289,
+      "paragraphs": 85
+    },
+    {
+      "id": 695,
+      "title": "第687章：请狮入瓮",
+      "words": 2139,
+      "paragraphs": 97
+    },
+    {
+      "id": 696,
+      "title": "第638章：拖走！",
+      "words": 2491,
+      "paragraphs": 120
+    },
+    {
+      "id": 697,
+      "title": "第639章：有埋伏！（录三岁+1）",
+      "words": 2160,
+      "paragraphs": 87
+    },
+    {
+      "id": 698,
+      "title": "第640章：真给我吃啊？",
+      "words": 2051,
+      "paragraphs": 78
+    },
+    {
+      "id": 699,
+      "title": "第641章：诸仙飞升之日",
+      "words": 2073,
+      "paragraphs": 77
+    },
+    {
+      "id": 700,
+      "title": "第642章：宗门聚灵大阵（用户23468340+1）",
+      "words": 2795,
+      "paragraphs": 105
+    },
+    {
+      "id": 701,
+      "title": "第643章：萧老魔啥都知道",
+      "words": 2036,
+      "paragraphs": 79
+    },
+    {
+      "id": 702,
+      "title": "第694章：是小女子此生的幸运啊",
+      "words": 2132,
+      "paragraphs": 70
+    },
+    {
+      "id": 703,
+      "title": "第695章：尾随（爱吃春笋烧毛豆的冬樱+1）",
+      "words": 2094,
+      "paragraphs": 81
+    },
+    {
+      "id": 704,
+      "title": "第696章：洞悉一切",
+      "words": 2262,
+      "paragraphs": 81
+    },
+    {
+      "id": 705,
+      "title": "第697章：歪瓜裂枣",
+      "words": 2094,
+      "paragraphs": 84
+    },
+    {
+      "id": 706,
+      "title": "第698章：选人（用户23468340+1）",
+      "words": 2228,
+      "paragraphs": 87
+    },
+    {
+      "id": 707,
+      "title": "第699章：有戏",
+      "words": 2047,
+      "paragraphs": 79
+    },
+    {
+      "id": 708,
+      "title": "第700章：又想了",
+      "words": 2190,
+      "paragraphs": 82
+    },
+    {
+      "id": 709,
+      "title": "第701章：气焰滔天（石皮+1）",
+      "words": 2267,
+      "paragraphs": 83
+    },
+    {
+      "id": 710,
+      "title": "第702章：焚天和尚的算计",
+      "words": 1997,
+      "paragraphs": 79
+    },
+    {
+      "id": 711,
+      "title": "第703章：九尾渡劫",
+      "words": 1999,
+      "paragraphs": 93
+    },
+    {
+      "id": 712,
+      "title": "第704章：这个天道大有问题（石皮+1）",
+      "words": 2384,
+      "paragraphs": 100
+    },
+    {
+      "id": 713,
+      "title": "第705章：涂山月升仙",
+      "words": 2128,
+      "paragraphs": 100
+    },
+    {
+      "id": 714,
+      "title": "第706章：气焰嚣张",
+      "words": 2169,
+      "paragraphs": 84
+    },
+    {
+      "id": 715,
+      "title": "第707章：随本尊斩妖（用户23468340+1）",
+      "words": 1836,
+      "paragraphs": 82
+    },
+    {
+      "id": 716,
+      "title": "第708章：来战！",
+      "words": 2078,
+      "paragraphs": 85
+    },
+    {
+      "id": 717,
+      "title": "第709章：引动天劫",
+      "words": 1979,
+      "paragraphs": 69
+    },
+    {
+      "id": 718,
+      "title": "第710章：渡劫者——陈怀安（23468340+1）",
+      "words": 2134,
+      "paragraphs": 116
+    },
+    {
+      "id": 719,
+      "title": "第711章：苦肉计",
+      "words": 3033,
+      "paragraphs": 120
+    },
+    {
+      "id": 720,
+      "title": "第712章：中计了（我永远喜欢阮如意+1）",
+      "words": 3120,
+      "paragraphs": 126
+    },
+    {
+      "id": 721,
+      "title": "第713章：谈笑间，剑杀五妖",
+      "words": 2038,
+      "paragraphs": 115
+    },
+    {
+      "id": 722,
+      "title": "第714章：都是算计",
+      "words": 2026,
+      "paragraphs": 92
+    },
+    {
+      "id": 723,
+      "title": "第715章：统一的步伐（我永远喜欢阮如意+1【还完】）",
+      "words": 2254,
+      "paragraphs": 87
+    },
+    {
+      "id": 724,
+      "title": "第716章：偷偷滴",
+      "words": 2021,
+      "paragraphs": 81
+    },
+    {
+      "id": 725,
+      "title": "第717章：青云老祖失恋之旅",
+      "words": 3069,
+      "paragraphs": 142
+    },
+    {
+      "id": 726,
+      "title": "第718章：早就知道你是仙！（Kevin小熊猫+1【还完】）",
+      "words": 2104,
+      "paragraphs": 113
+    },
+    {
+      "id": 727,
+      "title": "第719章：片刻温存",
+      "words": 2861,
+      "paragraphs": 103
+    },
+    {
+      "id": 728,
+      "title": "第720章：这事儿得问老祖",
+      "words": 2025,
+      "paragraphs": 87
+    },
+    {
+      "id": 729,
+      "title": "第721章：替身人偶",
+      "words": 2389,
+      "paragraphs": 88
+    },
+    {
+      "id": 730,
+      "title": "第722章：你不够强大，怎么保护我？！",
+      "words": 2008,
+      "paragraphs": 85
+    },
+    {
+      "id": 731,
+      "title": "第723章：西方白虎",
+      "words": 1511,
+      "paragraphs": 57
+    },
+    {
+      "id": 732,
+      "title": "第724章：再遇穷奇（句县的弥尘+1）",
+      "words": 1552,
+      "paragraphs": 55
+    },
+    {
+      "id": 733,
+      "title": "第725章：放下老祖的机缘！",
+      "words": 2000,
+      "paragraphs": 96
+    },
+    {
+      "id": 734,
+      "title": "第726章：现在你能认真听本尊说话了吗？",
+      "words": 2333,
+      "paragraphs": 100
+    },
+    {
+      "id": 735,
+      "title": "第727章：霸肌就是饕餮！",
+      "words": 2079,
+      "paragraphs": 95
+    },
+    {
+      "id": 736,
+      "title": "第728章：圣兽白虎",
+      "words": 2127,
+      "paragraphs": 97
+    },
+    {
+      "id": 737,
+      "title": "第729章：白虎献祭",
+      "words": 2085,
+      "paragraphs": 81
+    },
+    {
+      "id": 738,
+      "title": "第730章：杀之道",
+      "words": 2109,
+      "paragraphs": 97
+    },
+    {
+      "id": 739,
+      "title": "第731章：辰牛重伤",
+      "words": 2078,
+      "paragraphs": 100
+    },
+    {
+      "id": 740,
+      "title": "第732章：来一个杀一个",
+      "words": 2184,
+      "paragraphs": 96
+    },
+    {
+      "id": 741,
+      "title": "第733章：突破合体境",
+      "words": 2030,
+      "paragraphs": 82
+    },
+    {
+      "id": 742,
+      "title": "第734章：无垠的注视",
+      "words": 2312,
+      "paragraphs": 94
+    },
+    {
+      "id": 743,
+      "title": "第735章：来点儿新功能",
+      "words": 2315,
+      "paragraphs": 77
+    },
+    {
+      "id": 744,
+      "title": "第736章：好好学习！",
+      "words": 2180,
+      "paragraphs": 76
+    },
+    {
+      "id": 745,
+      "title": "第737章：仅需一剑",
+      "words": 2141,
+      "paragraphs": 86
+    },
+    {
+      "id": 746,
+      "title": "第738章：破解之法",
+      "words": 2013,
+      "paragraphs": 70
+    },
+    {
+      "id": 747,
+      "title": "第739章：师尊的名头真好用",
+      "words": 2054,
+      "paragraphs": 86
+    },
+    {
+      "id": 748,
+      "title": "第740章：异常狂暴的妖兽",
+      "words": 2101,
+      "paragraphs": 84
+    },
+    {
+      "id": 749,
+      "title": "第741章：该你了",
+      "words": 2210,
+      "paragraphs": 106
+    },
+    {
+      "id": 750,
+      "title": "第742章：再遇帝姜",
+      "words": 1949,
+      "paragraphs": 97
+    },
+    {
+      "id": 751,
+      "title": "第743章：胜负已分",
+      "words": 2201,
+      "paragraphs": 101
+    },
+    {
+      "id": 752,
+      "title": "第744章：梼杌",
+      "words": 2036,
+      "paragraphs": 78
+    },
+    {
+      "id": 753,
+      "title": "第745章：世界中心的蛋",
+      "words": 2152,
+      "paragraphs": 86
+    },
+    {
+      "id": 754,
+      "title": "第746章：一口锅",
+      "words": 2114,
+      "paragraphs": 111
+    },
+    {
+      "id": 755,
+      "title": "第747章：你得道歉",
+      "words": 2053,
+      "paragraphs": 97
+    },
+    {
+      "id": 756,
+      "title": "第748章：凤凰献祭",
+      "words": 2013,
+      "paragraphs": 80
+    },
+    {
+      "id": 757,
+      "title": "第749章：改擒为杀",
+      "words": 2557,
+      "paragraphs": 126
+    },
+    {
+      "id": 758,
+      "title": "第750章：涅槃重生",
+      "words": 1649,
+      "paragraphs": 75
+    },
+    {
+      "id": 759,
+      "title": "第751章：师尊，啊~",
+      "words": 2509,
+      "paragraphs": 99
+    },
+    {
+      "id": 760,
+      "title": "第752章：想要去历练的李清然",
+      "words": 2017,
+      "paragraphs": 60
+    },
+    {
+      "id": 761,
+      "title": "第753章：问题所在",
+      "words": 2038,
+      "paragraphs": 74
+    },
+    {
+      "id": 762,
+      "title": "第754章：白剑决断",
+      "words": 2048,
+      "paragraphs": 83
+    },
+    {
+      "id": 763,
+      "title": "第755章：主线任务7.0",
+      "words": 2047,
+      "paragraphs": 77
+    },
+    {
+      "id": 764,
+      "title": "第756章：修复界门",
+      "words": 1938,
+      "paragraphs": 68
+    },
+    {
+      "id": 765,
+      "title": "第757章：沧澜",
+      "words": 2077,
+      "paragraphs": 81
+    },
+    {
+      "id": 766,
+      "title": "第758章：沧澜界都是凡人？",
+      "words": 2073,
+      "paragraphs": 83
+    },
+    {
+      "id": 767,
+      "title": "第759章：离别前夕",
+      "words": 2805,
+      "paragraphs": 86
+    },
+    {
+      "id": 768,
+      "title": "第760章：李清然有道侣了？",
+      "words": 1712,
+      "paragraphs": 64
+    },
+    {
+      "id": 769,
+      "title": "第761章：让他们看看",
+      "words": 2100,
+      "paragraphs": 81
+    },
+    {
+      "id": 770,
+      "title": "第762章：你们……有事儿？",
+      "words": 2232,
+      "paragraphs": 77
+    },
+    {
+      "id": 771,
+      "title": "第763章：喜事",
+      "words": 2836,
+      "paragraphs": 101
+    },
+    {
+      "id": 772,
+      "title": "第764章：本尊知道！",
+      "words": 2056,
+      "paragraphs": 89
+    },
+    {
+      "id": 773,
+      "title": "第765章：大婚",
+      "words": 2066,
+      "paragraphs": 79
+    },
+    {
+      "id": 774,
+      "title": "第766章：送别",
+      "words": 2860,
+      "paragraphs": 111
+    },
+    {
+      "id": 775,
+      "title": "第767章：嫡女",
+      "words": 2105,
+      "paragraphs": 94
+    },
+    {
+      "id": 776,
+      "title": "第768章：“你也配”",
+      "words": 1915,
+      "paragraphs": 63
+    },
+    {
+      "id": 777,
+      "title": "第768章：肉山",
+      "words": 2503,
+      "paragraphs": 77
+    },
+    {
+      "id": 778,
+      "title": "第769章：母亲",
+      "words": 2131,
+      "paragraphs": 73
+    },
+    {
+      "id": 779,
+      "title": "第770章：圣魂丹",
+      "words": 2021,
+      "paragraphs": 70
+    },
+    {
+      "id": 780,
+      "title": "第771章：脱离",
+      "words": 3126,
+      "paragraphs": 93
+    },
+    {
+      "id": 781,
+      "title": "第772章：这可能需要时间",
+      "words": 2076,
+      "paragraphs": 80
+    },
+    {
+      "id": 782,
+      "title": "第773章：不会让你失望的",
+      "words": 2077,
+      "paragraphs": 84
+    },
+    {
+      "id": 783,
+      "title": "第774章：觉醒",
+      "words": 2094,
+      "paragraphs": 73
+    },
+    {
+      "id": 784,
+      "title": "第775章：斗魂——素弦",
+      "words": 1923,
+      "paragraphs": 75
+    },
+    {
+      "id": 785,
+      "title": "第776章：你先等一下",
+      "words": 2044,
+      "paragraphs": 66
+    },
+    {
+      "id": 786,
+      "title": "第777章：使劲编",
+      "words": 1941,
+      "paragraphs": 74
+    },
+    {
+      "id": 787,
+      "title": "第778章：苍云伸来的手",
+      "words": 2076,
+      "paragraphs": 89
+    },
+    {
+      "id": 788,
+      "title": "第779章：谋划",
+      "words": 2004,
+      "paragraphs": 79
+    },
+    {
+      "id": 789,
+      "title": "第780章：绑人",
+      "words": 2105,
+      "paragraphs": 74
+    },
+    {
+      "id": 790,
+      "title": "第781章：李清然的选择",
+      "words": 2041,
+      "paragraphs": 68
+    },
+    {
+      "id": 791,
+      "title": "第782章：现在就杀你",
+      "words": 2051,
+      "paragraphs": 79
+    },
+    {
+      "id": 792,
+      "title": "第783章：一剑葬送",
+      "words": 2472,
+      "paragraphs": 97
+    },
+    {
+      "id": 793,
+      "title": "第784章：借用",
+      "words": 1696,
+      "paragraphs": 66
+    },
+    {
+      "id": 794,
+      "title": "第785章：一份大礼",
+      "words": 2620,
+      "paragraphs": 100
+    },
+    {
+      "id": 795,
+      "title": "第786章：集合！",
+      "words": 2711,
+      "paragraphs": 97
+    },
+    {
+      "id": 796,
+      "title": "第787章：你们仇本尊记下了",
+      "words": 2080,
+      "paragraphs": 74
+    },
+    {
+      "id": 797,
+      "title": "第788章：搬山",
+      "words": 2444,
+      "paragraphs": 89
+    },
+    {
+      "id": 798,
+      "title": "第789章：血族",
+      "words": 2061,
+      "paragraphs": 79
+    },
+    {
+      "id": 799,
+      "title": "第790章：混战",
+      "words": 2207,
+      "paragraphs": 69
+    },
+    {
+      "id": 800,
+      "title": "第791章：直接补货",
+      "words": 2034,
+      "paragraphs": 73
+    },
+    {
+      "id": 801,
+      "title": "第792章：大家都有份儿",
+      "words": 2055,
+      "paragraphs": 91
+    },
+    {
+      "id": 802,
+      "title": "第793章：凶吉",
+      "words": 2250,
+      "paragraphs": 81
+    },
+    {
+      "id": 803,
+      "title": "第794章：送你十把",
+      "words": 2182,
+      "paragraphs": 85
+    },
+    {
+      "id": 804,
+      "title": "第795章：你有妻子吗",
+      "words": 2004,
+      "paragraphs": 74
+    },
+    {
+      "id": 805,
+      "title": "第796章：万事俱备",
+      "words": 2691,
+      "paragraphs": 88
+    },
+    {
+      "id": 806,
+      "title": "第797章：投桃报李",
+      "words": 2482,
+      "paragraphs": 93
+    },
+    {
+      "id": 807,
+      "title": "第798章：变数来了",
+      "words": 2601,
+      "paragraphs": 97
+    },
+    {
+      "id": 808,
+      "title": "第799章：要看操作细节！",
+      "words": 2574,
+      "paragraphs": 91
+    },
+    {
+      "id": 809,
+      "title": "第800章：噬地",
+      "words": 2541,
+      "paragraphs": 91
+    },
+    {
+      "id": 810,
+      "title": "第801章：辰牛再死与不安",
+      "words": 2114,
+      "paragraphs": 95
+    },
+    {
+      "id": 811,
+      "title": "第802章:来杀你的！",
+      "words": 2313,
+      "paragraphs": 72
+    },
+    {
+      "id": 812,
+      "title": "第803章：算账",
+      "words": 2025,
+      "paragraphs": 65
+    },
+    {
+      "id": 813,
+      "title": "第804章：破阵",
+      "words": 2038,
+      "paragraphs": 80
+    },
+    {
+      "id": 814,
+      "title": "第805章：一掌",
+      "words": 2032,
+      "paragraphs": 81
+    },
+    {
+      "id": 815,
+      "title": "第806章：杀气狂",
+      "words": 2091,
+      "paragraphs": 79
+    },
+    {
+      "id": 816,
+      "title": "第807章真正的永生",
+      "words": 2097,
+      "paragraphs": 78
+    },
+    {
+      "id": 817,
+      "title": "第808章：华锦真人的杀手锏",
+      "words": 2145,
+      "paragraphs": 74
+    },
+    {
+      "id": 818,
+      "title": "第809章：陈怀安的界",
+      "words": 2589,
+      "paragraphs": 107
+    },
+    {
+      "id": 819,
+      "title": "第810章：正宫之争",
+      "words": 2385,
+      "paragraphs": 88
+    },
+    {
+      "id": 820,
+      "title": "第811章：恶魔",
+      "words": 2002,
+      "paragraphs": 78
+    },
+    {
+      "id": 821,
+      "title": "第812章：破而后立",
+      "words": 2012,
+      "paragraphs": 67
+    },
+    {
+      "id": 822,
+      "title": "第813章天地大变",
+      "words": 2940,
+      "paragraphs": 91
+    },
+    {
+      "id": 823,
+      "title": "第814章：天井全开，华锦突破",
+      "words": 2015,
+      "paragraphs": 70
+    },
+    {
+      "id": 824,
+      "title": "第815章：煮熟的鸭子飞了",
+      "words": 2684,
+      "paragraphs": 82
+    },
+    {
+      "id": 825,
+      "title": "第816章：饕餮复活",
+      "words": 2037,
+      "paragraphs": 69
+    },
+    {
+      "id": 826,
+      "title": "第817章：区区伪仙",
+      "words": 2488,
+      "paragraphs": 72
+    },
+    {
+      "id": 827,
+      "title": "第818章你敢动一下试试？",
+      "words": 2000,
+      "paragraphs": 69
+    },
+    {
+      "id": 828,
+      "title": "第819章：一炷香的时间",
+      "words": 2517,
+      "paragraphs": 74
+    },
+    {
+      "id": 829,
+      "title": "第820章：陈怀安——大乘！",
+      "words": 2142,
+      "paragraphs": 83
+    },
+    {
+      "id": 830,
+      "title": "第821章：剑出无回",
+      "words": 2113,
+      "paragraphs": 88
+    },
+    {
+      "id": 831,
+      "title": "第822章：你在此地不要走动",
+      "words": 2079,
+      "paragraphs": 84
+    },
+    {
+      "id": 832,
+      "title": "第823章：大帝醒了，让你过去",
+      "words": 2396,
+      "paragraphs": 89
+    },
+    {
+      "id": 833,
+      "title": "第824章：展开世界观",
+      "words": 2070,
+      "paragraphs": 80
+    },
+    {
+      "id": 834,
+      "title": "第825章：仁寿的困惑",
+      "words": 2057,
+      "paragraphs": 84
+    },
+    {
+      "id": 835,
+      "title": "第826章：炼脉术",
+      "words": 2498,
+      "paragraphs": 75
+    },
+    {
+      "id": 836,
+      "title": "第827章：厚礼",
+      "words": 2439,
+      "paragraphs": 75
+    },
+    {
+      "id": 837,
+      "title": "第828章：都是好东西！",
+      "words": 2342,
+      "paragraphs": 77
+    },
+    {
+      "id": 838,
+      "title": "第829章：对接的世界",
+      "words": 2244,
+      "paragraphs": 87
+    },
+    {
+      "id": 839,
+      "title": "第830章：李清然的烦恼",
+      "words": 2166,
+      "paragraphs": 78
+    },
+    {
+      "id": 840,
+      "title": "第831章：托梦",
+      "words": 2727,
+      "paragraphs": 100
+    },
+    {
+      "id": 841,
+      "title": "第832章：敌意",
+      "words": 2146,
+      "paragraphs": 86
+    },
+    {
+      "id": 842,
+      "title": "第833章：老鬼渡劫",
+      "words": 2201,
+      "paragraphs": 79
+    },
+    {
+      "id": 843,
+      "title": "第834章：青莲剑域",
+      "words": 1962,
+      "paragraphs": 73
+    },
+    {
+      "id": 844,
+      "title": "第835章：渡劫成功",
+      "words": 2091,
+      "paragraphs": 65
+    },
+    {
+      "id": 845,
+      "title": "第836章：好奇得很呐",
+      "words": 2366,
+      "paragraphs": 81
+    },
+    {
+      "id": 846,
+      "title": "第837章：修仙的意义？",
+      "words": 2761,
+      "paragraphs": 92
+    },
+    {
+      "id": 847,
+      "title": "第838章：耕田还是守大门？",
+      "words": 2454,
+      "paragraphs": 96
+    },
+    {
+      "id": 848,
+      "title": "第839章：新的主线",
+      "words": 2437,
+      "paragraphs": 82
+    },
+    {
+      "id": 849,
+      "title": "第840章：李清然vs苏璐瑶",
+      "words": 1457,
+      "paragraphs": 50
+    },
+    {
+      "id": 850,
+      "title": "第841章：你输了",
+      "words": 1708,
+      "paragraphs": 70
+    },
+    {
+      "id": 851,
+      "title": "第842章：屈辱",
+      "words": 1442,
+      "paragraphs": 59
+    },
+    {
+      "id": 852,
+      "title": "第843章：该来的还是来了",
+      "words": 1843,
+      "paragraphs": 68
+    },
+    {
+      "id": 853,
+      "title": "第844章：都是实话",
+      "words": 2034,
+      "paragraphs": 63
+    },
+    {
+      "id": 854,
+      "title": "第845章：这是神明的看重",
+      "words": 2028,
+      "paragraphs": 77
+    },
+    {
+      "id": 855,
+      "title": "第846章：教皇比茜茜",
+      "words": 2133,
+      "paragraphs": 86
+    },
+    {
+      "id": 856,
+      "title": "第847章：阶段性任务",
+      "words": 2046,
+      "paragraphs": 85
+    },
+    {
+      "id": 857,
+      "title": "第848章：催工",
+      "words": 2979,
+      "paragraphs": 97
+    },
+    {
+      "id": 858,
+      "title": "第849章：走火入魔的萧老魔",
+      "words": 2541,
+      "paragraphs": 80
+    },
+    {
+      "id": 859,
+      "title": "第850章：都不对劲",
+      "words": 2134,
+      "paragraphs": 94
+    },
+    {
+      "id": 860,
+      "title": "第851章：神谕",
+      "words": 2596,
+      "paragraphs": 92
+    },
+    {
+      "id": 861,
+      "title": "第852章：一招制敌",
+      "words": 2612,
+      "paragraphs": 116
+    },
+    {
+      "id": 862,
+      "title": "第853章：黑环-云霓无相",
+      "words": 2091,
+      "paragraphs": 85
+    },
+    {
+      "id": 863,
+      "title": "第854章：到此为止",
+      "words": 3215,
+      "paragraphs": 123
+    },
+    {
+      "id": 864,
+      "title": "第855章：教皇威仪，血腥肃清",
+      "words": 3025,
+      "paragraphs": 97
+    },
+    {
+      "id": 865,
+      "title": "第856章：带你走一遭",
+      "words": 2126,
+      "paragraphs": 97
+    },
+    {
+      "id": 866,
+      "title": "第825章：拆东墙补西墙",
+      "words": 2344,
+      "paragraphs": 82
+    },
+    {
+      "id": 867,
+      "title": "第826章：凌霄诸仙",
+      "words": 2042,
+      "paragraphs": 71
+    },
+    {
+      "id": 868,
+      "title": "第827章：石松大仙儿",
+      "words": 2146,
+      "paragraphs": 65
+    },
+    {
+      "id": 869,
+      "title": "第828章：到底是谁干的",
+      "words": 2620,
+      "paragraphs": 97
+    },
+    {
+      "id": 870,
+      "title": "第829章：困阵",
+      "words": 2562,
+      "paragraphs": 99
+    },
+    {
+      "id": 871,
+      "title": "第830章：一人之下万人之上",
+      "words": 1999,
+      "paragraphs": 70
+    },
+    {
+      "id": 872,
+      "title": "第831章：饕餮出，上界震动",
+      "words": 2845,
+      "paragraphs": 112
+    },
+    {
+      "id": 873,
+      "title": "第832章：毕月乌请命，陈怀安尾随",
+      "words": 2933,
+      "paragraphs": 94
+    },
+    {
+      "id": 874,
+      "title": "第833章：锁妖塔归位，毕月乌探炼玄阵",
+      "words": 2683,
+      "paragraphs": 88
+    },
+    {
+      "id": 875,
+      "title": "第834章：入阵！",
+      "words": 2676,
+      "paragraphs": 112
+    },
+    {
+      "id": 876,
+      "title": "第835章：开天辟地",
+      "words": 2115,
+      "paragraphs": 79
+    },
+    {
+      "id": 877,
+      "title": "第836章：后路断绝",
+      "words": 2631,
+      "paragraphs": 89
+    },
+    {
+      "id": 878,
+      "title": "第837章：进进出出",
+      "words": 1796,
+      "paragraphs": 85
+    },
+    {
+      "id": 879,
+      "title": "第838章：打个样儿",
+      "words": 1633,
+      "paragraphs": 70
+    },
+    {
+      "id": 880,
+      "title": "第839章：重黎之像",
+      "words": 2472,
+      "paragraphs": 102
+    },
+    {
+      "id": 881,
+      "title": "第840章：无字残卷",
+      "words": 1611,
+      "paragraphs": 59
+    },
+    {
+      "id": 882,
+      "title": "第841章：火毒之桥",
+      "words": 1455,
+      "paragraphs": 64
+    },
+    {
+      "id": 883,
+      "title": "第842章：过桥",
+      "words": 2035,
+      "paragraphs": 80
+    },
+    {
+      "id": 884,
+      "title": "第843章：后羿",
+      "words": 2356,
+      "paragraphs": 114
+    },
+    {
+      "id": 885,
+      "title": "第844章琴师",
+      "words": 2753,
+      "paragraphs": 152
+    },
+    {
+      "id": 886,
+      "title": "第845章六耳",
+      "words": 2580,
+      "paragraphs": 141
+    },
+    {
+      "id": 887,
+      "title": "第846章七卷残经",
+      "words": 2911,
+      "paragraphs": 132
+    },
+    {
+      "id": 888,
+      "title": "第847章：天棺",
+      "words": 3033,
+      "paragraphs": 127
+    },
+    {
+      "id": 889,
+      "title": "第848章：一剑斩仙",
+      "words": 2371,
+      "paragraphs": 133
+    },
+    {
+      "id": 890,
+      "title": "第849章：上前领死！",
+      "words": 2578,
+      "paragraphs": 161
+    },
+    {
+      "id": 891,
+      "title": "第850章：天该变了",
+      "words": 2164,
+      "paragraphs": 121
+    },
+    {
+      "id": 892,
+      "title": "第851章大乘三劫境",
+      "words": 1369,
+      "paragraphs": 75
+    },
+    {
+      "id": 893,
+      "title": "第852章：油锅已热，请君入瓮",
+      "words": 1958,
+      "paragraphs": 119
+    },
+    {
+      "id": 894,
+      "title": "第853章剑斩十二元辰",
+      "words": 2272,
+      "paragraphs": 139
+    },
+    {
+      "id": 895,
+      "title": "第854章：唯愿师尊平安",
+      "words": 2342,
+      "paragraphs": 142
+    },
+    {
+      "id": 896,
+      "title": "第855章这一剑，叫苍凉。",
+      "words": 3248,
+      "paragraphs": 212
+    },
+    {
+      "id": 897,
+      "title": "第856章仙魔金身",
+      "words": 2126,
+      "paragraphs": 141
+    },
+    {
+      "id": 898,
+      "title": "第857章：一斧开天",
+      "words": 3861,
+      "paragraphs": 254
+    },
+    {
+      "id": 899,
+      "title": "第858章：虚实相间",
+      "words": 3460,
+      "paragraphs": 186
+    },
+    {
+      "id": 900,
+      "title": "第859章斩仙·狂生行",
+      "words": 2324,
+      "paragraphs": 122
+    },
+    {
+      "id": 901,
+      "title": "第860章：请斩仙台",
+      "words": 2134,
+      "paragraphs": 128
+    },
+    {
+      "id": 902,
+      "title": "第861章：怕吗？",
+      "words": 2399,
+      "paragraphs": 138
+    },
+    {
+      "id": 903,
+      "title": "第862章薪火相传",
+      "words": 2184,
+      "paragraphs": 153
+    },
+    {
+      "id": 904,
+      "title": "第861章谁能……为朕分忧？",
+      "words": 2003,
+      "paragraphs": 126
+    },
+    {
+      "id": 905,
+      "title": "第862章：老君出手",
+      "words": 2017,
+      "paragraphs": 118
+    },
+    {
+      "id": 906,
+      "title": "第863章：八卦炉内，六丁神火炼金身",
+      "words": 2488,
+      "paragraphs": 137
+    },
+    {
+      "id": 907,
+      "title": "第864章圣人法身，一剑斩之",
+      "words": 2619,
+      "paragraphs": 143
+    },
+    {
+      "id": 908,
+      "title": "第865章：混沌金身，不死不灭",
+      "words": 2108,
+      "paragraphs": 139
+    },
+    {
+      "id": 909,
+      "title": "第866章日月为枢，星辰为碾。阴阳逆乱，乾坤倒悬",
+      "words": 2104,
+      "paragraphs": 138
+    },
+    {
+      "id": 910,
+      "title": "第867章：如何选择",
+      "words": 2596,
+      "paragraphs": 149
+    },
+    {
+      "id": 911,
+      "title": "第868章：啊哈~listenboy~",
+      "words": 1789,
+      "paragraphs": 87
+    },
+    {
+      "id": 912,
+      "title": "第869章苍云山河图",
+      "words": 1882,
+      "paragraphs": 107
+    },
+    {
+      "id": 913,
+      "title": "第870章：各自选择",
+      "words": 1682,
+      "paragraphs": 100
+    },
+    {
+      "id": 914,
+      "title": "第871章：还有正常人吗",
+      "words": 1863,
+      "paragraphs": 101
+    },
+    {
+      "id": 915,
+      "title": "第872章半炷香的时间",
+      "words": 2251,
+      "paragraphs": 152
+    },
+    {
+      "id": 916,
+      "title": "第873章四方天帝，杀招如潮",
+      "words": 2221,
+      "paragraphs": 122
+    },
+    {
+      "id": 917,
+      "title": "第874章：陈怀安已死？！",
+      "words": 2942,
+      "paragraphs": 194
+    },
+    {
+      "id": 918,
+      "title": "第875章月落成霜",
+      "words": 2050,
+      "paragraphs": 126
+    },
+    {
+      "id": 919,
+      "title": "第876章一局定生死",
+      "words": 3127,
+      "paragraphs": 197
+    },
+    {
+      "id": 920,
+      "title": "第877章：中尸论道",
+      "words": 2028,
+      "paragraphs": 101
+    },
+    {
+      "id": 921,
+      "title": "第878章中尸归位",
+      "words": 2624,
+      "paragraphs": 159
+    },
+    {
+      "id": 922,
+      "title": "第879章：别怪我辣手摧花",
+      "words": 2161,
+      "paragraphs": 121
+    },
+    {
+      "id": 923,
+      "title": "第880章：一眼万年",
+      "words": 2176,
+      "paragraphs": 121
+    },
+    {
+      "id": 924,
+      "title": "第881章：岿然不动",
+      "words": 3069,
+      "paragraphs": 165
+    },
+    {
+      "id": 925,
+      "title": "第882章：这是我夫君！",
+      "words": 2144,
+      "paragraphs": 118
+    },
+    {
+      "id": 926,
+      "title": "第883章：哪怕众生死绝……与她何干",
+      "words": 1562,
+      "paragraphs": 72
+    },
+    {
+      "id": 927,
+      "title": "第884章暂时安顿（倾国倾城七王爷）",
+      "words": 1554,
+      "paragraphs": 86
+    },
+    {
+      "id": 928,
+      "title": "第885章：伪装",
+      "words": 2080,
+      "paragraphs": 102
+    },
+    {
+      "id": 929,
+      "title": "第886章：打了小的老的来了",
+      "words": 2543,
+      "paragraphs": 130
+    },
+    {
+      "id": 930,
+      "title": "第887章：大须弥棍",
+      "words": 3090,
+      "paragraphs": 172
+    },
+    {
+      "id": 931,
+      "title": "第888章：做人要讲良心",
+      "words": 3454,
+      "paragraphs": 175
+    },
+    {
+      "id": 932,
+      "title": "第889章：反噬一个看看？",
+      "words": 2306,
+      "paragraphs": 143
+    },
+    {
+      "id": 933,
+      "title": "第890章：血仇",
+      "words": 2791,
+      "paragraphs": 168
+    },
+    {
+      "id": 934,
+      "title": "第891章：活不了了",
+      "words": 2117,
+      "paragraphs": 79
+    },
+    {
+      "id": 935,
+      "title": "第892章：漏洞",
+      "words": 2687,
+      "paragraphs": 122
+    },
+    {
+      "id": 936,
+      "title": "第893章：比茜茜的野望",
+      "words": 2894,
+      "paragraphs": 139
+    },
+    {
+      "id": 937,
+      "title": "第894章：人间失格",
+      "words": 2275,
+      "paragraphs": 131
+    },
+    {
+      "id": 938,
+      "title": "第895章：神秘仙山",
+      "words": 2155,
+      "paragraphs": 79
+    },
+    {
+      "id": 939,
+      "title": "第896章：戏台高建",
+      "words": 2034,
+      "paragraphs": 98
+    },
+    {
+      "id": 940,
+      "title": "第897章：让本尊来",
+      "words": 2533,
+      "paragraphs": 123
+    },
+    {
+      "id": 941,
+      "title": "第898章：只手雕龙，凤火成丹",
+      "words": 2549,
+      "paragraphs": 120
+    },
+    {
+      "id": 942,
+      "title": "第899章：大家伙",
+      "words": 2698,
+      "paragraphs": 162
+    },
+    {
+      "id": 943,
+      "title": "第900章：南北绿豆哈基米",
+      "words": 2385,
+      "paragraphs": 134
+    },
+    {
+      "id": 944,
+      "title": "第901章：喵",
+      "words": 2143,
+      "paragraphs": 115
+    },
+    {
+      "id": 945,
+      "title": "第902章大雪落幽燕，一片杀机藏",
+      "words": 2905,
+      "paragraphs": 149
+    },
+    {
+      "id": 946,
+      "title": "第903章：查账的来了",
+      "words": 2002,
+      "paragraphs": 96
+    },
+    {
+      "id": 947,
+      "title": "第904章他是谁",
+      "words": 2272,
+      "paragraphs": 131
+    },
+    {
+      "id": 948,
+      "title": "第905章：是死还是给你们一个机会",
+      "words": 2484,
+      "paragraphs": 153
+    },
+    {
+      "id": 949,
+      "title": "第906章：化形的手段",
+      "words": 2673,
+      "paragraphs": 135
+    },
+    {
+      "id": 950,
+      "title": "第907章来晚了",
+      "words": 2981,
+      "paragraphs": 145
+    },
+    {
+      "id": 951,
+      "title": "第908章：杀父之仇，丧子之痛",
+      "words": 2902,
+      "paragraphs": 136
+    },
+    {
+      "id": 952,
+      "title": "第909章：别的方法",
+      "words": 2751,
+      "paragraphs": 149
+    },
+    {
+      "id": 953,
+      "title": "第910章：天才的建议",
+      "words": 2095,
+      "paragraphs": 83
+    },
+    {
+      "id": 954,
+      "title": "第911章恶魔岛",
+      "words": 3179,
+      "paragraphs": 159
+    },
+    {
+      "id": 955,
+      "title": "第912章：真是活够了！",
+      "words": 2376,
+      "paragraphs": 110
+    },
+    {
+      "id": 956,
+      "title": "第913章喜欢按规则办事",
+      "words": 2274,
+      "paragraphs": 105
+    },
+    {
+      "id": 957,
+      "title": "第914章魔塔城内",
+      "words": 2480,
+      "paragraphs": 112
+    },
+    {
+      "id": 958,
+      "title": "第915章：斗兽场",
+      "words": 2376,
+      "paragraphs": 98
+    },
+    {
+      "id": 959,
+      "title": "第916章仇人相见",
+      "words": 2146,
+      "paragraphs": 94
+    },
+    {
+      "id": 960,
+      "title": "第917章：玉面鬼手",
+      "words": 2487,
+      "paragraphs": 112
+    },
+    {
+      "id": 961,
+      "title": "第918章：代价是什么",
+      "words": 2504,
+      "paragraphs": 137
+    },
+    {
+      "id": 962,
+      "title": "第919章：爸爸，看着吧",
+      "words": 2608,
+      "paragraphs": 114
+    },
+    {
+      "id": 963,
+      "title": "第920章：唐二之死",
+      "words": 3102,
+      "paragraphs": 143
+    },
+    {
+      "id": 964,
+      "title": "第921章：许愿",
+      "words": 2844,
+      "paragraphs": 113
+    },
+    {
+      "id": 965,
+      "title": "第922章：你掉进陷阱了！",
+      "words": 2055,
+      "paragraphs": 80
+    },
+    {
+      "id": 966,
+      "title": "第923章你以为你就赢了吗",
+      "words": 2191,
+      "paragraphs": 114
+    },
+    {
+      "id": 967,
+      "title": "第924章真正的死亡",
+      "words": 2259,
+      "paragraphs": 116
+    },
+    {
+      "id": 968,
+      "title": "第925章：死神哈迪斯",
+      "words": 2102,
+      "paragraphs": 74
+    },
+    {
+      "id": 969,
+      "title": "第926章合作共赢",
+      "words": 2039,
+      "paragraphs": 80
+    },
+    {
+      "id": 970,
+      "title": "第927章：一根绳上的蚂蚱",
+      "words": 2548,
+      "paragraphs": 111
+    },
+    {
+      "id": 971,
+      "title": "第928章久违的触感",
+      "words": 2195,
+      "paragraphs": 99
+    },
+    {
+      "id": 972,
+      "title": "第929章：焚天山脉",
+      "words": 2425,
+      "paragraphs": 93
+    },
+    {
+      "id": 973,
+      "title": "第930章：火神的考核",
+      "words": 3075,
+      "paragraphs": 118
+    },
+    {
+      "id": 974,
+      "title": "第931章：收为己用",
+      "words": 2221,
+      "paragraphs": 83
+    },
+    {
+      "id": 975,
+      "title": "第932章对不起！！！",
+      "words": 2397,
+      "paragraphs": 134
+    },
+    {
+      "id": 976,
+      "title": "第933章：你怎么不躲着点呢？",
+      "words": 2335,
+      "paragraphs": 140
+    },
+    {
+      "id": 977,
+      "title": "第934章戏没白演",
+      "words": 3027,
+      "paragraphs": 110
+    },
+    {
+      "id": 978,
+      "title": "第935章我不参加了~",
+      "words": 2108,
+      "paragraphs": 85
+    },
+    {
+      "id": 979,
+      "title": "第936章：下一个忽悠谁？",
+      "words": 2177,
+      "paragraphs": 98
+    },
+    {
+      "id": 980,
+      "title": "第937章航行",
+      "words": 3656,
+      "paragraphs": 128
+    },
+    {
+      "id": 981,
+      "title": "第938章：海皇族",
+      "words": 2001,
+      "paragraphs": 71
+    },
+    {
+      "id": 982,
+      "title": "第939章：一剑杀出",
+      "words": 2008,
+      "paragraphs": 78
+    },
+    {
+      "id": 983,
+      "title": "第940章：还，还有高手！",
+      "words": 2872,
+      "paragraphs": 118
+    },
+    {
+      "id": 984,
+      "title": "第941章：三皇子",
+      "words": 2944,
+      "paragraphs": 143
+    },
+    {
+      "id": 985,
+      "title": "第942章：雀凤之辩",
+      "words": 2806,
+      "paragraphs": 135
+    },
+    {
+      "id": 986,
+      "title": "第943章恩将仇报",
+      "words": 2503,
+      "paragraphs": 135
+    },
+    {
+      "id": 987,
+      "title": "第944章：焚天煮海",
+      "words": 2297,
+      "paragraphs": 133
+    },
+    {
+      "id": 988,
+      "title": "第945章：帮手",
+      "words": 2156,
+      "paragraphs": 122
+    },
+    {
+      "id": 989,
+      "title": "第946章：伊芙",
+      "words": 2048,
+      "paragraphs": 129
+    },
+    {
+      "id": 990,
+      "title": "第947章融合朱雀元神",
+      "words": 2192,
+      "paragraphs": 137
+    },
+    {
+      "id": 991,
+      "title": "第948章：这是烧火棍",
+      "words": 2063,
+      "paragraphs": 111
+    },
+    {
+      "id": 992,
+      "title": "第949章救救我的女儿",
+      "words": 2580,
+      "paragraphs": 131
+    },
+    {
+      "id": 993,
+      "title": "第950章：不准看",
+      "words": 2038,
+      "paragraphs": 95
+    },
+    {
+      "id": 994,
+      "title": "第951章这是意外的情况",
+      "words": 2154,
+      "paragraphs": 130
+    },
+    {
+      "id": 995,
+      "title": "第952章给你烫个头",
+      "words": 2102,
+      "paragraphs": 109
+    },
+    {
+      "id": 996,
+      "title": "第953章：谁在上面",
+      "words": 2762,
+      "paragraphs": 160
+    },
+    {
+      "id": 997,
+      "title": "第954章你能恢复一下吗？",
+      "words": 2560,
+      "paragraphs": 132
+    },
+    {
+      "id": 998,
+      "title": "第955章本尊不打算给你仁慈",
+      "words": 2751,
+      "paragraphs": 160
+    },
+    {
+      "id": 999,
+      "title": "第956章海神",
+      "words": 2037,
+      "paragraphs": 99
+    },
+    {
+      "id": 1000,
+      "title": "第957章：海的女儿",
+      "words": 2135,
+      "paragraphs": 79
+    },
+    {
+      "id": 1001,
+      "title": "第958章：我也给！",
+      "words": 2279,
+      "paragraphs": 117
+    },
+    {
+      "id": 1002,
+      "title": "第959章出手！",
+      "words": 2135,
+      "paragraphs": 88
+    },
+    {
+      "id": 1003,
+      "title": "第960章：信不信得过",
+      "words": 2108,
+      "paragraphs": 89
+    },
+    {
+      "id": 1004,
+      "title": "第961章圣兽复苏",
+      "words": 2081,
+      "paragraphs": 109
+    },
+    {
+      "id": 1005,
+      "title": "第962章：要不一鸟一半",
+      "words": 2010,
+      "paragraphs": 78
+    },
+    {
+      "id": 1006,
+      "title": "第963章：我需要您的帮助",
+      "words": 2142,
+      "paragraphs": 102
+    },
+    {
+      "id": 1007,
+      "title": "第964章全部炼化！",
+      "words": 2765,
+      "paragraphs": 117
+    },
+    {
+      "id": 1008,
+      "title": "第965章陈怀安的神格",
+      "words": 2012,
+      "paragraphs": 88
+    },
+    {
+      "id": 1009,
+      "title": "第966章：那别的神格呢",
+      "words": 2121,
+      "paragraphs": 100
+    },
+    {
+      "id": 1010,
+      "title": "第967章鸿门宴",
+      "words": 2611,
+      "paragraphs": 119
+    },
+    {
+      "id": 1011,
+      "title": "第968章：请神入瓮",
+      "words": 2069,
+      "paragraphs": 106
+    },
+    {
+      "id": 1012,
+      "title": "第969章一个都走不了！",
+      "words": 2030,
+      "paragraphs": 97
+    },
+    {
+      "id": 1013,
+      "title": "第970章：不入虎穴不得虎子",
+      "words": 2106,
+      "paragraphs": 100
+    },
+    {
+      "id": 1014,
+      "title": "第971章：铸神体",
+      "words": 2034,
+      "paragraphs": 86
+    },
+    {
+      "id": 1015,
+      "title": "第972章准圣",
+      "words": 2144,
+      "paragraphs": 101
+    },
+    {
+      "id": 1016,
+      "title": "第973章：混沌之海",
+      "words": 2049,
+      "paragraphs": 97
+    },
+    {
+      "id": 1017,
+      "title": "第974章：卑鄙的域外之人",
+      "words": 2104,
+      "paragraphs": 93
+    },
+    {
+      "id": 1018,
+      "title": "第975章：只有把整个沧澜世界全部炼化了",
+      "words": 2289,
+      "paragraphs": 103
+    },
+    {
+      "id": 1019,
+      "title": "第976章烦了",
+      "words": 2204,
+      "paragraphs": 105
+    },
+    {
+      "id": 1020,
+      "title": "第977章本尊！出来了！",
+      "words": 2048,
+      "paragraphs": 106
+    },
+    {
+      "id": 1021,
+      "title": "第978章：本尊要和你融为一体！",
+      "words": 2230,
+      "paragraphs": 112
+    },
+    {
+      "id": 1022,
+      "title": "第979章：再加上我们呢",
+      "words": 2107,
+      "paragraphs": 100
+    },
+    {
+      "id": 1023,
+      "title": "第980章：世界壁垒崩溃",
+      "words": 2151,
+      "paragraphs": 91
+    },
+    {
+      "id": 1024,
+      "title": "第981章不速之客",
+      "words": 2117,
+      "paragraphs": 83
+    },
+    {
+      "id": 1025,
+      "title": "第982章：联合进攻",
+      "words": 2164,
+      "paragraphs": 85
+    },
+    {
+      "id": 1026,
+      "title": "第983章：察觉",
+      "words": 2538,
+      "paragraphs": 125
+    },
+    {
+      "id": 1027,
+      "title": "第984章：金龙王没死？！",
+      "words": 2141,
+      "paragraphs": 82
+    },
+    {
+      "id": 1028,
+      "title": "第985章还是好人多啊",
+      "words": 2342,
+      "paragraphs": 100
+    },
+    {
+      "id": 1029,
+      "title": "第986章让身后之人不再挥剑",
+      "words": 2004,
+      "paragraphs": 101
+    },
+    {
+      "id": 1030,
+      "title": "第987章：圣人归位，三界震荡",
+      "words": 2269,
+      "paragraphs": 122
+    },
+    {
+      "id": 1031,
+      "title": "第988章给过你们机会了",
+      "words": 2722,
+      "paragraphs": 133
+    },
+    {
+      "id": 1032,
+      "title": "第989章归心似箭",
+      "words": 2136,
+      "paragraphs": 83
+    },
+    {
+      "id": 1033,
+      "title": "第990章真是找死！",
+      "words": 2175,
+      "paragraphs": 89
+    },
+    {
+      "id": 1034,
+      "title": "第991章吃不死你",
+      "words": 2044,
+      "paragraphs": 108
+    },
+    {
+      "id": 1035,
+      "title": "第992章大道环纹",
+      "words": 2170,
+      "paragraphs": 80
+    },
+    {
+      "id": 1036,
+      "title": "第993章两界因果，一剑清算",
+      "words": 2395,
+      "paragraphs": 101
+    },
+    {
+      "id": 1037,
+      "title": "第994章无法解析，无法抗衡！",
+      "words": 2090,
+      "paragraphs": 90
+    },
+    {
+      "id": 1038,
+      "title": "第995章剑神",
+      "words": 2266,
+      "paragraphs": 81
+    },
+    {
+      "id": 1039,
+      "title": "第996章咱们回家",
+      "words": 2006,
+      "paragraphs": 83
+    },
+    {
+      "id": 1040,
+      "title": "第997章归来",
+      "words": 2068,
+      "paragraphs": 68
+    },
+    {
+      "id": 1041,
+      "title": "第998章域外秘境",
+      "words": 2649,
+      "paragraphs": 101
+    },
+    {
+      "id": 1042,
+      "title": "第999章地星近况",
+      "words": 2240,
+      "paragraphs": 88
+    },
+    {
+      "id": 1043,
+      "title": "第1000章白剑的布局",
+      "words": 2071,
+      "paragraphs": 82
+    },
+    {
+      "id": 1044,
+      "title": "第1001章探查社稷图",
+      "words": 2069,
+      "paragraphs": 76
+    },
+    {
+      "id": 1045,
+      "title": "第1002章沧澜之道",
+      "words": 2249,
+      "paragraphs": 98
+    },
+    {
+      "id": 1046,
+      "title": "第1003章送你们走远些",
+      "words": 2071,
+      "paragraphs": 83
+    },
+    {
+      "id": 1047,
+      "title": "第1004章宗门大事",
+      "words": 2084,
+      "paragraphs": 78
+    },
+    {
+      "id": 1048,
+      "title": "第1005章点化",
+      "words": 2140,
+      "paragraphs": 89
+    },
+    {
+      "id": 1049,
+      "title": "第1006章传道受业",
+      "words": 2285,
+      "paragraphs": 101
+    },
+    {
+      "id": 1050,
+      "title": "第1007章去也",
+      "words": 2580,
+      "paragraphs": 110
+    },
+    {
+      "id": 1051,
+      "title": "第1008章纷至沓来",
+      "words": 3021,
+      "paragraphs": 129
+    },
+    {
+      "id": 1052,
+      "title": "第1009章流水线",
+      "words": 2675,
+      "paragraphs": 125
+    },
+    {
+      "id": 1053,
+      "title": "第1010章【功德圆满，飞升！】",
+      "words": 2168,
+      "paragraphs": 104
+    },
+    {
+      "id": 1054,
+      "title": "第1011章都是为了活",
+      "words": 2237,
+      "paragraphs": 89
+    },
+    {
+      "id": 1055,
+      "title": "第1012章仙界生存指南",
+      "words": 3107,
+      "paragraphs": 118
+    },
+    {
+      "id": 1056,
+      "title": "第1013章诱饵已成熟",
+      "words": 2182,
+      "paragraphs": 82
+    },
+    {
+      "id": 1057,
+      "title": "第1014章风云将起",
+      "words": 2637,
+      "paragraphs": 111
+    },
+    {
+      "id": 1058,
+      "title": "第1015章你，耗子尾汁",
+      "words": 2468,
+      "paragraphs": 112
+    },
+    {
+      "id": 1059,
+      "title": "第1016章天地之变",
+      "words": 2519,
+      "paragraphs": 100
+    },
+    {
+      "id": 1060,
+      "title": "第1017章秘境开启",
+      "words": 2402,
+      "paragraphs": 100
+    },
+    {
+      "id": 1061,
+      "title": "第1018章箭在弦上",
+      "words": 2348,
+      "paragraphs": 91
+    },
+    {
+      "id": 1062,
+      "title": "第1019章举宗过境",
+      "words": 2033,
+      "paragraphs": 82
+    },
+    {
+      "id": 1063,
+      "title": "第1020章摇人！！！！",
+      "words": 2692,
+      "paragraphs": 111
+    },
+    {
+      "id": 1064,
+      "title": "第1021章没听过？",
+      "words": 2486,
+      "paragraphs": 111
+    },
+    {
+      "id": 1065,
+      "title": "第1022章送上门来",
+      "words": 2207,
+      "paragraphs": 109
+    },
+    {
+      "id": 1066,
+      "title": "第1023章故人",
+      "words": 2339,
+      "paragraphs": 113
+    },
+    {
+      "id": 1067,
+      "title": "第1024章身不由己",
+      "words": 2053,
+      "paragraphs": 91
+    },
+    {
+      "id": 1068,
+      "title": "第1025章准了",
+      "words": 2159,
+      "paragraphs": 103
+    },
+    {
+      "id": 1069,
+      "title": "第1026章解决之法",
+      "words": 2196,
+      "paragraphs": 88
+    },
+    {
+      "id": 1070,
+      "title": "第1027章等着看好戏",
+      "words": 2248,
+      "paragraphs": 86
+    },
+    {
+      "id": 1071,
+      "title": "第1028章察觉！",
+      "words": 2304,
+      "paragraphs": 108
+    },
+    {
+      "id": 1072,
+      "title": "第1029章敖鹰",
+      "words": 2248,
+      "paragraphs": 91
+    },
+    {
+      "id": 1073,
+      "title": "第1030章晚辈？美味！",
+      "words": 2162,
+      "paragraphs": 96
+    },
+    {
+      "id": 1074,
+      "title": "第1031章交锋！",
+      "words": 2178,
+      "paragraphs": 102
+    },
+    {
+      "id": 1075,
+      "title": "第1032章苍云天威",
+      "words": 2765,
+      "paragraphs": 107
+    },
+    {
+      "id": 1076,
+      "title": "第1033章不知死活",
+      "words": 2181,
+      "paragraphs": 103
+    },
+    {
+      "id": 1077,
+      "title": "第1034章请三清",
+      "words": 2141,
+      "paragraphs": 102
+    },
+    {
+      "id": 1078,
+      "title": "第1035章圣人之威？！",
+      "words": 2417,
+      "paragraphs": 102
+    },
+    {
+      "id": 1079,
+      "title": "第1036章大佬真的是你！",
+      "words": 2081,
+      "paragraphs": 88
+    },
+    {
+      "id": 1080,
+      "title": "第1037章巧取豪夺",
+      "words": 2031,
+      "paragraphs": 88
+    },
+    {
+      "id": 1081,
+      "title": "第1038章只需等待",
+      "words": 2905,
+      "paragraphs": 121
+    },
+    {
+      "id": 1082,
+      "title": "第1039章再见陈文远",
+      "words": 2355,
+      "paragraphs": 108
+    },
+    {
+      "id": 1083,
+      "title": "第1040章：倾巢而出",
+      "words": 2335,
+      "paragraphs": 103
+    },
+    {
+      "id": 1084,
+      "title": "第1041章统筹兼顾",
+      "words": 2030,
+      "paragraphs": 89
+    },
+    {
+      "id": 1085,
+      "title": "第1042章风起云涌",
+      "words": 2425,
+      "paragraphs": 125
+    },
+    {
+      "id": 1086,
+      "title": "第1043章千里眼，顺风耳",
+      "words": 2233,
+      "paragraphs": 100
+    },
+    {
+      "id": 1087,
+      "title": "第1044章黑云压城城欲摧",
+      "words": 2401,
+      "paragraphs": 104
+    },
+    {
+      "id": 1088,
+      "title": "第1045章道伤",
+      "words": 2231,
+      "paragraphs": 98
+    },
+    {
+      "id": 1089,
+      "title": "第1046章出师不利",
+      "words": 2289,
+      "paragraphs": 106
+    },
+    {
+      "id": 1090,
+      "title": "第1047章想亲就亲了",
+      "words": 2066,
+      "paragraphs": 102
+    },
+    {
+      "id": 1091,
+      "title": "第1048章诸位，随我入阵",
+      "words": 2370,
+      "paragraphs": 116
+    },
+    {
+      "id": 1092,
+      "title": "第1049章杀鸡儆猴",
+      "words": 3001,
+      "paragraphs": 134
+    },
+    {
+      "id": 1093,
+      "title": "第1050章带你去个地方",
+      "words": 2149,
+      "paragraphs": 90
+    },
+    {
+      "id": 1094,
+      "title": "第1051章棺中之人",
+      "words": 2105,
+      "paragraphs": 87
+    },
+    {
+      "id": 1095,
+      "title": "第1052章那便约定一句话",
+      "words": 2461,
+      "paragraphs": 97
+    },
+    {
+      "id": 1096,
+      "title": "第1053章修补容器",
+      "words": 2044,
+      "paragraphs": 83
+    },
+    {
+      "id": 1097,
+      "title": "第1054章大情种",
+      "words": 2096,
+      "paragraphs": 92
+    },
+    {
+      "id": 1098,
+      "title": "第1055章倒要看看，你是个什么东西",
+      "words": 2113,
+      "paragraphs": 83
+    },
+    {
+      "id": 1099,
+      "title": "第1056章剑斩天眼，满殿寂然",
+      "words": 2111,
+      "paragraphs": 87
+    },
+    {
+      "id": 1100,
+      "title": "第1057章天庭招安，故人归来",
+      "words": 2453,
+      "paragraphs": 88
+    },
+    {
+      "id": 1101,
+      "title": "第1058章太白金星",
+      "words": 2058,
+      "paragraphs": 78
+    },
+    {
+      "id": 1102,
+      "title": "第1059章坐坐龙椅",
+      "words": 2510,
+      "paragraphs": 100
+    },
+    {
+      "id": 1103,
+      "title": "第1060章又见面了",
+      "words": 3258,
+      "paragraphs": 120
+    },
+    {
+      "id": 1104,
+      "title": "第1061章为何不跪",
+      "words": 2088,
+      "paragraphs": 85
+    },
+    {
+      "id": 1105,
+      "title": "第1062章你到底是谁",
+      "words": 2295,
+      "paragraphs": 87
+    },
+    {
+      "id": 1106,
+      "title": "第1063章本尊也略懂一二",
+      "words": 2046,
+      "paragraphs": 87
+    },
+    {
+      "id": 1107,
+      "title": "第1064章九天玄阵——开！",
+      "words": 2149,
+      "paragraphs": 90
+    },
+    {
+      "id": 1108,
+      "title": "第1065章剑挑十二金仙",
+      "words": 2280,
+      "paragraphs": 92
+    },
+    {
+      "id": 1109,
+      "title": "第1066章冥河老祖",
+      "words": 2047,
+      "paragraphs": 76
+    },
+    {
+      "id": 1110,
+      "title": "第1067章斩血海",
+      "words": 2412,
+      "paragraphs": 106
+    },
+    {
+      "id": 1111,
+      "title": "第1068章圣人之下，皆为蝼蚁",
+      "words": 2237,
+      "paragraphs": 100
+    },
+    {
+      "id": 1112,
+      "title": "第1069章你不能杀我",
+      "words": 2170,
+      "paragraphs": 84
+    },
+    {
+      "id": 1113,
+      "title": "第1070章你不过是怕了",
+      "words": 2100,
+      "paragraphs": 87
+    },
+    {
+      "id": 1114,
+      "title": "第1071章太清道域",
+      "words": 2002,
+      "paragraphs": 82
+    },
+    {
+      "id": 1115,
+      "title": "第1072章真-道生一剑！",
+      "words": 2100,
+      "paragraphs": 107
+    },
+    {
+      "id": 1116,
+      "title": "第1073章双圣出关",
+      "words": 1999,
+      "paragraphs": 77
+    },
+    {
+      "id": 1117,
+      "title": "第1074章你们来晚一步！",
+      "words": 2068,
+      "paragraphs": 80
+    },
+    {
+      "id": 1118,
+      "title": "第1075章双圣联杀",
+      "words": 2319,
+      "paragraphs": 102
+    },
+    {
+      "id": 1119,
+      "title": "第1076章自有布局",
+      "words": 2008,
+      "paragraphs": 82
+    },
+    {
+      "id": 1120,
+      "title": "第1077章将计就计",
+      "words": 2057,
+      "paragraphs": 91
+    },
+    {
+      "id": 1121,
+      "title": "第1078章后手",
+      "words": 2048,
+      "paragraphs": 87
+    },
+    {
+      "id": 1122,
+      "title": "第1079章暴怒的白剑",
+      "words": 2735,
+      "paragraphs": 118
+    },
+    {
+      "id": 1123,
+      "title": "第1080章强行破界",
+      "words": 2128,
+      "paragraphs": 78
+    },
+    {
+      "id": 1124,
+      "title": "第1081章动荡不安",
+      "words": 2902,
+      "paragraphs": 118
+    },
+    {
+      "id": 1125,
+      "title": "第1082章法慧的谋划",
+      "words": 2183,
+      "paragraphs": 87
+    },
+    {
+      "id": 1126,
+      "title": "第1083章修猫修狗",
+      "words": 2008,
+      "paragraphs": 82
+    },
+    {
+      "id": 1127,
+      "title": "第1084章神秘剑客",
+      "words": 2075,
+      "paragraphs": 82
+    },
+    {
+      "id": 1128,
+      "title": "第1085章你该升仙了",
+      "words": 2282,
+      "paragraphs": 105
+    },
+    {
+      "id": 1129,
+      "title": "第1086章不能放水了",
+      "words": 2607,
+      "paragraphs": 129
+    },
+    {
+      "id": 1130,
+      "title": "第1087章李清然的道生一剑",
+      "words": 2644,
+      "paragraphs": 101
+    },
+    {
+      "id": 1131,
+      "title": "第1085章这逆贼早就布好了局",
+      "words": 2393,
+      "paragraphs": 91
+    },
+    {
+      "id": 1132,
+      "title": "第1086章剑开秘境",
+      "words": 2036,
+      "paragraphs": 93
+    },
+    {
+      "id": 1133,
+      "title": "第1087章找死！",
+      "words": 2320,
+      "paragraphs": 104
+    },
+    {
+      "id": 1134,
+      "title": "第1088章死而复生",
+      "words": 2007,
+      "paragraphs": 91
+    },
+    {
+      "id": 1135,
+      "title": "第1089章镜像",
+      "words": 2512,
+      "paragraphs": 121
+    },
+    {
+      "id": 1136,
+      "title": "第1090章也罢！",
+      "words": 2015,
+      "paragraphs": 88
+    },
+    {
+      "id": 1137,
+      "title": "第1091章白剑，三尸合一",
+      "words": 2301,
+      "paragraphs": 110
+    },
+    {
+      "id": 1138,
+      "title": "第1092章这也能学了去？",
+      "words": 2071,
+      "paragraphs": 87
+    },
+    {
+      "id": 1139,
+      "title": "第1093章斩镜像",
+      "words": 2359,
+      "paragraphs": 102
+    },
+    {
+      "id": 1140,
+      "title": "第1094章罗盘所指之地",
+      "words": 2682,
+      "paragraphs": 98
+    },
+    {
+      "id": 1141,
+      "title": "第1095章陈怀安是怎样的人",
+      "words": 2290,
+      "paragraphs": 95
+    },
+    {
+      "id": 1142,
+      "title": "第1096章都是机缘~",
+      "words": 2470,
+      "paragraphs": 97
+    },
+    {
+      "id": 1143,
+      "title": "第1097章无情",
+      "words": 2086,
+      "paragraphs": 106
+    },
+    {
+      "id": 1144,
+      "title": "第1098章本尊不同意！",
+      "words": 3140,
+      "paragraphs": 151
+    },
+    {
+      "id": 1145,
+      "title": "第1099章瞒天过海",
+      "words": 2032,
+      "paragraphs": 98
+    },
+    {
+      "id": 1146,
+      "title": "第1100章大罗天",
+      "words": 2076,
+      "paragraphs": 88
+    },
+    {
+      "id": 1147,
+      "title": "第1101章两界终合并",
+      "words": 2100,
+      "paragraphs": 73
+    },
+    {
+      "id": 1148,
+      "title": "第1102章布局！",
+      "words": 2764,
+      "paragraphs": 119
+    },
+    {
+      "id": 1149,
+      "title": "第1103章打个商量如何？",
+      "words": 2232,
+      "paragraphs": 88
+    },
+    {
+      "id": 1150,
+      "title": "第1104章超脱境",
+      "words": 1530,
+      "paragraphs": 78
+    },
+    {
+      "id": 1151,
+      "title": "第1105章覆水难收",
+      "words": 1714,
+      "paragraphs": 81
+    },
+    {
+      "id": 1152,
+      "title": "第1106章归无",
+      "words": 1410,
+      "paragraphs": 73
+    },
+    {
+      "id": 1153,
+      "title": "第1107章雪落无痕",
+      "words": 2082,
+      "paragraphs": 110
+    },
+    {
+      "id": 1154,
+      "title": "第1108章可曾动过心",
+      "words": 1417,
+      "paragraphs": 73
+    },
+    {
+      "id": 1155,
+      "title": "第1109章今天有我在，我看谁敢动我的人！",
+      "words": 1004,
+      "paragraphs": 65
+    },
+    {
+      "id": 1156,
+      "title": "第1110章一眼万年（全书完）",
+      "words": 1426,
+      "paragraphs": 62
+    },
+    {
+      "id": 1157,
+      "title": "第1111章完结感言",
+      "words": 1076,
+      "paragraphs": 44
+    }
+  ]
+}

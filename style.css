@@ -152,6 +152,7 @@ img { display: block; max-width: 100%; }
 .btn-text.small, .btn-text.sm { font-size: 12px; }
 
 .avatar { border-radius: 999px; object-fit: cover; background: var(--surface-2); flex: none; }
+.avatar-cropped { width:var(--avatar-size,28px);height:var(--avatar-size,28px); }
 .avatar-ph { display: inline-grid; place-items: center; font-size: 12px; font-weight: 700; background: hsl(var(--h, 140) 40% 88%); color: hsl(var(--h, 140) 35% 30%); }
 [data-theme="dark"] .avatar-ph { background: hsl(var(--h, 140) 25% 26%); color: hsl(var(--h, 140) 45% 82%); }
 
@@ -294,6 +295,10 @@ a.who-name:hover { color: var(--primary); }
 .emo { font-size: 16px; line-height: 1; }
 .stk { display: inline-block; width: 1.5em; height: 1.5em; object-fit: contain; vertical-align: -.4em; }
 .stk.emo { width: 20px; height: 20px; vertical-align: middle; }
+/* AC娘是透明深色线稿：只给这套素材垫纸底，正文/选择器/回应/输入框共用，尺寸不变。 */
+[data-theme="dark"] img:is(.stk,.ri-stk)[src^="/stickers/nga/"] { background-color:#fffaf2; border-radius:3px; }
+/* 阿鲁思考的脸部阴影含透明像素，深色背景下需白底保持脸部完整。 */
+[data-theme="dark"] img:is(.stk,.ri-stk)[src="/stickers/alu/think.png"] { background-color:#fff; border-radius:3px; }
 .emoji { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -.25em; }
 
 /* 一句回应 */
@@ -324,9 +329,11 @@ a.who-name:hover { color: var(--primary); }
 .rp-del { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 2px; border-radius: 999px; color: var(--text-3); flex: none; }
 .rp-del:hover { color: var(--err); background: var(--surface); }
 /* 用户名片 */
-.pop-user { width: 260px; }
+.pop-user { width:260px; max-height:calc(100dvh - 16px); overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; scrollbar-gutter:stable; }
 .ucard { display: flex; flex-direction: column; gap: 12px; padding: 14px; font-size: 13px; }
 .ucard-head { display: flex; align-items: center; gap: 10px; }
+.ucard-head .who { min-width:0; overflow-wrap:anywhere; }
+.ucard-head .muted { flex-wrap:wrap; }
 .ucard-head strong { font-size: 15px; }
 .ucard-head .muted { display: flex; align-items: center; gap: 6px; font-size: 12px; }
 .tl { padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); font-size: 11px; font-weight: 600; }
@@ -737,6 +744,43 @@ textarea.input { resize: vertical; line-height: 1.55; }
 .me-head { display: flex; align-items: center; gap: 16px; padding: 30px 0 18px; flex-wrap: wrap; }
 .me-who h1 { margin: 0; font-size: 24px; line-height: 1.3; }
 .me-who .muted { font-size: 13px; }
+.me-hub .me-head { padding:24px 0;align-items:flex-start;border-bottom:1px solid var(--line);margin-bottom:24px; }
+.me-hub .me-who { min-width:0;flex:1; }
+.me-hub .me-who h1,.me-hub .me-bio { overflow-wrap:anywhere; }
+.me-quick { display:flex;flex-wrap:wrap;gap:8px; }
+.me-hub .settings-search { min-width:0;width:100%; }
+.me-hub .settings-category-panel { gap:14px; }
+.me-hub .settings-category-panel:has(.me-tabs) > h3 { display:none; }
+.me-hub .me-tabs { flex-wrap:wrap;position:static;overflow:visible; }
+.me-hub .me-tab { flex:1;justify-content:center;white-space:nowrap;padding:12px 8px; }
+.me-hub .me-tools { padding:4px 0; }
+.me-hub .me-search { width:min(240px,100%);min-width:0; }
+.me-hub .me-search input { min-width:0; }
+.me-hub .me-list { margin:0; }
+.me-feedback { margin:0; }
+.me-service-list { display:flex;flex-direction:column; }
+.me-service { display:grid;grid-template-columns:24px minmax(0,1fr) 16px;gap:12px;align-items:center;padding:18px 4px;text-align:left;color:var(--text);border-bottom:1px solid var(--line);background:transparent; }
+.me-service:hover { background:var(--surface-2); }
+.me-service:focus-visible { outline:2px solid var(--primary);outline-offset:2px; }
+.me-service > span { display:grid;gap:6px; }
+.me-service strong { font-size:15px;font-weight:600; }
+.me-service small { font-size:13px;color:var(--text-2);line-height:1.5; }
+.me-session { display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding-top:20px; }
+@media(max-width:600px) {
+ .me-hub .me-head { gap:12px;padding:18px 0;margin-bottom:16px; }
+ .me-hub .me-head > .avatar { width:48px;height:48px; }
+ .me-hub .me-quick { width:100%; }
+ .me-hub .me-quick > button { flex:1;min-height:40px; }
+ .me-hub .settings-category-nav { display:grid;grid-template-columns:repeat(3,minmax(0,1fr)); }
+ .me-hub .settings-category-button { width:100%; }
+ .me-hub .me-tabs { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0; }
+ .me-hub .me-tools { display:grid;grid-template-columns:minmax(0,1fr) auto; }
+ .me-hub .me-tools > .grow { display:none; }
+ .me-hub .me-tools > h2 { grid-column:1 / -1; }
+ .me-hub .me-search { width:100%; }
+ .me-hub .me-tools select.input { max-width:132px; }
+ .me-service { padding:16px 2px; }
+}
 .me-tabs {
   display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none;
   position: sticky; top: 60px; z-index: 5; background: var(--bg);
@@ -771,6 +815,7 @@ textarea.input { resize: vertical; line-height: 1.55; }
 .me-row.undone { opacity: .55; }
 .me-thumb { position: relative; width: 84px; height: 84px; border-radius: 10px; overflow: hidden; flex: none; background: var(--surface-2); }
 .me-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.me-text-thumb { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:100%;color:var(--text-2);font-size:12px; }
 .me-thumb.blur img { filter: blur(12px); }
 .me-thumb .n { position: absolute; right: 4px; bottom: 4px; padding: 0 6px; border-radius: 6px; background: rgba(0, 0, 0, .6); color: #fff; font-size: 11px; }
 .me-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -1154,6 +1199,8 @@ span.img-broken:hover { color: var(--text-2); }
 .vid video { max-width: 100%; max-height: calc(100vh - 80px); background: #000; }
 .stage .vid video { max-height: 100%; }
 .vid.live video { cursor: pointer; }
+.video-recovery { position: absolute; z-index: 2; left: 8px; right: 8px; bottom: 48px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; padding: 8px; border-radius: 8px; background: var(--surface, #fff); color: var(--text, #233b32); box-shadow: 0 2px 10px #0003; font-size: 12px; text-align: center; }
+.video-recovery[hidden] { display: none; }
 /* 详情里的单个视频 / 实况：整段放进舞台，不被裁掉 */
 .stage:not(.multi) .vid { height: 100%; }
 .stage .vid video { width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
@@ -1743,7 +1790,10 @@ html[data-skin] .site-notice { display: none; }
 .media.single.fit .cell { display: flex; justify-content: center; align-items: center; }
 .media.single.fit .cell > :is(img, video) { width: auto; height: auto; max-width: 100%; max-height: var(--mh); object-fit: contain; }
 .media.single.fit .gallery-video-cell { width: min(100%, var(--nw, 100%), calc(var(--mh) * var(--ar, 1.5))); max-height: var(--mh); aspect-ratio: var(--ar, 1.5); }
-.media.single.fit .gallery-video-cell.playing { width: min(100%, 320px); margin-inline: auto; }
+.media.single.fit.video-fit { width: min(100%, var(--nw, 100%), calc(var(--mh) * var(--ar, 1.5))); margin-inline: auto; }
+.media.single.fit.video-fit .gallery-video-cell { width: 100%; margin-inline: auto; }
+.media.single.fit.video-fit .gallery-video-cover { flex: 1; min-width: 0; min-height: 0; }
+.media.single.fit.video-fit .img-broken { padding: 16px 12px 66px; text-align: center; }
 .media.single.fit .gallery-video-cover > img { object-fit: contain; }
 .media.thumbs .gallery-video-cell.playing { width: min(100%, 260px); height: 170px; }
 /* 知道尺寸的直接算好宽度：加载前就占对位置，不跳动；小图不放大 */
@@ -1927,14 +1977,14 @@ html[data-skin] .site-notice { display: none; }
   .topbar-inner { height:54px; gap:10px; padding:0 12px; overflow:visible; }
   .topbar .mainnav,.topbar .desktop-action,.topbar .me-link,.topbar .btn-login { display:none; }
   .topbar .logo-text { display:none; }
-  .mobile-page-title { display:flex; align-items:center; flex:1; min-width:0; width:auto; padding:4px 0; font-size:16px; font-weight:700; text-align:left; }
+  .mobile-page-title { display:flex; align-items:center; flex:1; min-width:0; width:auto; padding:4px 0; font-size:16px; font-weight:700; text-align:left; white-space:nowrap; }
   .mobile-page-title::after { content:'⌄'; margin-left:6px; color:var(--text-3); font-size:16px; font-weight:400; }
   .mobile-action { display:inline-grid; }
   .topbar .actions { margin-left:auto; gap:2px; }
   .topbar .actions .btn-icon,.topbar .share { width:38px; height:38px; }
   .topbar .share { padding:0; }
   .topbar .share .lbl { display:none; }
-  .mobile-nav { position:fixed; inset:auto 0 0; z-index:25; height:calc(44px + env(safe-area-inset-bottom)); padding-bottom:env(safe-area-inset-bottom); display:grid; grid-template-columns:repeat(5,1fr); background:color-mix(in srgb,var(--surface) 96%,transparent); border-top:1px solid var(--line); backdrop-filter:blur(12px); }
+  .mobile-nav { position:fixed; inset:auto 0 0; z-index:25; height:calc(44px + env(safe-area-inset-bottom)); padding-bottom:env(safe-area-inset-bottom); display:grid; grid-auto-flow:column; grid-auto-columns:1fr; background:color-mix(in srgb,var(--surface) 96%,transparent); border-top:1px solid var(--line); backdrop-filter:blur(12px); }
   .mobile-nav a { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:11px; color:var(--text-3); }
   .mobile-nav a > span { display:flex; font-size:21px; line-height:1; }
   .mobile-nav a.on { color:var(--primary); font-weight:700; }
@@ -1963,6 +2013,14 @@ html[data-skin] .site-notice { display: none; }
   html[data-skin] .mobile-nav,html[data-skin] .mobile-page-title { display:none; }
 }
 /* 详情轮播复用卡片切图，舞台与完整预览都按可用尺寸容纳图片。 */
+.modal { container-type: inline-size; }
+@container (max-width: 900px) {
+  .detail-panel { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; height: auto; overflow-y: auto; overflow-x: hidden; }
+  .detail-panel > * { min-width: 0; }
+  .detail-panel .side { overflow: visible; border-left: 0; }
+  .detail-panel .stage { max-height: 60vh; }
+  .detail-panel .stage.detail-carousel { height: min(62dvh, calc(100cqw / var(--ratio, 1))); min-height: 200px; }
+}
 .stage.detail-carousel { display:block; width:100%; height:100%; padding:0; }
 .stage.detail-carousel .car-track { height:100%; }
 .stage.detail-carousel .car-cell { position:relative; height:100%; min-height:0; min-width:0; aspect-ratio:auto; display:grid; grid-template:minmax(0,100%) / minmax(0,100%); place-items:center; background:#0c0c0b; }

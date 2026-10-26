@@ -1,0 +1,85 @@
+export function mountSession({main,me,mode,h,api:hostApi,button,field,input,select,ruleHelp,updateParticipants=()=>{},initialRoomId='',inviteUrl=id=>location.origin+'/games/'+mode+'?room='+id,onRoomChange=()=>{},socketUrl=id=>(location.protocol==='https:'?'wss://':'ws://')+location.host+'/api/game-rooms/'+id+'/socket',personalAiUrl='https://cc.52dmeme.com/me/ai'}){
+ const doc=main.ownerDocument,win=doc.defaultView,lifetime=new win.AbortController(),dialogs=new Set();let visible=true;
+ main.classList.add('shared-game');
+ const active=()=>!dead&&visible&&!doc.hidden;
+ const api=async(path,options={})=>{const data=await hostApi(path,{...options,signal:lifetime.signal});if(dead)throw new DOMException('视图已关闭','AbortError');return data};
+ let room=null,socket=null,dead=false,connecting=false,backoff=1000,reconnect=0,offset=0,checking=false,budget=30,points=null,strokeTimer=0,lastPreview=0;
+ const drawing=mode==='drawing',title=h('header',{class:'game-title'},h('h2',{},drawing?'卧底画家':'AI 对抗猜词'),ruleHelp(mode));
+ const side=h('aside',{class:'game-side'}),left=h('section',{class:'game-main'}),bar=h('div',{class:'game-toolbar'}),word=h('section',{class:'game-word-card','aria-label':'我的词'}),summary=h('span'),countdown=h('b',{'aria-label':'回合倒计时'}),status=h('p',{class:'game-status',role:'status'}),history=h('div',{class:'game-history'});
+ const canvas=h('canvas',{width:1000,height:600,'aria-label':'共享画板',tabindex:0}),tools=h('div',{class:'game-draw-tools'}),gallery=new Map();let zoom=null;
+ const create=button('发起一局',createDialog,{class:'game-primary'}),refresh=button('当前对局',()=>checkCurrent(true)),copy=button('邀请参与',async()=>{try{await win.navigator.clipboard.writeText(inviteUrl(room.id));if(!dead)status.textContent='邀请链接已复制'}catch{if(!dead)status.textContent='邀请链接：'+inviteUrl(room.id)}},{disabled:true});
+ bar.append(create,refresh,copy,h('span',{class:'grow'}),summary,countdown);
+ const width=select('画笔粗细',[['2','细'],['5','中'],['9','粗']]),color=h('strong',{class:'game-my-color'}),undo=button('撤回上一笔',()=>send({type:'undo'}));width.value='5';
+ tools.append(color,field('粗细',width),undo);left.append(bar,word,drawing?canvas:history,...(drawing?[tools]:[]),status);main.replaceChildren(title,h('div',{class:'game-layout'},left,side));
+ const fail=e=>{if(!dead&&e.name!=='AbortError')status.textContent=e.message||String(e)},myColor=()=>room?.me?.color||'#2563eb';
+ const label=p=>`${p.number||room.players.indexOf(p)+1}号 · ${p.name}`;
+ const marker=p=>h('span',{class:'game-player-number',style:'--player-color:'+p.color},String(p.number||room.players.indexOf(p)+1));
+ const tick=()=>{countdown.textContent=room?.deadline?Math.max(0,Math.ceil((room.deadline-Date.now()-offset)/1000))+'秒':''};
+ let clock=0,poll=0;
+ function timers(){win.clearInterval(clock);win.clearInterval(poll);clock=poll=0;if(!active())return;tick();clock=win.setInterval(tick,1000);poll=win.setInterval(()=>{if(!room||room.phase==='finished')checkCurrent()},3000)}
+ function setVisible(value){visible=value;clearTimeout(strokeTimer);points=null;timers();if(active())checkCurrent(true)}
+ function destroy(){if(dead)return;dead=true;lifetime.abort();win.clearInterval(clock);win.clearInterval(poll);clearTimeout(reconnect);clearTimeout(strokeTimer);socket?.close();socket=null;for(const dialog of dialogs){dialog.close();dialog.remove()}dialogs.clear();gallery.clear();main.replaceChildren()}
+ doc.addEventListener('visibilitychange',()=>setVisible(visible),{signal:lifetime.signal});win.addEventListener('pagehide',destroy,{once:true,signal:lifetime.signal});timers();
+ async function action(b){if(!room)return;try{const d=await api('/game-rooms/'+room.id,{method:'POST',body:{...b,nonce:crypto.randomUUID()}});apply(d);status.textContent=''}catch(e){fail(e)}}
+ function send(b){if(socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify({...b,nonce:crypto.randomUUID()}));else fail(Error('实时连接中断，请稍后重试'))}
+ function invitation(id){onRoomChange(id)}
+ async function open(id){if(connecting||dead)return;connecting=true;try{const d=await api('/game-rooms/'+encodeURIComponent(id));if(d.room.mode!==mode)throw Error('此邀请属于其他玩法');const old=socket;socket=null;old?.close();clearTimeout(reconnect);apply(d);invitation(id);connect(id)}catch(e){fail(e)}finally{connecting=false}}
+ function connect(id){if(dead)return;const ws=new win.WebSocket(socketUrl(id));socket=ws;
+  ws.onopen=()=>{if(dead||ws!==socket)return;backoff=1000;status.textContent=''};
+  ws.onmessage=e=>{if(dead||ws!==socket)return;try{const d=JSON.parse(e.data);if(d.type==='state')apply(d);else if(d.type==='preview'&&active()){draw();paint(canvas,d.stroke)}else if(d.type==='stroke'){if(!room.strokes.some(s=>s.id===d.stroke.id))room.strokes.push(d.stroke);if(active())draw()}else if(d.error)fail(Error(d.error))}catch{fail(Error('收到无效更新，请重新连接'))}};
+  ws.onclose=()=>{if(dead||socket!==ws)return;status.textContent='连接中断，正在重连…';reconnect=setTimeout(()=>connect(id),backoff);backoff=Math.min(30000,backoff*2)};
+ }
+ async function checkCurrent(force=false){if(checking||!active()||connecting)return;checking=true;try{const d=await api('/game-rooms?mode='+mode);if(d.room&&d.room.id!==room?.id)await open(d.room.id);else if(force&&room)await open(room.id);else if(!room){create.disabled=!!d.creating;summary.textContent=d.creating?'正在准备新局':'当前没有对局';word.replaceChildren(h('strong',{},d.creating?'正在准备新局':'发起一局，邀请大家参与'));side.replaceChildren(h('h2',{},'观众席'),h('p',{},'新局出现后会自动进入候场。'))}}catch(e){if(force||!room)fail(e)}finally{checking=false}}
+ function apply(data){if(dead||!data.room)return;const previous=room;room={...data.room,strokes:data.room.strokes??(previous?.id===data.room.id?previous.strokes:[])??[]};offset=(data.now||Date.now())-Date.now();updateParticipants(room.players.length,{key:room.id,players:room.players});if(!active())return;
+  if(previous?.turn_user_id!==room.turn_user_id||previous?.phase!==room.phase){clearTimeout(strokeTimer);points=null}
+  create.disabled=room.phase!=='finished';copy.disabled=false;summary.textContent=room.phase==='lobby'?`候场 · ${room.players.length}/${drawing?room.min_players:1}人`:room.phase==='finished'?'本局已结束':drawing&&room.phase==='vote'?`第${room.round}轮 · 投票中`:drawing?`第${room.round}轮 · ${room.players.find(p=>p.id===room.turn_user_id)?.number||''}号作画`:'AI 轮流作答';tick();side.replaceChildren();gallery.clear();
+  const joined=drawing?!!room.me:room.players.some(p=>p.id===me.id),host=room.host_id===me.id;
+  if(drawing){
+   const text=room.phase==='lobby'?(joined?'已加入 · 开局后显示你的词':'观众席 · 候场中可加入'):room.me?.word===null?'你是空白牌':room.me?.word||'观众席';
+   word.replaceChildren(h('span',{},joined&&room.phase!=='lobby'?'我的词':'本局身份'),h('strong',{},text),joined&&room.phase!=='lobby'?h('span',{class:'game-word-private'},'仅你可见'):null);
+   color.replaceChildren(room.me?marker(room.me):null,room.me?'我的画笔':'观众模式');canvas.classList.toggle('can-draw',room.phase==='drawing'&&room.turn_user_id===me.id);undo.disabled=width.disabled=room.phase!=='drawing'||room.turn_user_id!==me.id;
+   if(room.phase==='drawing'&&joined)word.append(h('span',{class:'game-turn-cue'},room.turn_user_id===me.id?'轮到你了 · 在画板上作画':'等待 '+label(room.players.find(p=>p.id===room.turn_user_id))+' 作画'));
+   if(room.phase==='lobby'&&!joined)side.append(button('参与本局',()=>action({type:'join'}),{class:'game-primary'}));
+   if(room.phase==='lobby'&&joined&&!host)side.append(button('退出候场',()=>action({type:'leave'})));
+   if(room.phase==='drawing'&&room.me?.alive)side.append(button('发起投票',()=>action({type:'vote-start'}),{class:'game-primary'}));
+   if(room.vote){side.append(h('h2',{},'投票 · '+(room.vote.run===2?'平票加投':'选择卧底')),h('p',{},`已投 ${room.vote.count} 票 · ${room.vote.informational?'本轮不淘汰':'最高票淘汰'}`));const votes=h('div',{class:'game-vote-options'});side.append(votes);for(const p of room.players.filter(p=>room.vote.candidates.includes(p.id)))votes.append(button([marker(p),label(p)+(room.vote.mine===p.id?' · 已投':'')],()=>action({type:'vote',target:p.id}),{class:'game-vote-player','aria-pressed':String(room.vote.mine===p.id),disabled:room.vote.mine!==null||!room.me?.alive}))}
+   side.append(h('h2',{},'画作 · '+room.players.length+'/8人'));
+   const grid=h('div',{class:'game-gallery'});for(const p of room.players){const thumb=h('canvas',{width:300,height:180,'aria-hidden':true}),entry=button([thumb,h('span',{class:'game-art-label'},marker(p),h('span',{},p.name)),h('small',{},p.alive===false?'已淘汰':'点击放大')],()=>openArt(p.id),{class:'game-art','aria-label':'查看 '+label(p)+' 的画作'});gallery.set(p.id,thumb);grid.append(entry)}side.append(grid);
+   if(room.last_vote)side.append(h('details',{},h('summary',{},'上次投票结果'),h('p',{},Object.entries(room.last_vote.counts).map(([id,n])=>label(room.players.find(p=>p.id===Number(id)))+' '+n+'票').join('；'))));
+   if(room.phase==='finished')side.append(...room.players.filter(p=>p.role).map(p=>h('p',{},marker(p),label(p)+' · '+({ordinary:'普通',spy:'卧底',blank:'空白牌'})[p.role]+' · '+(p.word||'空白'))));
+   draw();
+  }else{
+   word.replaceChildren(h('span',{},host?'出题者':joined?'已参赛':'观众席'),h('strong',{},'线索：'+(room.hint||'暂无')+' · '+room.answer_length+'字'));
+   if(room.can_join){const times=input('我的AI猜测次数',{type:'number',min:1,max:300,value:budget});times.oninput=()=>budget=Number(times.value);side.append(field('本局最多调用次数',times),h('small',{},'点击参与即授权个人AI仅用于本局猜词，费用由你的API账户承担。'),button('参与 AI 对抗',()=>{if(times.reportValidity())action({type:'join',max_calls:Number(times.value)})},{class:'game-primary'}),h('a',{href:personalAiUrl,target:'_blank',rel:'noopener'},'个人 AI 设置'))}
+   if(room.players.some(p=>p.id===me.id&&p.active))side.append(button('停止我的AI',()=>action({type:'stop'}),{class:'game-danger'}));
+   side.append(h('h2',{},'本局排名'));for(const p of [...room.players].sort((a,b)=>b.best-a.best))side.append(h('p',{},p.name+' · '+p.model+' · '+p.best+'%',h('small',{},' 调用 '+p.used+'/'+p.max_calls+(p.active?'':' · 已停止'))));
+   history.replaceChildren(...[room.answer&&h('strong',{},'答案：'+room.answer),...room.history.map(e=>h('article',{},h('small',{},room.players.find(p=>p.id===e.user_id)?.name||'玩家'),h('p',{},e.kind==='question'?'问：':'猜：',...[...e.text].map((c,i)=>e.character_matches?.[i]&&e.character_matches[i]!=='none'?h('b',{class:'gm-char-'+e.character_matches[i]},c):c)),h('span',{},e.kind==='guess'?(e.score??0)+'%':({yes:'是',no:'否',unknown:'无法判断',not_question:'不是问题'})[e.verdict]||'无法判断'))),!room.history.length&&h('p',{},'等待参赛模型作答')].filter(Boolean));
+  }
+  if(room.phase==='lobby'){side.prepend(h('p',{class:'game-lobby-info'},`报名截止自动开局 · 还需 ${Math.max(0,(drawing?room.min_players:1)-room.players.filter(p=>p.active!==false).length)} 人`));if(host)side.append(button('不再等待，立即开局',()=>action({type:'start'}),{class:'game-primary',disabled:room.players.filter(p=>p.active!==false).length<(drawing?room.min_players:1)}))}
+  if(host&&room.phase!=='finished')side.append(button('结束本局',()=>action({type:'finish'})));
+  if(room.phase==='finished'){const reason=room.winner||room.finish_reason;side.prepend(h('strong',{},({ordinary:'普通玩家获胜',undercover:'卧底阵营获胜',cancelled:'本局已取消',inactive:'全员离线，本局已结束',insufficient:'人数不足，本局已取消'})[reason]||'本局已结束'));side.append(button('发起新一局',createDialog,{class:'game-primary'}))}
+ }
+ function paint(target,s){const c=target.getContext('2d');c.strokeStyle=s.color;c.lineWidth=s.width*target.width/1000;c.lineCap=c.lineJoin='round';c.beginPath();s.points.forEach(([x,y],i)=>i?c.lineTo(x*target.width,y*target.height):c.moveTo(x*target.width,y*target.height));c.stroke()}
+ function picture(target,uid){const c=target.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,target.width,target.height);for(const s of room?.strokes||[])if(uid===undefined||s.user_id===uid)paint(target,s)}
+ function draw(){if(!drawing)return;picture(canvas);for(const[id,c]of gallery)picture(c,id);if(zoom)picture(zoom.canvas,zoom.uid)}
+ function openArt(uid){const p=room.players.find(p=>p.id===uid),big=h('canvas',{width:1000,height:600,'aria-label':label(p)+' 的画作'}),dialog=h('dialog',{class:'game-dialog game-art-dialog'});dialog.append(h('header',{},h('h2',{},marker(p),label(p)),button('关闭',()=>dialog.close())),big);doc.body.append(dialog);dialogs.add(dialog);dialog.classList.add('shared-game-dialog');dialog.addEventListener('close',()=>dialogs.delete(dialog),{once:true});zoom={uid,canvas:big,dialog};dialog.addEventListener('close',()=>{zoom=null;dialog.remove()},{once:true});picture(big,uid);dialog.showModal()}
+ const point=e=>{const r=canvas.getBoundingClientRect();return [Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))]};
+ canvas.addEventListener('pointerdown',e=>{if(!active()||room?.phase!=='drawing'||room.turn_user_id!==me.id)return;points=[point(e)];canvas.setPointerCapture(e.pointerId);strokeTimer=setTimeout(endStroke,Math.max(1,room.deadline-Date.now()-offset-100))});
+ canvas.addEventListener('pointermove',e=>{if(!active()||!points||points.length>=128)return;points.push(point(e));draw();paint(canvas,{points,color:myColor(),width:Number(width.value)});if(socket?.readyState===WebSocket.OPEN&&Date.now()-lastPreview>125){lastPreview=Date.now();socket.send(JSON.stringify({type:'preview',points,color:myColor(),width:Number(width.value)}))}});
+ function endStroke(){clearTimeout(strokeTimer);if(!points)return;const path=points;points=null;if(path.length>=2)send({type:'stroke',points:path,color:myColor(),width:Number(width.value)});draw()}
+ canvas.addEventListener('pointerup',endStroke);canvas.addEventListener('pointercancel',()=>{clearTimeout(strokeTimer);points=null;draw()});
+ async function createDialog(){const dialog=h('dialog',{class:'game-dialog'}),form=h('form'),err=h('p',{role:'status'}),submit=h('button',{type:'submit',class:'game-primary'},'发起候场');let make;
+  const seconds=Array.from({length:6},(_,i)=>[String((i+1)*10),((i+1)*10)+'秒']),wait=select('候场时间',seconds);wait.value='60';
+  dialog.append(h('header',{},h('h2',{},drawing?'发起卧底画家':'发起 AI 对抗'),button('关闭',()=>dialog.close())),form);doc.body.append(dialog);dialogs.add(dialog);dialog.classList.add('shared-game-dialog');dialog.addEventListener('close',()=>dialogs.delete(dialog),{once:true});dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();form.append(field('候场时间',wait,'人数足够时可提前开局；到时不足则取消本局。'));
+  if(drawing){const minimum=select('最低开局人数',Array.from({length:6},(_,i)=>[String(i+3),(i+3)+'人'+(i===2?' · 标准局':'')])),spies=select('卧底人数',[['1','1人'],['2','2人']]),blank=input('加入空白牌',{type:'checkbox'}),duration=select('每人每轮作画时间',seconds),source=select('词语来源',[['library','题库随机词对'],['manual','自己出题'],['history','历史猜词题库']]),ordinary=input('普通玩家词语',{maxlength:20}),under=input('卧底词语',{maxlength:20}),historyWords=select('选择历史题目',[['','请选择已公开题目']]);minimum.value='5';duration.value='20';
+   const custom=h('div',{},field('普通玩家词语',ordinary),field('卧底词语',under,'与普通词相近，但不能相同')),sourceHistory=field('历史题目',historyWords);custom.hidden=sourceHistory.hidden=true;
+   source.onchange=async()=>{custom.hidden=source.value==='library';sourceHistory.hidden=source.value!=='history';ordinary.required=under.required=source.value!=='library';if(source.value==='history')try{const d=await api('/game-word-library');historyWords.replaceChildren(h('option',{value:''},'请选择'),...d.items.map(r=>h('option',{value:r.word},r.word)))}catch(e){err.textContent=e.message}};historyWords.onchange=()=>ordinary.value=historyWords.value;
+   const roles=()=>{const small=Number(minimum.value)<5;spies.disabled=small;if(small)spies.value='1';blank.disabled=small||Number(minimum.value)<=2*(Number(spies.value)+1);if(blank.disabled)blank.checked=false};minimum.onchange=spies.onchange=roles;roles();
+   form.append(field('每人每轮作画时间',duration),field('最低开局人数',minimum),field('卧底人数',spies),field('空白牌',blank),field('词语来源',source),sourceHistory,custom,ruleHelp('drawing'));
+   make=()=>({mode,min_players:Number(minimum.value),spies:Number(spies.value),blank:blank.checked,draw_seconds:Number(duration.value),word_source:source.value==='library'?'library':'manual',words:[ordinary.value.trim(),under.value.trim()]});
+  }else{const source=select('出题方式',[['manual','自己出题'],['ai','我的AI出题']]),answer=input('本局答案',{maxlength:40,required:true}),hint=input('公开线索',{maxlength:160});source.onchange=()=>{answer.required=source.value==='manual';answer.disabled=hint.disabled=source.value==='ai'};form.append(field('出题方式',source),field('答案',answer),field('公开线索',hint),h('small',{},'出题和裁判使用你的个人模型，仅用于本局；费用由你的API账户承担。'),ruleHelp('arena'));make=()=>({mode,answer_source:source.value,answer:answer.value.trim(),hint:hint.value.trim()})}
+  form.append(err,submit);form.onsubmit=async e=>{e.preventDefault();submit.disabled=true;err.textContent='正在发起…';try{const d=await api('/game-rooms',{method:'POST',body:{...make(),wait_seconds:Number(wait.value)}});dialog.close();await open(d.room.id)}catch(e){err.textContent=e.message}finally{submit.disabled=false}};
+ }
+ const ready=(async()=>{if(initialRoomId)await open(initialRoomId);await checkCurrent()})();
+ return {ready,setVisible,refresh:()=>checkCurrent(true),destroy};
+}

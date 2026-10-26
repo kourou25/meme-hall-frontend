@@ -1,0 +1,7 @@
+.dcoin{display:inline-block;flex:0 0 auto;width:24px;height:24px;background:url('/assets/farm/dcoin-banana-v1.webp') center/contain no-repeat;vertical-align:middle;transform-origin:center;animation:dcoin-turn 1.6s ease-in-out 1}
+.dcoin-amount{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dcoin--hero{width:76px;height:76px;animation:dcoin-turn 5s ease-in-out infinite}
+.farm-stats .dcoin{animation:dcoin-turn 6s ease-in-out infinite}
+@keyframes dcoin-turn{0%,12%{transform:perspective(240px) rotateY(0)}55%,100%{transform:perspective(240px) rotateY(360deg)}}
+[data-page-hidden=true] .dcoin,[data-bubble-motion=pause] .dcoin{animation-play-state:paused}
+@media(prefers-reduced-motion:reduce){.dcoin{animation:none!important}}
