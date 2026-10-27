@@ -1,4 +1,4 @@
-import {GROWTH_V5} from '/growth-v5.js?v=97fd912d'
+import {GROWTH_V5} from '/growth-v5.js?v=c8639d55'
 // Each achievement series owns a distinct new illustration. IDs and awards stay stable.
 const tiles={farm_plant:12,farm_steal:11,guess_pressure:38,guess_tormentor:39,guess_firstshot:40,guess_easy:41,guess:0,luck_king:1,luck_last:2,guide:3,newbie:4,elder:17,moyu_god:5,moyu_pro:20,post_god:18,post_pro:19,sese:6,chunse:43,water:7,react:8,night:9,farm_harvest:10,farm_wood:15,farm_discovery:14}
 const boards=['guess','guess_winrate','sender_count','sender_paid','chat_count','chat_early','chat_late']

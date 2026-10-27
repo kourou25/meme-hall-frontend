@@ -1,4 +1,4 @@
-import {installBubbleBursts} from '/title-bubble-bursts.js?v=97fd912d'
+import {installBubbleBursts} from '/title-bubble-bursts.js?v=c8639d55'
 const motifs={oldfarmer:'garden',newcomer:'leaf',mona:'lotus',lace:'ribbon',giant:'banana',worship:'banana',muscle:'glove',deepseek:'fin',deepseekupgrade:'fin',maid:'ribbon',whalepunch:'glove',nightdevil:'horns',gpt:'dragon',claude:'flower',gemini:'twin',whitedragon:'dragon',rascal:'horns',weirdo:'mask',blacksilk:'ribbon',loli:'bunny',electric:'bolt',railcannon:'cannon',chickengun:'meme',blade:'blade',spear:'spear',sword:'blade',halberd:'halberd',snow:'snow',moon:'moon',wind:'wind',flower:'flower',sun:'sun',star:'star',cloud:'cloud'}
 function ensureWeaponFilter(doc){
  if(doc.getElementById('rt-weapon-ink'))return

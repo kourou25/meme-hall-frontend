@@ -1,6 +1,6 @@
-import {farmArt} from './farm-assets.js?v=97fd912d'
-import {quantityStepper} from './farm-quantity.js?v=97fd912d'
-import {coin} from './farm-ui.js?v=97fd912d'
+import {farmArt} from './farm-assets.js?v=c8639d55'
+import {quantityStepper} from './farm-quantity.js?v=c8639d55'
+import {coin} from './farm-ui.js?v=c8639d55'
 const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n}
 export function ranchAnimalStatus(animal,spec,t,capacity=12,starvationSeconds=48*3600){
  const produced=Math.max(0,Math.floor((Math.min(t,animal.fedUntil)-animal.producedAt)/spec.seconds)),stored=Math.min(capacity,animal.stored+produced)

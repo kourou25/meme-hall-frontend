@@ -1,8 +1,8 @@
-import {el,button,coin,duration,icon} from './farm-ui.js?v=97fd912d'
-import {quantityStepper} from './farm-quantity.js?v=97fd912d'
-import {goodsArt,metric,marketStyles} from './farm-market-visuals.js?v=97fd912d'
-import {conflictChance,conflictLoot,CONFLICT_RULES as R} from './farm-conflict-rules.js?v=97fd912d'
-import {panelClock} from './farm-panel-clock.js?v=97fd912d'
+import {el,button,coin,duration,icon} from './farm-ui.js?v=c8639d55'
+import {quantityStepper} from './farm-quantity.js?v=c8639d55'
+import {goodsArt,metric,marketStyles} from './farm-market-visuals.js?v=c8639d55'
+import {conflictChance,conflictLoot,CONFLICT_RULES as R} from './farm-conflict-rules.js?v=c8639d55'
+import {panelClock} from './farm-panel-clock.js?v=c8639d55'
 const stances=[['patrol','巡逻 · 克制潜入'],['barrier','路障 · 克制强攻'],['decoy','诱饵 · 克制诱敌']]
 const tactics=[['sneak','潜入'],['rush','强攻'],['lure','诱敌']]
 const states={preparing:'准备中',failed:'进攻被阻止',escrow:'战利品托管',uprising:'起义招募中',claimable:'等待仓库空位',claimed:'战利品已领取',recovered:'追索成功'}

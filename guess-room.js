@@ -1,14 +1,15 @@
-import {createGuessTip} from '/guess-tip.js?v=97fd912d'
-import {createGuessCloseControls} from '/guess-close-controls.js?v=97fd912d'
-import {createRewardFeedback} from '/guess-reward-feedback.js?v=97fd912d'
-import {captureChatScroll} from '/chat-scroll-anchor.js?v=97fd912d'
-import {avatarImage} from '/avatar-view.js?v=97fd912d'
+import {createGuessTip} from '/guess-tip.js?v=c8639d55'
+import {createGuessCloseControls} from '/guess-close-controls.js?v=c8639d55'
+import {createRewardFeedback} from '/guess-reward-feedback.js?v=c8639d55'
+import {captureChatScroll} from '/chat-scroll-anchor.js?v=c8639d55'
+import {avatarImage} from '/avatar-view.js?v=c8639d55'
 // 猜词总览按需加载，复用群消息变更信号，不新增定时轮询。
-import {formatGuessDeadline,createGuessView} from '/shared-games/guess-view.js';
+import {formatGuessDeadline,createGuessView} from '/shared-games/guess-view.js?v=20261028a';
 export {formatGuessDeadline};
 export function createGuessRoom({ pane, chat, scroller, opener, gid, userId, h, api, create, onMode }) {
   const doc=pane.ownerDocument,win=doc.defaultView,key=`guessSplit:${userId||0}:${gid}`
-  for(const href of ['/shared-games/session.css',...(onMode?['/game-panel.css?v=97fd912d']:[])])if(!doc.querySelector('link[href="'+href+'"]'))doc.head.append(h('link',{rel:'stylesheet',href}))
+  for(const href of ['/shared-games/session.css',...(onMode?['/game-panel.css?v=c8639d55']:[])])if(!doc.querySelector('link[href="'+href+'"]'))doc.head.append(h('link',{rel:'stylesheet',href}))
+  const layoutHref='/shared-games/guess-layout.css?v=20261028a';if(!doc.querySelector('link[href="'+layoutHref+'"]'))doc.head.append(h('link',{rel:'stylesheet',href:layoutHref}))
   const desktop=win.matchMedia('(min-width:641px)')
   let width=520
   try{width=Math.max(320,Math.min(760,Number(win.localStorage.getItem(key))||520))}catch{}
@@ -130,7 +131,7 @@ export function createGuessRoom({ pane, chat, scroller, opener, gid, userId, h, 
     if(hideChat&&!wasHidden)restoreMain=anchor()
     pane.classList.toggle('gr-open',opened);pane.classList.toggle('gr-wide',opened&&wide);section.hidden=!opened;divider.hidden=!opened||!wide;if(opened||!pane.matches('.hc-open,.gp-open'))chat.inert=hideChat
     pane.style.setProperty('--guess-w',actual+'px');divider.setAttribute('aria-valuenow',String(Math.round(actual)));divider.setAttribute('aria-valuemax',String(Math.max(320,pane.clientWidth-320)))
-    opener.setAttribute('aria-expanded',String(opened));const label=opener.querySelector('.cm-guess-label');if(label)label.textContent=opened?'猜词专区已打开':'猜词专区 / 分屏';toolLabel(closeButton,wide?'关闭分屏':'返回群聊')
+    opener.setAttribute('aria-expanded',String(opened));const label=opener.querySelector('.cm-guess-label');if(label)label.textContent='猜词';toolLabel(closeButton,wide?'关闭分屏':'返回群聊')
     if(wasHidden&&!hideChat){restoreMain?.();restoreMain=null}
   }
   function resize(value,save=true){const restore=anchor();width=Math.max(320,Math.min(value,pane.clientWidth-320));layout();restore();if(save)try{win.localStorage.setItem(key,String(Math.round(width)))}catch{}}
@@ -298,7 +299,7 @@ export function createGuessRoom({ pane, chat, scroller, opener, gid, userId, h, 
     queuePanel.hidden=true;queueButton.setAttribute('aria-expanded','false')
   }
   function responsiveDefaults(){
-    roundDetails.open=hintDetails.open=manualHints.open=desktop.matches
+    roundDetails.open=hintDetails.open=manualHints.open=desktop.matches&&pane.clientWidth>=720
     collapseAuxiliary()
     if(opened)load({restart:true})
   }

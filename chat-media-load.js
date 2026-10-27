@@ -1,4 +1,4 @@
-import {onRemoval} from '/resource-memory.js?v=97fd912d'
+import {onRemoval} from '/resource-memory.js?v=c8639d55'
 
 // Public media has its own origin; private attachments and development keep their URL.
 export function mediaUrl(value, base = location.href) {

@@ -1,5 +1,5 @@
-import {el,coin,duration} from './farm-ui.js?v=97fd912d'
-import {quantityStepper} from './farm-quantity.js?v=97fd912d'
+import {el,coin,duration} from './farm-ui.js?v=c8639d55'
+import {quantityStepper} from './farm-quantity.js?v=c8639d55'
 const quantities=new WeakMap()
 export function pigStatus(p,spec,t){const grown=p.deadAt?0:Math.max(0,Math.min(spec.seconds-p.growth,Math.min(t,p.fedUntil)-p.updatedAt)),growth=p.growth+grown,manure=p.manure===undefined?0:Math.min(12,p.manure+Math.floor(((p.manureSeconds??0)+grown)/7200));return {growth,manure,adult:growth>=spec.seconds,dead:!!p.deadAt||t>=p.fedUntil+172800}}
 export function drawPigPanel(details,{state:s,catalog:c,selected,time,actionButton,isLocked}){

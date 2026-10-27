@@ -1,7 +1,7 @@
-import {el,button,coin,duration,icon} from './farm-ui.js?v=97fd912d'
-import {quantityStepper} from './farm-quantity.js?v=97fd912d'
-import {goodsArt,metric,priceChart,marketStyles} from './farm-market-visuals.js?v=97fd912d'
-import {panelClock} from './farm-panel-clock.js?v=97fd912d'
+import {el,button,coin,duration,icon} from './farm-ui.js?v=c8639d55'
+import {quantityStepper} from './farm-quantity.js?v=c8639d55'
+import {goodsArt,metric,priceChart,marketStyles} from './farm-market-visuals.js?v=c8639d55'
+import {panelClock} from './farm-panel-clock.js?v=c8639d55'
 export function createFarmMarket(root,{request,onChanged,userId}){
  marketStyles()
  const dialog=el('dialog','farm-social farm-market'),head=el('header','farm-social-heading'),body=el('div','farm-social-body'),note=el('p','farm-market-notice'),title=el('h2','','田园集市')

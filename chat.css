@@ -1,4 +1,4 @@
-@import url('/dcoin.css?v=97fd912d');
+@import url('/dcoin.css?v=c8639d55');
 .cm-redpack-seal.is-dcoin{background:transparent;border:0;box-shadow:none}
 .cm-redpack-seal.is-dcoin .dcoin{width:48px;height:48px}
 .cm-redpack-foot .dcoin{width:18px;height:18px}
@@ -1991,3 +1991,16 @@ html[data-bubble-motion=pause] .guess-frame::before,html[data-page-hidden=true] 
 .gr-tip{font-size:12px;min-width:0}.gr-tip>summary{cursor:pointer;color:var(--primary);padding:5px 0}.gr-tip-body{display:grid;gap:7px;max-height:190px;overflow:auto;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.gr-tip-body p{margin:0;overflow-wrap:anywhere}.gr-tip-body label,.gr-tip-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.gr-tip-body input[type=number]{width:95px;max-width:100%;padding:6px;font:inherit}.gr-tip-confirm input{flex:none}.gr-tip-confirm span{flex:1;min-width:0}.gr-tip-actions .gr-send{padding:6px 10px;min-height:32px;font-size:12px}.gr-tip-body .dcoin{width:20px;height:20px;flex:none}
 
 .gr-letter-correct{color:#176b38;background:#d5edce;text-decoration:underline;text-underline-offset:3px;border-radius:2px}.gr-letter-present{color:#805200;background:#fff0ad;text-decoration:underline dotted;text-underline-offset:3px;border-radius:2px}
+
+/* Group actions follow their actual pane width, including the desktop dock. */
+.cm-pane{min-width:0;container:chat-pane / inline-size}
+.cm-guess-bar{box-sizing:border-box;max-width:100%;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain}
+.cm-guess-bar>button{flex:0 0 auto;white-space:nowrap}
+.cm-guess-bar .cm-guess-label{white-space:nowrap}
+@container chat-pane (max-width:560px){
+ .cm-guess-bar{justify-content:flex-end;gap:8px;padding:5px 8px}
+ .cm-guess-bar>button{flex:0 0 36px;min-width:36px;min-height:36px;justify-content:center;padding:4px!important;border-radius:8px}
+ .cm-guess-bar>button>span:not(.i){display:none!important}
+ .cm-guess-bar>button>.i{display:inline-flex;flex:none;width:20px;height:20px}
+ .cm-guess-bar .cm-guess-icon{width:24px;height:24px}
+}

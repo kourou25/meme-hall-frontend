@@ -1,5 +1,5 @@
-import {dcoinIcon,dcoinAmount} from '/dcoin.js?v=97fd912d'
-import {packetLuckRanks} from '/packet-luck.js?v=97fd912d'
+import {dcoinIcon,dcoinAmount} from '/dcoin.js?v=c8639d55'
+import {packetLuckRanks} from '/packet-luck.js?v=c8639d55'
 export function coin52Create({h,api,group,onSent,onBack,onBusy}){
  const nonce=crypto.randomUUID(),amount=h('input',{type:'number',min:1,max:1000000,step:1,required:true,class:'rpk-input','aria-label':'总额 · D币'}),count=h('input',{type:'number',min:1,max:100,step:1,value:'1',required:true,class:'rpk-input','aria-label':'份数'}),kind=h('select',{class:'rpk-input','aria-label':'分配方式'},h('option',{value:'random'},'拼手气'),h('option',{value:'fixed'},'等额')),minutes=h('input',{type:'number',min:1,max:10080,value:'1440',required:true,class:'rpk-input','aria-label':'有效期 · 分钟'}),prompt=h('input',{maxlength:120,class:'rpk-input','aria-label':'祝福语',placeholder:'给大家一点经营的收获'}),status=h('p',{class:'rpk-status',role:'status'}),submit=h('button',{type:'submit',class:'rpk-primary'},'确认发出 ',dcoinIcon(h),' 红包'),back=h('button',{type:'button',class:'rpk-secondary',onclick:onBack},'返回其他红包方式')
  const field=(name,input)=>h('label',{class:'rpk-field'},h('span',null,name),input)

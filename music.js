@@ -1,6 +1,6 @@
-import {parseMusicLyrics} from '/music-lyrics.js?v=97fd912d';
-import {createMusicDetail} from '/music-detail.js?v=97fd912d';
-import {attachMusicSurfaces} from '/music-surfaces.js?v=97fd912d';
+import {parseMusicLyrics} from '/music-lyrics.js?v=c8639d55';
+import {createMusicDetail} from '/music-detail.js?v=c8639d55';
+import {attachMusicSurfaces} from '/music-surfaces.js?v=c8639d55';
 const node=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e};
 const button=(text,fn,label=text)=>{const b=node('button','',text);b.type='button';b.title=label;b.setAttribute('aria-label',label);b.onclick=fn;return b};
 const key=t=>t.source+':'+t.id,time=t=>Number.isFinite(t)?Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'):'0:00';
@@ -16,7 +16,7 @@ function ensureMusicStyles(){
  if(document.getElementById('music-styles')?.sheet)return Promise.resolve();
  if(stylesReady)return stylesReady;
  let link=document.getElementById('music-styles');
- if(!link){link=node('link');link.id='music-styles';link.rel='stylesheet';link.href='/music-studio.css?v=97fd912d'}
+ if(!link){link=node('link');link.id='music-styles';link.rel='stylesheet';link.href='/music-studio.css?v=c8639d55'}
  stylesReady=new Promise((resolve,reject)=>{
   const finish=error=>{clearTimeout(timer);link.removeEventListener('load',loaded);link.removeEventListener('error',failed);error?reject(error):resolve()};
   const loaded=()=>finish(),failed=()=>finish(Error('音乐样式加载失败，请重试'));

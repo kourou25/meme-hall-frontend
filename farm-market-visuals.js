@@ -1,6 +1,6 @@
-import {el,sprite,coin} from './farm-ui.js?v=97fd912d'
-import {fishSprite} from './farm-fish-art.js?v=97fd912d'
-export function marketStyles(){if(document.querySelector('link[data-farm-market]'))return;const link=el('link');link.rel='stylesheet';link.href='/farm-market.css?v=97fd912d';link.dataset.farmMarket='1';document.head.append(link)}
+import {el,sprite,coin} from './farm-ui.js?v=c8639d55'
+import {fishSprite} from './farm-fish-art.js?v=c8639d55'
+export function marketStyles(){if(document.querySelector('link[data-farm-market]'))return;const link=el('link');link.rel='stylesheet';link.href='/farm-market.css?v=c8639d55';link.dataset.farmMarket='1';document.head.append(link)}
 export function goodsArt(spec){const wrap=el('span','fm-goods-art');if(spec)wrap.append(spec.kind==='fish'?fishSprite(spec.frame):sprite(spec.frame,spec.kind==='animal'));return wrap}
 export function metric(label,value,detail){const n=el('div','fm-metric');n.append(el('span','',label),el('strong','',value));if(detail)n.append(el('small','',detail));return n}
 const date=t=>new Date(t*1000).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})

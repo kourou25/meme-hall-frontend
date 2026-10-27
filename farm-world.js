@@ -1,7 +1,7 @@
-import {plotTarget,plotIdentity,plotLabel,plotLocked} from './farm-plot-view.js?v=97fd912d'
-import {cropMatureAt,cropHasPests,cropProgress} from './farm-crop-care.js?v=97fd912d'
-import {farmFrames as atlasFrames,cuteFarmFrames,siteFarmFrames,modelFarmFrames,themeFarmFrames,farmArt} from './farm-assets.js?v=97fd912d'
-import {ranchAnimalStatus} from './farm-ranch.js?v=97fd912d'
+import {plotTarget,plotIdentity,plotLabel,plotLocked} from './farm-plot-view.js?v=c8639d55'
+import {cropMatureAt,cropHasPests,cropProgress} from './farm-crop-care.js?v=c8639d55'
+import {farmFrames as atlasFrames,cuteFarmFrames,siteFarmFrames,modelFarmFrames,themeFarmFrames,farmArt} from './farm-assets.js?v=c8639d55'
+import {ranchAnimalStatus} from './farm-ranch.js?v=c8639d55'
 
 // Retained for existing path consumers; the management view has no avatar.
 export function farmPath(start,goals,blocked,width=32,height=24){
@@ -22,13 +22,13 @@ const clock=n=>n<60?Math.max(1,Math.ceil(n))+'秒':n<3600?Math.ceil(n/60)+'分':
 export async function createFarmWorld(parent,options){
  if(!['0','1'].includes(new URLSearchParams(location.search).get('farm3d'))){
   let world
-  try{const {createPixelFarmWorld}=await import('./farm-world-pixel.js?v=97fd912d');world=await createPixelFarmWorld(parent,options);if(!world)return null;await world.ready;return world}
+  try{const {createPixelFarmWorld}=await import('./farm-world-pixel.js?v=c8639d55');world=await createPixelFarmWorld(parent,options);if(!world)return null;await world.ready;return world}
   catch{world?.destroy();options.onMessage?.('像素场景暂未加载成功，正在切换兼容场景。')}
  }
  if(new URLSearchParams(location.search).get('farm3d')!=='0'){
   let world
   try{
-   const {createVoxelFarmWorld}=await import('./farm-world-voxel.js?v=97fd912d')
+   const {createVoxelFarmWorld}=await import('./farm-world-voxel.js?v=c8639d55')
    world=await createVoxelFarmWorld(parent,options)
    if(!world)return null
    await world.ready

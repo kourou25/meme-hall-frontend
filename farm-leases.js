@@ -1,5 +1,5 @@
-import {cropMatureAt,cropHasPests,cropMaxSeconds} from './farm-crop-care.js?v=97fd912d'
-import {el,button,sprite,duration} from '/farm-ui.js?v=97fd912d'
+import {cropMatureAt,cropHasPests,cropMaxSeconds} from './farm-crop-care.js?v=c8639d55'
+import {el,button,sprite,duration} from '/farm-ui.js?v=c8639d55'
 export function createFarmLeases(root,{request,userId,getFarm,onChanged}){
  const dialog=el('dialog','farm-social farm-leases'),head=el('header'),nav=el('nav'),body=el('div','farm-social-content'),status=el('p','farm-lease-status'),retry=button('确认上次操作',()=>void send())
  head.append(el('h2','','地块租赁'),button('关闭',()=>dialog.close()));dialog.setAttribute('aria-label','地块租赁');status.setAttribute('role','status');retry.hidden=true

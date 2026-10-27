@@ -1,5 +1,5 @@
 // 浏览器与服务端共用的官方红包引用解析；这里不请求平台或领取红包。
-import {fishActivityId,fishShareCode} from './fish-ecoji.js?v=97fd912d'
+import {fishActivityId,fishShareCode} from './fish-ecoji.js?v=c8639d55'
 export const packetText = (v) => String(v ?? '').normalize('NFC').trim();
 // 兼容已有分享脚本的可逆口令格式；解析聊天正文时不请求外站。
 export function decodeSharedCode(value) {
