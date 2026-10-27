@@ -1,9 +1,9 @@
-import {packetRecords,packetAmount} from '/packet-records.js?v=98ddcc7d'
-import {fundingState} from '/packet-funding.js?v=98ddcc7d'
-import {dcoinIcon} from '/dcoin.js?v=98ddcc7d'
-import {packetLuckRanks} from '/packet-luck.js?v=98ddcc7d'
+import {packetRecords,packetAmount} from '/packet-records.js?v=810c43bb'
+import {fundingState} from '/packet-funding.js?v=810c43bb'
+import {dcoinIcon} from '/dcoin.js?v=810c43bb'
+import {packetLuckRanks} from '/packet-luck.js?v=810c43bb'
 export {packetLuckRanks}
-import {avatarImage} from '/avatar-view.js?v=98ddcc7d'
+import {avatarImage} from '/avatar-view.js?v=810c43bb'
 // 按需加载。所有 DOM 挂到入口所在文档，普通群聊 / 分屏 / 小窗共用。
 const MODES = { open: '直接开', phrase: '复读红包', cipher: '解个谜', image: '猜张图' }
 const GAMES = {
@@ -223,7 +223,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
     else if(view==='archive')archive()
     else openExisting()
   }
-  if(accountOnly){title.textContent='红包账户与发放记录';navigation.hidden=true;connectorButton.hidden=true;import('/redpacket-native.js?v=98ddcc7d').then(({nativeCreateForm})=>{if(dialog.isConnected)content.replaceChildren(nativeCreateForm({h,api,host:content,signal:lifetime.signal,accountOnly:true,onBack:()=>dialog.close()}))}).catch(e=>{if(dialog.isConnected)content.replaceChildren(h('p',{class:'rpk-status'},e.message))})}
+  if(accountOnly){title.textContent='红包账户与发放记录';navigation.hidden=true;connectorButton.hidden=true;import('/redpacket-native.js?v=810c43bb').then(({nativeCreateForm})=>{if(dialog.isConnected)content.replaceChildren(nativeCreateForm({h,api,host:content,signal:lifetime.signal,accountOnly:true,onBack:()=>dialog.close()}))}).catch(e=>{if(dialog.isConnected)content.replaceChildren(h('p',{class:'rpk-status'},e.message))})}
   else if (initialArchive) navigate('archive')
   else if (initialCreate) navigate('create')
   else load()
@@ -236,7 +236,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
     content.replaceChildren(h('form',{class:'rpk-form',onsubmit:async e=>{
       e.preventDefault();if(submit.disabled)return;submit.disabled=true;const seq=detailSeq
       try{
-        const {parsePacketReference,packetReferenceUrl}=await import('/redpacket-reference.js?v=98ddcc7d')
+        const {parsePacketReference,packetReferenceUrl}=await import('/redpacket-reference.js?v=810c43bb')
         const parsed=parsePacketReference(reference.value,provider.value)
         if(!dialog.isConnected||seq!==detailSeq)return
         message=null;back.hidden=false;externalInspected=false;claimOnOpen=true
@@ -280,7 +280,7 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
     const seq=detailSeq
     content.replaceChildren(h('p',{class:'rpk-help'},'正在加载发包设置…'))
     try{
-      const {createPacketComposer}=await import('/packet-composer.js?v=98ddcc7d')
+      const {createPacketComposer}=await import('/packet-composer.js?v=810c43bb')
       if(!dialog.isConnected||seq!==detailSeq)return
       createForm=createPacketComposer({h,api,group,userId,host:content,signal:lifetime.signal,uploadCover,uploadClue,preview,makeClue:makePacketClue,autoGuess,onBusy:v=>{navigationBusy=v},onSent:m=>{onSent?.(m);dialog.close()}})
       autoGuess=null;content.replaceChildren(createForm)
@@ -306,12 +306,12 @@ export function openRedpacket({ anchor, group, archiveGroup, userId, message, ac
   function render(p,{celebrate=false}={}) {
     if(p.coin52){
       const seq=detailSeq,id=message.id;claimOnOpen=false;title.replaceChildren(dcoinIcon(h),' 红包')
-      import('/coin52-packets.js?v=98ddcc7d').then(({coin52Detail})=>{if(!dialog.isConnected||seq!==detailSeq)return;content.replaceChildren(coin52Detail({h,api,packet:p,messageId:id,celebrate,onRefresh:(next,options)=>{if(dialog.isConnected&&seq===detailSeq)render(next,options)},onUpdate,onBusy:v=>{navigationBusy=v}}))}).catch(e=>content.replaceChildren(h('p',{class:'rpk-status'},e.message),btn('重试',load)))
+      import('/coin52-packets.js?v=810c43bb').then(({coin52Detail})=>{if(!dialog.isConnected||seq!==detailSeq)return;content.replaceChildren(coin52Detail({h,api,packet:p,messageId:id,celebrate,onRefresh:(next,options)=>{if(dialog.isConnected&&seq===detailSeq)render(next,options)},onUpdate,onBusy:v=>{navigationBusy=v}}))}).catch(e=>content.replaceChildren(h('p',{class:'rpk-status'},e.message),btn('重试',load)))
       return
     }
     if(p.ldc){
       const seq=detailSeq,id=message.id,claimNow=claimOnOpen;claimOnOpen=false;title.textContent=p.ldc.draw?'红包抽奖':p.ldc.payment_provider==='coin52'?'D币红包':'LDC 红包'
-      import('/redpacket-native.js?v=98ddcc7d').then(({nativePacketDetail})=>{
+      import('/redpacket-native.js?v=810c43bb').then(({nativePacketDetail})=>{
         if(!dialog.isConnected||seq!==detailSeq)return
         const show=packet=>{if(dialog.isConnected&&seq===detailSeq)render(packet)}
         content.replaceChildren(nativePacketDetail({h,api,messageId:id,packet:p,host:content,onRefresh:show,onBusy:value=>{navigationBusy=value},onPosted:()=>dialog.close()}))

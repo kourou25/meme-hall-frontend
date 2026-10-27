@@ -1,4 +1,4 @@
-import {refreshMessageReference} from '/message-reference.js?v=98ddcc7d'
+import {refreshMessageReference} from '/message-reference.js?v=810c43bb'
 // 一对一私信：仅在页面可见时轮询，离开页面即释放定时器和请求。
 export function renderDmPage(root,{path,me,navigate,onLeave,sidebarHost,onRead,compose,renderText,renderMedia}) {
   const state={threadId:Number(path.match(/^\/dm\/(\d+)$/)?.[1]||0),peer:null,draft:null,newest:0,oldest:0,loading:false,closed:false,since:0,reply:null,edit:null,sending:false}

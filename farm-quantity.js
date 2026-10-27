@@ -1,4 +1,4 @@
-import {el,button} from './farm-ui.js?v=98ddcc7d'
+import {el,button} from './farm-ui.js?v=810c43bb'
 export function quantityStepper(value,{label,min=1,max=99,onChange}){
  const group=el('div','farm-quantity'),input=el('input');input.type='number';input.min=String(min);input.max=String(max);input.step='1';input.inputMode='numeric';input.value=String(value);input.setAttribute('aria-label',label)
  const change=()=>{const n=Number(input.value),valid=input.value!==''&&Number.isSafeInteger(n)&&n>=min&&n<=max;input.setCustomValidity(valid?'':`请输入${min}至${max}的整数`);minus.disabled=valid&&n===min;plus.disabled=valid&&n===max;onChange(valid?n:null)}

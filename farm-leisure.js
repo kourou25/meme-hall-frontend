@@ -1,9 +1,9 @@
-import {el,button,coin,duration} from '/farm-ui.js?v=98ddcc7d'
-import {fishingFrame,FISHING_GAME} from '/farm-fishing-game.js?v=98ddcc7d'
-import {fishSprite} from '/farm-fish-art.js?v=98ddcc7d'
+import {el,button,coin,duration} from '/farm-ui.js?v=810c43bb'
+import {fishingFrame,FISHING_GAME} from '/farm-fishing-game.js?v=810c43bb'
+import {fishSprite} from '/farm-fish-art.js?v=810c43bb'
 
 export async function createFarmLeisure(parent,{session,now,onClose}){
- if(!document.querySelector('link[data-farm-leisure]')){const css=el('link');css.rel='stylesheet';css.href='/farm-leisure.css?v=98ddcc7d';css.dataset.farmLeisure='1';document.head.append(css)}
+ if(!document.querySelector('link[data-farm-leisure]')){const css=el('link');css.rel='stylesheet';css.href='/farm-leisure.css?v=810c43bb';css.dataset.farmLeisure='1';document.head.append(css)}
  let world=null,disposed=false,held=false,fight=null,finishing=false,lastState=null,signature='',useBait=false,useLine=false,rods=1,tick=0
  const host=el('section','farm-leisure'),header=el('header','fl-header'),back=button('← 返回农场',onClose),balance=el('div','fl-balance')
  header.append(back,el('strong','','溪湾垂钓'),balance)
@@ -85,6 +85,6 @@ export async function createFarmLeisure(parent,{session,now,onClose}){
  }
  const visibility=()=>{clearTimeout(tick);tick=0;if(document.hidden)control(false);else refresh()};document.addEventListener('visibilitychange',visibility)
  refresh()
- try{const {createLeisureWorld}=await import('/farm-pond-pixel.js?v=98ddcc7d');if(!disposed){world=createLeisureWorld(canvasHost,{onCast:cast,onHook:hook,onControl:control,getPlay:play});refresh()}}catch{canvasHost.append(el('p','fl-fallback','场景暂不可用，请刷新页面重试；存档与道具已保留。'))}
+ try{const {createLeisureWorld}=await import('/farm-pond-pixel.js?v=810c43bb');if(!disposed){world=createLeisureWorld(canvasHost,{onCast:cast,onHook:hook,onControl:control,getPlay:play});refresh()}}catch{canvasHost.append(el('p','fl-fallback','场景暂不可用，请刷新页面重试；存档与道具已保留。'))}
  return {refresh,destroy(){if(disposed)return;disposed=true;control(false);clearTimeout(tick);document.removeEventListener('visibilitychange',visibility);world?.destroy();world=null;host.remove()}}
 }

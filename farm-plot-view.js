@@ -1,4 +1,4 @@
-import {cropMaxSeconds} from './farm-crop-care.js?v=98ddcc7d'
+import {cropMaxSeconds} from './farm-crop-care.js?v=810c43bb'
 
 // This is a display projection. Never persist appended plots to farm_saves.
 export function farmSceneState(data){

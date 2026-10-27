@@ -1,0 +1,4 @@
+.cm-pane[data-media-size] .cm-media,.cm-pane[data-media-size] .cm-car{zoom:var(--chat-media-scale,1)}
+.cm-pane[data-media-size=quarter] .cm-media .play-mark,.cm-pane[data-media-size=eighth] .cm-media .play-mark{width:48px;height:48px;margin:-24px 0 0 -24px}
+.cm-pane[data-media-size=eighth] .cm-media .play-mark{width:58px;height:58px;margin:-29px 0 0 -29px}
+.chat-media-size-settings{display:flex;flex-direction:column;align-items:flex-start;gap:9px;margin:18px 0}.chat-media-size-settings h4{margin:0}.chat-media-size-settings select{max-width:100%;padding:8px 12px;font:inherit;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text)}.chat-media-size-settings small{max-width:42em;line-height:1.6}

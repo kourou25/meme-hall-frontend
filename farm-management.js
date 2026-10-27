@@ -1,7 +1,7 @@
-import {cropMatureAt,cropHasPests} from './farm-crop-care.js?v=98ddcc7d'
-import {ranchAnimalStatus} from './farm-ranch.js?v=98ddcc7d'
-import {pigStatus} from './farm-pigs.js?v=98ddcc7d'
-import {plotLocked,plotWork,leaseCanPlant} from './farm-plot-view.js?v=98ddcc7d'
+import {cropMatureAt,cropHasPests} from './farm-crop-care.js?v=810c43bb'
+import {ranchAnimalStatus} from './farm-ranch.js?v=810c43bb'
+import {pigStatus} from './farm-pigs.js?v=810c43bb'
+import {plotLocked,plotWork,leaseCanPlant} from './farm-plot-view.js?v=810c43bb'
 // UI planning only; the existing server remains authoritative for every operation.
 export function planFarmBatch(state,catalog,type,cropId,t,{autoBuy=false}={}){
  if(!state||!catalog||!Number.isFinite(t)||!['till','plant','water','pest','harvest'].includes(type))return []

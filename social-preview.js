@@ -1,4 +1,4 @@
-import {socialLinks,canSocialPost,socialCaption} from './social-links.js?v=98ddcc7d'
+import {socialLinks,canSocialPost,socialCaption} from './social-links.js?v=810c43bb'
 const scripts=new WeakMap()
 function loadScript(doc,provider){
  let cache=scripts.get(doc);if(!cache){cache=new Map();scripts.set(doc,cache)}

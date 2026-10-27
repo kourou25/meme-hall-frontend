@@ -1,23 +1,24 @@
-import {TITLE_COLLECTION,titleStage,TITLE_MAX_LEVEL,TITLE_STAGES,TITLE_STAGE_NAMES,CHICKENGUN_MIN_SIZE,CHICKENGUN_MAX_SIZE,chickengunSizeLimit,chickengunSize} from '/title-collection.js?v=98ddcc7d'
-import {titleVisualClass,titleBadgeSource,attachTitleMotion,initializeTitleEffects} from '/title-visuals.js?v=98ddcc7d'
-import {createChatBubbleVisibility} from '/bubble-visibility.js?v=98ddcc7d'
-import {titleSymbol} from '/title-symbols.js?v=98ddcc7d'
+import {attachChatMediaScale,chatMediaScaleSettings} from '/chat-media-scale.js?v=810c43bb';
+import {TITLE_COLLECTION,titleStage,TITLE_MAX_LEVEL,TITLE_STAGES,TITLE_STAGE_NAMES,CHICKENGUN_MIN_SIZE,CHICKENGUN_MAX_SIZE,chickengunSizeLimit,chickengunSize} from '/title-collection.js?v=810c43bb'
+import {titleVisualClass,titleBadgeSource,attachTitleMotion,initializeTitleEffects} from '/title-visuals.js?v=810c43bb'
+import {createChatBubbleVisibility} from '/bubble-visibility.js?v=810c43bb'
+import {titleSymbol} from '/title-symbols.js?v=810c43bb'
 // 尽欢前端：无构建、无框架
-import { settingsSections } from '/settings-sections.js?v=98ddcc7d'
-import {dcoinIcon} from '/dcoin.js?v=98ddcc7d'
-import {seenCoverage,seenIntersects,seenPostCoverage} from '/seen-visibility.js?v=98ddcc7d'
-import {badgeArt} from '/badge-art.js?v=98ddcc7d'
-import { normalizeAnimationFile } from '/animation-loop.js?v=98ddcc7d'
-import {avatarImage,refreshAvatar} from '/avatar-view.js?v=98ddcc7d'
-import { stickerPreviews } from '/sticker-preview.js?v=98ddcc7d'
-import { onRemoval, windowContent, wakeWindowContent, observeResourceDocument } from '/resource-memory.js?v=98ddcc7d'
-import {focusChatMessage} from '/chat-scroll-anchor.js?v=98ddcc7d'
-import {refreshMessageReference} from '/message-reference.js?v=98ddcc7d'
-import { socialCards } from '/social-preview.js?v=98ddcc7d'
-import { socialLink,socialLinks,socialMessageText,canSocialPost,isOfficialEmbed } from '/social-links.js?v=98ddcc7d'
-import { PERSONAL_TITLES as LEGACY_PERSONAL_TITLES } from '/personal-catalog.js?v=98ddcc7d'
-import { PERSONAL_V2_TITLES } from '/personal-v2-catalog.js?v=98ddcc7d'
-import {mediaUrl,deferChatImage,beginChatMessageFetch} from '/chat-media-load.js?v=98ddcc7d'
+import { settingsSections } from '/settings-sections.js?v=810c43bb'
+import {dcoinIcon} from '/dcoin.js?v=810c43bb'
+import {seenCoverage,seenIntersects,seenPostCoverage} from '/seen-visibility.js?v=810c43bb'
+import {badgeArt} from '/badge-art.js?v=810c43bb'
+import { normalizeAnimationFile } from '/animation-loop.js?v=810c43bb'
+import {avatarImage,refreshAvatar} from '/avatar-view.js?v=810c43bb'
+import { stickerPreviews } from '/sticker-preview.js?v=810c43bb'
+import { onRemoval, windowContent, wakeWindowContent, observeResourceDocument } from '/resource-memory.js?v=810c43bb'
+import {focusChatMessage} from '/chat-scroll-anchor.js?v=810c43bb'
+import {refreshMessageReference} from '/message-reference.js?v=810c43bb'
+import { socialCards } from '/social-preview.js?v=810c43bb'
+import { socialLink,socialLinks,socialMessageText,canSocialPost,isOfficialEmbed } from '/social-links.js?v=810c43bb'
+import { PERSONAL_TITLES as LEGACY_PERSONAL_TITLES } from '/personal-catalog.js?v=810c43bb'
+import { PERSONAL_V2_TITLES } from '/personal-v2-catalog.js?v=810c43bb'
+import {mediaUrl,deferChatImage,beginChatMessageFetch} from '/chat-media-load.js?v=810c43bb'
 const PERSONAL_TITLES = { ...LEGACY_PERSONAL_TITLES, ...PERSONAL_V2_TITLES }
 const S = { me: null, emojis: [], minPostTL: 1, bgKey: null, modal: null, wall: null, meSt: null, folders: null, viewer: null }
 const main = document.getElementById('main')
@@ -2870,7 +2871,7 @@ function notifSettings(list, back) {
     h('div', { class: 'row-end' }, h('button', { class: 'btn-text sm', type: 'button', onclick: back }, '返回提醒'))))
   const host=h('div',{class:'device-push-host'})
   list.querySelector('.notif-prefs').append(host)
-  import('/device-push.js?v=98ddcc7d').then(({devicePushSettings})=>{
+  import('/device-push.js?v=810c43bb').then(({devicePushSettings})=>{
     if(host.isConnected)host.replaceChildren(devicePushSettings({api,h,userId:S.me.id}))
   }).catch(()=>{if(host.isConnected)host.textContent='设备通知设置加载失败，请重新打开。'})
 }
@@ -4815,7 +4816,7 @@ const CIPHER_NAME = { shou: '兽音译者', fo: '与佛论禅', emoji: 'emoji �
   rail: '栅栏密码', vigenere: '维吉尼亚', aes: 'AES', zwsp: '隐形字', stego: '图片藏字',
   base58: 'Base58', base62: 'Base62', base85: 'Ascii85', decimal: '十进制码点', html: 'HTML 实体', rot47: 'ROT47', affine: '仿射密码',
   bacon: '培根密码', polybius: '棋盘密码', qwerty: '键盘密码', autokey: '自动密钥', rc4: 'RC4', xor: 'XOR 异或' }
-const loadCipher = () => import('/cipher.js?v=98ddcc7d')
+const loadCipher = () => import('/cipher.js?v=810c43bb')
 
 function rewardView(pz, label) {
   const isLink = pz.reward_type === 'link'
@@ -8197,7 +8198,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
   async function openGuess(mid = 0) {
     sideMode='guess';huancaiPanel?.close();gamePanel?.close()
     try {
-      guessLoading ||= import('/guess-room.js?v=98ddcc7d').then(({ createGuessRoom }) => {
+      guessLoading ||= import('/guess-room.js?v=810c43bb').then(({ createGuessRoom }) => {
         if (!st.destroyed) guessPanel = createGuessRoom({ pane: el, chat: chatColumn, scroller, opener: guessOpen, gid: g.id, userId: S.me?.id, h, icon, api, onMode:g.id===1?openGameMode:null,
           create: anchor => redpackDialog(anchor, { group:g, autoGuess:{amount:''}, onSent:()=>{poll();guessPanel?.refresh(true)} }) })
       }).catch(error => { guessLoading = null; throw error })
@@ -8208,7 +8209,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
   async function openHuancai(){
     sideMode='huancai';guessPanel?.close();gamePanel?.close()
     try{
-      huancaiLoading ||= import('/huancai.js?v=98ddcc7d').then(({createHuancai})=>{if(!st.destroyed)huancaiPanel=createHuancai({pane:el,chat:chatColumn,scroller,opener:huancaiOpen,userId:S.me?.id,h,api})}).catch(error=>{huancaiLoading=null;throw error})
+      huancaiLoading ||= import('/huancai.js?v=810c43bb').then(({createHuancai})=>{if(!st.destroyed)huancaiPanel=createHuancai({pane:el,chat:chatColumn,scroller,opener:huancaiOpen,userId:S.me?.id,h,api})}).catch(error=>{huancaiLoading=null;throw error})
       await huancaiLoading;if(!st.destroyed&&sideMode==='huancai')huancaiPanel.open()
     }catch(error){if(!st.destroyed)toast(error.message,'err')}
   }
@@ -8217,20 +8218,20 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
     if(g.id!==1)return
     if(mode==='outside'){
       try{
-        vipLoading ||= import('/vip-chat-dock.js?v=98ddcc7d').then(({createVipChatDock})=>{if(!st.destroyed)vipPanel=createVipChatDock({pane:el,scroller,opener:outsideOpen,api,emojiPicker:(anchor,pick)=>openPop(anchor,emojiBoard(k=>{pick(k);closePop()}),{key:'outside-chat-emoji',cls:'pop-stk'}),renderBody:text=>richBody(text,{md:'lite'})})}).catch(error=>{vipLoading=null;throw error})
+        vipLoading ||= import('/vip-chat-dock.js?v=810c43bb').then(({createVipChatDock})=>{if(!st.destroyed)vipPanel=createVipChatDock({pane:el,scroller,opener:outsideOpen,api,emojiPicker:(anchor,pick)=>openPop(anchor,emojiBoard(k=>{pick(k);closePop()}),{key:'outside-chat-emoji',cls:'pop-stk'}),renderBody:text=>richBody(text,{md:'lite'})})}).catch(error=>{vipLoading=null;throw error})
         await vipLoading;if(!st.destroyed)vipPanel.open()
       }catch(error){if(!st.destroyed)toast(error.message,'err')}
       return
     }
     sideMode=mode;guessPanel?.close();huancaiPanel?.close()
     try{
-      gameLoading ||= import('/game-panel.js?v=98ddcc7d').then(({createGamePanel})=>{if(!st.destroyed)gamePanel=createGamePanel({pane:el,chat:chatColumn,scroller,opener:outsideOpen,user:S.me,api,onMode:openGameMode,emojiPicker:(anchor,pick)=>openPop(anchor,emojiBoard(k=>{pick(k);closePop()}),{key:'outside-chat-emoji',cls:'pop-stk'}),renderBody:text=>richBody(text,{md:'lite'})})}).catch(error=>{gameLoading=null;throw error})
+      gameLoading ||= import('/game-panel.js?v=810c43bb').then(({createGamePanel})=>{if(!st.destroyed)gamePanel=createGamePanel({pane:el,chat:chatColumn,scroller,opener:outsideOpen,user:S.me,api,onMode:openGameMode,emojiPicker:(anchor,pick)=>openPop(anchor,emojiBoard(k=>{pick(k);closePop()}),{key:'outside-chat-emoji',cls:'pop-stk'}),renderBody:text=>richBody(text,{md:'lite'})})}).catch(error=>{gameLoading=null;throw error})
       await gameLoading;if(!st.destroyed&&sideMode===mode)gamePanel.open(mode,roomId)
     }catch(error){if(!st.destroyed)toast(error.message,'err')}
   }
   async function openAi(anchor, mode = 'summary', range = '200') {
     try {
-      aiLoading ||= import('/ai-chat.js?v=98ddcc7d').then(({ createAiChat }) => {
+      aiLoading ||= import('/ai-chat.js?v=810c43bb').then(({ createAiChat }) => {
         if (!st.destroyed) aiPanel = createAiChat({ pane: el, gid: g.id, h, icon, api })
       }).catch(error => { aiLoading = null; throw error })
       await aiLoading
@@ -8549,7 +8550,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
     if(where==='live')for(const m of items.filter(m=>m.system_kind==='redpack_due'&&!m.deleted).slice(0,3)){
       drawQueue=drawQueue.then(async()=>{
         if(drawLifetime.signal.aborted||doc.hidden)return
-        const {syncPacketDraw}=await import('/redpacket.js?v=98ddcc7d')
+        const {syncPacketDraw}=await import('/redpacket.js?v=810c43bb')
         await syncPacketDraw({id:Number(m.system_ref),api,signal:drawLifetime.signal,onUpdate:update})
       }).catch(()=>{})
     }
@@ -9224,7 +9225,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
   }
   const key = 'cmstk' + g.id
   const favoriteBoard = async anchor => {
-    const {openChatFavorites}=await import('/chat-favorites.js?v=98ddcc7d')
+    const {openChatFavorites}=await import('/chat-favorites.js?v=810c43bb')
     if(st.destroyed||!scroller.isConnected)return
     openChatFavorites(anchor,{h,icon,api,openPop,closePop,toast,send:async job=>{
       if(st.destroyed||!scroller.isConnected)throw Error('聊天窗口已关闭')
@@ -9404,7 +9405,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
     icon('packetBag','i tiny'),h('span',null,'群红包袋'),h('span',{class:'cm-bag-alert','aria-hidden':'true'},'还有红包'))
   const updatesOpen=h('button',{type:'button',class:'cm-updates-open',title:'最近更新','aria-label':'最近更新',onclick:async e=>{
     const anchor=e.currentTarget;if(anchor.disabled)return;anchor.disabled=true
-    try{const {openRecentUpdates}=await import('/recent-updates.js?v=98ddcc7d');if(anchor.isConnected)openRecentUpdates(anchor)}
+    try{const {openRecentUpdates}=await import('/recent-updates.js?v=810c43bb');if(anchor.isConnected)openRecentUpdates(anchor)}
     catch{toast('更新记录加载失败，请重试','err')}finally{anchor.disabled=false}
   }},icon('clock','i tiny'),h('span',null,'最近更新'))
   async function refreshBagBadge(force=false) {
@@ -9432,6 +9433,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
   const huancaiOpen=h('button',{type:'button',class:'cm-bag-open cm-huancai-open',hidden:g.id!==1,'aria-expanded':'false','aria-label':'欢彩',onclick:openHuancai},icon('sparkle','i tiny'),h('span',null,'欢彩'))
   const outsideOpen=h('button',{type:'button',class:'cm-bag-open cm-outside-open',hidden:g.id!==1,title:'分屏查看VIP聊天','aria-label':'VIP聊天','aria-expanded':'false',onclick:()=>openGameMode('outside')},icon('chat','i tiny'),h('span',null,'VIP聊天'))
   const el = h('div', { class: 'cm-pane' }, h('div',{class:'cm-guess-bar'},bagOpen,updatesOpen,huancaiOpen,guessOpen,outsideOpen), chatColumn)
+  onRemoval(el,attachChatMediaScale(el,{uid:S.me?.id,scroller,list}))
   if(g.id===1){const invite=new URL(targetDocument.defaultView.location.href);if(['arena','drawing'].includes(invite.searchParams.get('game')))queueMicrotask(()=>{if(!st.destroyed)openGameMode(invite.searchParams.get('game'),invite.searchParams.get('room')||'')})}
   const syncBagReminder=(event)=>{
     const key=event?.type==='storage'?event.key:event?.detail?.key
@@ -9572,7 +9574,7 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=98ddcc7d')
+    const { openRedpacket } = await import('/redpacket.js?v=810c43bb')
     if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, bagReminderSettings:packetBagReminderSettings, uploadCover: async (file,signal) => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
@@ -9585,14 +9587,14 @@ async function redpackDialog(anchor, options) {
   } catch (e) { toast(e.message, 'err') }
 }
 async function instantCardDialog(anchor) {
-  try {closePop();const {openInstantCards}=await import('/instant-cards.js?v=98ddcc7d');openInstantCards({anchor,api,h,dress:id=>meSettings('deco',id),preview:(id,level)=>{const u={deco:{ft:id,fn:level}};return h('div',{class:'ic-actual-preview'},h('div',{class:'ic-identity'},badgeEl(u,'chat',true),titleEl(u,'chat')),h('div',{class:'cm-text'+bubbleCls(u)},h('span',{class:'rt-copy'},'每次相遇，都留有光芒。')))},legacy:()=>titleRaffleDialog(anchor,null,null,true)})}
+  try {closePop();const {openInstantCards}=await import('/instant-cards.js?v=810c43bb');openInstantCards({anchor,api,h,dress:id=>meSettings('deco',id),preview:(id,level)=>{const u={deco:{ft:id,fn:level}};return h('div',{class:'ic-actual-preview'},h('div',{class:'ic-identity'},badgeEl(u,'chat',true),titleEl(u,'chat')),h('div',{class:'cm-text'+bubbleCls(u)},h('span',{class:'rt-copy'},'每次相遇，都留有光芒。')))},legacy:()=>titleRaffleDialog(anchor,null,null,true)})}
   catch(e){toast(e.message,'err')}
 }
 async function titleRaffleDialog(anchor, packetId = null, raffleId = null, legacy = false) {
   if(!packetId&&!raffleId&&!legacy)return instantCardDialog(anchor)
   try {
     closePop()
-    const { openTitleRaffle } = await import('/title-raffle.js?v=98ddcc7d')
+    const { openTitleRaffle } = await import('/title-raffle.js?v=810c43bb')
     openTitleRaffle({ anchor, packetId, raffleId, api, h, icon })
   } catch (e) { toast(e.message, 'err') }
 }
@@ -10675,10 +10677,10 @@ async function groupPanel(g, { outside, section } = {}) {
       {id:'info',label:'群资料',keywords:'群名 改名 公告 群规 引用',nodes:[rename,noticeSec()]},
       {id:'requests',label:'入群申请',keywords:'审批 同意 拒绝 退出 移出 拉回',available:()=>admin,nodes:[outsideBox]},
       {id:'resources',label:'文件与榜单',keywords:'下载 历史 文件 水群 早起 夜聊 排名',nodes:[filesSection,h('button',{class:'btn sm',type:'button',onclick:()=>chatRankPanel(g)},'水群榜 · 消息 / 早起 / 夜聊')]},
-      {id:'preferences',label:'我的偏好',keywords:'免打扰 红包 提醒 离开 滚动 气泡 动画 装扮 隐藏',nodes:[
+      {id:'preferences',label:'我的偏好',keywords:'免打扰 红包 提醒 离开 滚动 气泡 动画 装扮 隐藏 媒体 图片 视频 缩小',nodes:[
         h('label',{class:'deco-pref-toggle'},mutedInput,h('span',null,'消息免打扰'),mutedState),
         h('p',{class:'muted sm'},'只影响当前账号在本群的提醒，跨设备同步；开启后只有 @ 我的消息计数和提醒。'),packetBagReminderSettings(g.id),
-        h('h4',null,'本浏览器的阅读与装扮显示'),h('p',{class:'muted sm'},'下列设置立即生效，仅保存在本浏览器。阅读设置用于全部群聊，装扮屏蔽也用于帖子。'),awaySettings(),chatAutoSettings(),decoHideSettings()]},
+        h('h4',null,'本浏览器的阅读与装扮显示'),h('p',{class:'muted sm'},'下列设置立即生效，仅保存在本浏览器。阅读设置用于全部群聊，装扮屏蔽也用于帖子。'),awaySettings(),chatAutoSettings(),chatMediaScaleSettings({uid:S.me?.id,h,onRemoval}),decoHideSettings()]},
       {id:'manage',label:'退出与管理',keywords:'退出 退群 解散 删除',nodes:[danger]},
     ]})
     if(section)categories.select(section)
@@ -11833,7 +11835,7 @@ async function renderDmRoute() {
   const path = location.pathname
   main.replaceChildren(loadingBox())
   try {
-    const { renderDmPage } = await import('/dm.js?v=98ddcc7d')
+    const { renderDmPage } = await import('/dm.js?v=810c43bb')
     if (seq !== dmRouteSeq || location.pathname !== path) return
     if(S.me)await renderChat(null,{dmPath:path,mountDm:renderDmPage})
     else renderDmPage(main, { path, me: S.me, navigate, onLeave: onPageLeave })
@@ -11848,16 +11850,16 @@ async function renderFarmRoute(){
   onPageLeave(()=>{left=true})
   main.replaceChildren(loadingBox())
   try{
-    const farewell=await api('/farm/farewell'),{farewellPanel}=await import('/farm-farewell.js?v=98ddcc7d')
+    const farewell=await api('/farm/farewell'),{farewellPanel}=await import('/farm-farewell.js?v=810c43bb')
     if(left)return
     const farewellBanner=farewellPanel(farewell,{reload:()=>route(),onLeave:onPageLeave})
     if(farewell.closed){main.replaceChildren(farewellBanner);return}
     const css=new Promise((resolve,reject)=>{
       let link=document.getElementById('farm-styles')
       if(link?.sheet){resolve();return}
-      link?.remove();link=h('link',{id:'farm-styles',rel:'stylesheet',href:'/farm.css?v=98ddcc7d',onload:resolve,onerror:()=>{link.remove();reject(Error('农场样式加载失败'))}});document.head.append(link)
+      link?.remove();link=h('link',{id:'farm-styles',rel:'stylesheet',href:'/farm.css?v=810c43bb',onload:resolve,onerror:()=>{link.remove();reject(Error('农场样式加载失败'))}});document.head.append(link)
     })
-    const [{mountFarm}]=await Promise.all([import('/farm.js?v=98ddcc7d'),css])
+    const [{mountFarm}]=await Promise.all([import('/farm.js?v=810c43bb'),css])
     if(left)return
     mountFarm(main,{userId:S.me.id,onLeave:onPageLeave})
     main.prepend(farewellBanner)
@@ -11867,8 +11869,8 @@ async function renderNovelRoute(){
   let left=false;onPageLeave(()=>{left=true})
   main.replaceChildren(loadingBox())
   try{
-    if(!document.getElementById('novel-styles'))document.head.append(h('link',{id:'novel-styles',rel:'stylesheet',href:'/novels.css?v=98ddcc7d'}))
-    const {mountNovels}=await import('/novels.js?v=98ddcc7d');if(left)return
+    if(!document.getElementById('novel-styles'))document.head.append(h('link',{id:'novel-styles',rel:'stylesheet',href:'/novels.css?v=810c43bb'}))
+    const {mountNovels}=await import('/novels.js?v=810c43bb');if(left)return
     await mountNovels(main,{user:S.me,api,onLeave:onPageLeave,navigate})
   }catch(e){if(!left)main.replaceChildren(emptyState('书房暂时无法打开',e.message,h('button',{class:'btn',onclick:renderNovelRoute},'重试')))}
 }
@@ -11877,11 +11879,11 @@ function renderNsfw(){
 }
 async function renderResourceRoute(){
   let left=false;onPageLeave(()=>{left=true});main.replaceChildren(loadingBox())
-  try{if(!document.getElementById('resource-styles'))document.head.append(h('link',{id:'resource-styles',rel:'stylesheet',href:'/resources.css?v=98ddcc7d'}));const {mountResources}=await import('/resources.js?v=98ddcc7d');if(!left)await mountResources(main,{user:S.me,api,h,onLeave:onPageLeave,navigate,mediaTray,toast,icon})}catch(e){if(!left)main.replaceChildren(emptyState('资源社区暂时无法打开',e.message,h('button',{class:'btn',onclick:renderResourceRoute},'重试')))}
+  try{if(!document.getElementById('resource-styles'))document.head.append(h('link',{id:'resource-styles',rel:'stylesheet',href:'/resources.css?v=810c43bb'}));const {mountResources}=await import('/resources.js?v=810c43bb');if(!left)await mountResources(main,{user:S.me,api,h,onLeave:onPageLeave,navigate,mediaTray,toast,icon})}catch(e){if(!left)main.replaceChildren(emptyState('资源社区暂时无法打开',e.message,h('button',{class:'btn',onclick:renderResourceRoute},'重试')))}
 }
 async function renderMusicRoute(){
  let left=false;onPageLeave(()=>{left=true});main.replaceChildren(loadingBox())
- try{const {mountMusic}=await import('/music.js?v=98ddcc7d');if(!left)await mountMusic(main,{user:S.me,onLeave:onPageLeave})}catch(e){if(!left)main.replaceChildren(emptyState('音乐暂时无法打开',e.message,h('button',{class:'btn',onclick:renderMusicRoute},'重试')))}
+ try{const {mountMusic}=await import('/music.js?v=810c43bb');if(!left)await mountMusic(main,{user:S.me,onLeave:onPageLeave})}catch(e){if(!left)main.replaceChildren(emptyState('音乐暂时无法打开',e.message,h('button',{class:'btn',onclick:renderMusicRoute},'重试')))}
 }
 const ROUTES = [
   [/^\/music$/, () => renderMusicRoute()],
@@ -12488,8 +12490,8 @@ function meSettings(section, initialTrial=null) {
     ;(S.modal.clean??=[]).push(()=>controller.abort())
     avatarHost.querySelector('button').disabled=true
     try{
-      if(!document.querySelector('link[data-avatar-editor]'))document.head.append(h('link',{rel:'stylesheet',href:'/avatar-editor.css?v=98ddcc7d','data-avatar-editor':'1'}))
-      const {createAvatarEditor}=await import('/avatar-editor.js?v=98ddcc7d')
+      if(!document.querySelector('link[data-avatar-editor]'))document.head.append(h('link',{rel:'stylesheet',href:'/avatar-editor.css?v=810c43bb','data-avatar-editor':'1'}))
+      const {createAvatarEditor}=await import('/avatar-editor.js?v=810c43bb')
       if(controller.signal.aborted)return
       const editor=createAvatarEditor({h,api,current:S.me.avatar,name:S.me.name||S.me.username,signal:controller.signal,onSaved:url=>{
         const old=S.me.avatar;S.me.avatar=url;USERS.delete(S.me.username);refreshAvatar(h,old,url,S.me.name||S.me.username)

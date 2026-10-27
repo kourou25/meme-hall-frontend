@@ -1,5 +1,5 @@
-import {dcoinAmount} from '/dcoin.js?v=98ddcc7d'
-import {titleBadgeSource} from '/title-visuals.js?v=98ddcc7d'
+import {dcoinAmount} from '/dcoin.js?v=810c43bb'
+import {titleBadgeSource} from '/title-visuals.js?v=810c43bb'
 const BASE='/instant-cards'
 const money=(h,n)=>dcoinAmount(h,n)
 const permanent=r=>r.reward_kind==='title'||(!r.reward_kind&&!!r.won)
@@ -7,7 +7,7 @@ const maxedRefund=r=>r.reward_kind==='coin'&&!!r.reward_id
 const date=t=>new Date(t*1000).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})
 export function openInstantCards({anchor,api,h,legacy,preview,dress}){
  const doc=anchor.ownerDocument;if(doc.querySelector('.ic-dialog'))return
- if(!doc.querySelector('link[data-instant-cards]'))doc.head.append(h('link',{rel:'stylesheet',href:'/instant-cards.css?v=98ddcc7d','data-instant-cards':''}))
+ if(!doc.querySelector('link[data-instant-cards]'))doc.head.append(h('link',{rel:'stylesheet',href:'/instant-cards.css?v=810c43bb','data-instant-cards':''}))
  const body=h('div',{class:'ic-body'}),nav=h('nav',{class:'ic-tabs','aria-label':'抽卡分类'}),dialog=h('dialog',{class:'ic-dialog','aria-label':'抽卡'},h('header',null,h('h2',null,'抽卡'),h('button',{class:'ic-close','aria-label':'关闭抽卡',onclick:()=>dialog.close()},'×')),nav,body)
  let data,selected='',tab='draw',poolKind='standard',busy=false,pending=null,cleanup=()=>{},epoch=0,trialRequest=null
  const storage=()=>`instant-card-pending:${data.user_id}`

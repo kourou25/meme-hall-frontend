@@ -1,10 +1,10 @@
 import {createGameChat} from '/shared-games/chat.js';
 import {gameDom} from '/shared-games/dom.js';
-import {captureChatScroll} from '/chat-scroll-anchor.js?v=98ddcc7d';
+import {captureChatScroll} from '/chat-scroll-anchor.js?v=810c43bb';
 
 export function createVipChatDock({pane,scroller,opener,api,emojiPicker,renderBody}){
  const doc=pane.ownerDocument,win=doc.defaultView,{h}=gameDom(doc),desktop=win.matchMedia('(min-width:761px)');
- const stylesReady=Promise.all(['/vip-chat-dock.css?v=98ddcc7d','/shared-games/chat.css?v=98ddcc7d'].map(href=>{
+ const stylesReady=Promise.all(['/vip-chat-dock.css?v=810c43bb','/shared-games/chat.css?v=810c43bb'].map(href=>{
   const existing=doc.querySelector(`link[href="${href}"]`);if(existing?.sheet)return;
   const link=existing||h('link',{rel:'stylesheet',href});return new Promise(resolve=>{link.addEventListener('load',resolve,{once:true});link.addEventListener('error',resolve,{once:true});if(!existing)doc.head.append(link)});
  }));

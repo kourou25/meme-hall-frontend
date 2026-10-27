@@ -1,4 +1,4 @@
-import {blockCropFrame} from './farm-block-crops.js?v=98ddcc7d'
+import {blockCropFrame} from './farm-block-crops.js?v=810c43bb'
 // Source atlas uses hand-painted rows with different heights, not a square grid.
 export const farmFrames=[
  [0,0,305,390],[305,0,325,390],[646,38,310,352],[958,8,285,383],

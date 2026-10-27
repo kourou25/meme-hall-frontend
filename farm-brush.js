@@ -1,7 +1,7 @@
-import {cropMatureAt,cropHasPests} from './farm-crop-care.js?v=98ddcc7d'
-import {ranchAnimalStatus} from './farm-ranch.js?v=98ddcc7d'
-import {pigStatus} from './farm-pigs.js?v=98ddcc7d'
-import {plotLocked,plotWork,leaseCanPlant,plotTargetValid} from './farm-plot-view.js?v=98ddcc7d'
+import {cropMatureAt,cropHasPests} from './farm-crop-care.js?v=810c43bb'
+import {ranchAnimalStatus} from './farm-ranch.js?v=810c43bb'
+import {pigStatus} from './farm-pigs.js?v=810c43bb'
+import {plotLocked,plotWork,leaseCanPlant,plotTargetValid} from './farm-plot-view.js?v=810c43bb'
 // Auto-purchase is opt-in and is settled atomically by the plant action.
 export function farmBrushAction(state,catalog,target,tool,seed,now,{autoBuy=false}={}){
  if(target.kind==='plot'){

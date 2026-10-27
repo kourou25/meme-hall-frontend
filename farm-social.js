@@ -1,5 +1,5 @@
-import {createFarmWorld} from './farm-world.js?v=98ddcc7d'
-import {iconButton,coin,duration} from '/farm-ui.js?v=98ddcc7d'
+import {createFarmWorld} from './farm-world.js?v=810c43bb'
+import {iconButton,coin,duration} from '/farm-ui.js?v=810c43bb'
 const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n}
 const button=(text,fn)=>{const b=el('button','',text);b.type='button';b.onclick=fn;return b}
 export function createFarmSocial(parent,{request,catalog,userId,onChanged,canAct,onOpen=()=>{},onClose=()=>{}}){
