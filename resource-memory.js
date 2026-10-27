@@ -1,4 +1,4 @@
-import {observeChatScroll,chatLayoutRestoring} from '/chat-scroll-anchor.js?v=8f410db6'
+import {observeChatScroll,chatLayoutRestoring} from '/chat-scroll-anchor.js?v=97fd912d'
 // 页面级资源随节点生命周期释放；WeakMap 不额外保留已经离开的页面。
 const removals = new WeakMap(), documents = new WeakMap()
 function releaseTree(root) {

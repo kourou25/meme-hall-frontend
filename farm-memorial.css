@@ -1,13 +1,20 @@
-.rt-oldfarmer{--rt-color:#9b7334;--rt-accent:#b8cf91;--rt-frame:url('/assets/farm-memorial/frame.png');--rt-slice:190 300 430 680;--rt-paper:#fff9e9;--rt-paper-end:#f3f6e7}
+.rt-oldfarmer{--rt-color:#9b7334;--rt-accent:#b8cf91;--rt-paper:#fbf8eb;--rt-paper-end:#fbf8eb}
 html .rt-oldfarmer.rt-badge .rt-art{background-image:url('/assets/farm-memorial/atlas.png');background-size:213.333% 320%;background-position:50% 55%;background-repeat:no-repeat}
 html .rt-oldfarmer.rt-badge .rt-art img{visibility:hidden}
-html .cm-text.rt-anime.rt-bubble.rt-oldfarmer{--rt-paper:#fff9e9;--rt-paper-end:#f3f6e7}
-.rt-oldfarmer .rt-trim-frame,.rt-oldfarmer .rt-trim-finish{inset:-5px -5px -12px -25px;border-width:10px 16px 23px 36px;border-image-width:10px 16px 23px 36px}
-.rt-oldfarmer.rt-growth-10 .rt-trim-finish{animation:oldfarmer-sunset 12s ease-in-out infinite;filter:brightness(1.25);mix-blend-mode:screen}
-.rt-oldfarmer .rt-trim-spark{width:3px;height:3px;border-radius:50%;background:#fff2a5;box-shadow:0 0 4px #d9ab43;left:calc(12% + var(--rt-i)*34%);bottom:-1px;top:auto;animation:oldfarmer-firefly 8s ease-in-out infinite;animation-delay:calc(var(--rt-i)*-2.2s)}
+/* The outline stretches with text; fixed square ornaments never enter avatar or text columns. */
+html .cm-text.rt-anime.rt-bubble.rt-oldfarmer{--rt-paper:#fbf8eb;--rt-paper-end:#fbf8eb;padding-inline:32px}
+html .cm-text.rt-anime.rt-bubble.rt-oldfarmer::before{background:var(--rt-paper)}
+.rt-oldfarmer .rt-detail{overflow:hidden}
+.rt-oldfarmer .rt-trim-frame{inset:0;border:1px solid #c7ae79;border-bottom:3px double #ab8347;border-image:none;border-radius:inherit}
+.rt-oldfarmer .rt-trim-finish,.rt-oldfarmer .rt-trim-spark{display:none}
+.rt-oldfarmer :is(.rt-trim-garden,.rt-trim-coins){width:32px;height:32px;background-image:url('/assets/farm-memorial/garden-coins-v2.webp');background-size:64px 32px;background-repeat:no-repeat}
+.rt-oldfarmer .rt-trim-garden{left:0;bottom:0;background-position:left center}
+.rt-oldfarmer .rt-trim-coins{right:0;top:0;background-position:right center}
+.rt-oldfarmer.rt-growth-10 .rt-trim-coins{animation:oldfarmer-coin-glint 9s ease-in-out infinite}
+html[data-theme=dark] .cm-text.rt-anime.rt-bubble.rt-oldfarmer{--rt-paper:#273127;--rt-paper-end:#273127;color:#f2edda}
+[data-theme=dark] .rt-oldfarmer .rt-trim-frame{border-color:#9f8958;border-bottom-color:#c39a58}
 html .rt-oldfarmer.rt-title.u-title[class]{background:linear-gradient(112deg,#faf0d4,#fffdf6 55%,#e1edcb);border-color:#b5924d;color:#795625;box-shadow:inset 0 0 0 1px #fff9,0 1px 2px #7c5f2120}
 html .rt-oldfarmer.rt-title .rt-level{background:#9b7334}
-@keyframes oldfarmer-sunset{0%,65%,100%{opacity:0}78%{opacity:.22}90%{opacity:0}}
-@keyframes oldfarmer-firefly{0%,24%,100%{opacity:0;transform:translate(0,0)}45%{opacity:.7}70%{opacity:0;transform:translate(9px,-6px)}}
+@keyframes oldfarmer-coin-glint{0%,72%,100%{filter:brightness(1)}84%{filter:brightness(1.2)}}
 .cm-row:not([data-bubble-live=true]) .rt-oldfarmer .rt-detail *{animation:none!important}
 @media(prefers-reduced-motion:reduce){.rt-oldfarmer .rt-detail *{animation:none!important}}

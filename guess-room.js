@@ -1,14 +1,14 @@
-import {createGuessTip} from '/guess-tip.js?v=8f410db6'
-import {createGuessCloseControls} from '/guess-close-controls.js?v=8f410db6'
-import {createRewardFeedback} from '/guess-reward-feedback.js?v=8f410db6'
-import {captureChatScroll} from '/chat-scroll-anchor.js?v=8f410db6'
-import {avatarImage} from '/avatar-view.js?v=8f410db6'
+import {createGuessTip} from '/guess-tip.js?v=97fd912d'
+import {createGuessCloseControls} from '/guess-close-controls.js?v=97fd912d'
+import {createRewardFeedback} from '/guess-reward-feedback.js?v=97fd912d'
+import {captureChatScroll} from '/chat-scroll-anchor.js?v=97fd912d'
+import {avatarImage} from '/avatar-view.js?v=97fd912d'
 // 猜词总览按需加载，复用群消息变更信号，不新增定时轮询。
 import {formatGuessDeadline,createGuessView} from '/shared-games/guess-view.js';
 export {formatGuessDeadline};
 export function createGuessRoom({ pane, chat, scroller, opener, gid, userId, h, api, create, onMode }) {
   const doc=pane.ownerDocument,win=doc.defaultView,key=`guessSplit:${userId||0}:${gid}`
-  for(const href of ['/shared-games/session.css',...(onMode?['/game-panel.css?v=8f410db6']:[])])if(!doc.querySelector('link[href="'+href+'"]'))doc.head.append(h('link',{rel:'stylesheet',href}))
+  for(const href of ['/shared-games/session.css',...(onMode?['/game-panel.css?v=97fd912d']:[])])if(!doc.querySelector('link[href="'+href+'"]'))doc.head.append(h('link',{rel:'stylesheet',href}))
   const desktop=win.matchMedia('(min-width:641px)')
   let width=520
   try{width=Math.max(320,Math.min(760,Number(win.localStorage.getItem(key))||520))}catch{}

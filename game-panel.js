@@ -1,10 +1,10 @@
 import {mountSession} from '/shared-games/session.js';
 import {gameDom} from '/shared-games/dom.js';
 import {createGameChat} from '/shared-games/chat.js';
-import {captureChatScroll} from '/chat-scroll-anchor.js?v=8f410db6';
+import {captureChatScroll} from '/chat-scroll-anchor.js?v=97fd912d';
 export function createGamePanel({pane,chat,scroller,opener,user,api,onMode,emojiPicker,renderBody}){
  const doc=pane.ownerDocument,win=doc.defaultView,{h,...dom}=gameDom(doc);
- for(const href of ['/game-panel.css?v=8f410db6','/shared-games/session.css','/shared-games/chat.css?v=8f410db6'])if(!doc.querySelector(`link[href="${href}"]`))doc.head.append(h('link',{rel:'stylesheet',href}));
+ for(const href of ['/game-panel.css?v=97fd912d','/shared-games/session.css','/shared-games/chat.css?v=97fd912d'])if(!doc.querySelector(`link[href="${href}"]`))doc.head.append(h('link',{rel:'stylesheet',href}));
  let opened=false,dead=false,session=null,outside=null,mode='',restore=null;
  const choice=h('select',{'aria-label':'切换游戏与聊天',onchange:()=>{const value=choice.value;choice.value=mode;onMode(value)}},...[['guess','普通猜词'],['arena','AI 对抗'],['drawing','卧底画家'],['outside','VIP聊天']].map(([value,label])=>h('option',{value},label)));
  const body=h('div',{class:'gp-body'}),link=h('a',{target:'_blank',rel:'noopener',href:'https://cc.52dmeme.com/chat/1'},'VIP 打开 ↗');

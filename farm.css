@@ -1,6 +1,6 @@
-@import url('/dcoin.css?v=8f410db6');
-@import url('/farm-pixel.css?v=8f410db6');
-@import url('/farm-market.css?v=8f410db6');
+@import url('/dcoin.css?v=97fd912d');
+@import url('/farm-pixel.css?v=97fd912d');
+@import url('/farm-market.css?v=97fd912d');
 /* The approved management prototype: one field, contextual care, visible inventory. */
 .farm-page{--farm-ink:#30422e;--farm-muted:#647055;--farm-green:#476a33;--farm-paper:#fffdf2;--farm-line:#d6dbbd;--farm-button:#edf1da;--farm-grass:#d8e2ae;color:var(--farm-ink);max-width:1200px;margin:0 auto;padding:14px 0 24px;font-size:14px}
 .farm-page *{box-sizing:border-box}

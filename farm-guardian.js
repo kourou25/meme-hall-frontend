@@ -1,4 +1,4 @@
-import {el,button,duration} from './farm-ui.js?v=8f410db6'
+import {el,button,duration} from './farm-ui.js?v=97fd912d'
 export function guardianStatus(s,t){
  const g=s.guardian;if(!g)return null
  const charges=Math.min(3,g.charges+Math.max(0,Math.floor((t-g.chargedAt)/21600)))

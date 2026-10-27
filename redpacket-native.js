@@ -1,6 +1,6 @@
-import {fishAccountPanel,creditAccountPanel,packetSections,fundingState} from '/packet-funding.js?v=8f410db6'
-import {packetRecords,packetAmount} from '/packet-records.js?v=8f410db6'
-import {packetPreferences} from '/packet-preferences.js?v=8f410db6'
+import {fishAccountPanel,creditAccountPanel,packetSections,fundingState} from '/packet-funding.js?v=97fd912d'
+import {packetRecords,packetAmount} from '/packet-records.js?v=97fd912d'
+import {packetPreferences} from '/packet-preferences.js?v=97fd912d'
 // 按需加载；无轮询、常驻监听或浏览器端凭据存储。
 const labels={fixed:'普通红包',random:'拼手气',guess:'欢欢猜词',clues:'逐步线索'}
 const states={reserved:'奖励已锁定，等待发放',sent:'正在发放，请稍后核对',accepted:'平台已受理，到账以 Credit 为准',unknown:'结果待核对，不会重复发放',rejected:'发放失败，名额保留待发包者核对'}
@@ -208,7 +208,7 @@ export function nativeCreateForm({h,api,group,userId,host,signal,uploadCover,onS
  form.addEventListener('change',rememberPreferences)
  form.addEventListener('click',e=>{const target=e.target.closest?.('button');if(target&&target!==forgetPreferences&&[...rewardButtons,...hintSourceButtons,...triggerButtons,...scheduleButtons].includes(target))rememberPreferences()})
  mode.addEventListener('change',modeChange);answerSource.addEventListener('change',modeChange);participate.addEventListener('change',modeChange);amount.addEventListener('input',modeChange);modeChange()
- file.addEventListener('change',async()=>{const f=file.files?.[0];if(!f||busy)return;lock(true);try{const {cropPacketCover}=await import('/redpacket-cover.js?v=8f410db6');const cropped=await cropPacketCover(f,{host,form,doc,h,signal});if(!cropped||signal.aborted)return;cover=await uploadCover(cropped,signal);coverPreview.replaceChildren(h('img',{class:'rpk-cover',src:cover.url,alt:'红包封面'}),button('移除封面',()=>{cover=null;coverPreview.replaceChildren()}))}catch(e){info.textContent=e.message}finally{lock(false);file.value=''}})
+ file.addEventListener('change',async()=>{const f=file.files?.[0];if(!f||busy)return;lock(true);try{const {cropPacketCover}=await import('/redpacket-cover.js?v=97fd912d');const cropped=await cropPacketCover(f,{host,form,doc,h,signal});if(!cropped||signal.aborted)return;cover=await uploadCover(cropped,signal);coverPreview.replaceChildren(h('img',{class:'rpk-cover',src:cover.url,alt:'红包封面'}),button('移除封面',()=>{cover=null;coverPreview.replaceChildren()}))}catch(e){info.textContent=e.message}finally{lock(false);file.value=''}})
  async function loadAccount(){return funding.load()}
  if(!fundingControl&&!coin)loadAccount().catch(e=>{bindingInfo.textContent=e.message})
  if(!accountOnly&&(initialMode==='guess'||!compact))loadQueue().catch(()=>{queueList.textContent='暂时无法读取等候队列，可稍后刷新。'})

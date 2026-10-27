@@ -1,7 +1,7 @@
 const sizes={normal:1,quarter:.5,eighth:Math.SQRT1_2/2},key=uid=>'chat-media-size:'+Number(uid||0),event='chat-media-size-change';
 export function chatMediaSize(uid){try{const value=localStorage.getItem(key(uid));return Object.hasOwn(sizes,value)?value:'normal'}catch{return'normal'}}
 export function attachChatMediaScale(pane,{uid,scroller,list}){
- const doc=pane.ownerDocument;if(!doc.querySelector('link[href*="/chat-media-scale.css?v=8f410db6"]')){const css=doc.createElement('link');css.rel='stylesheet';css.href=new URL('./chat-media-scale.css?v=8f410db6',import.meta.url).href;doc.head.append(css)}
+ const doc=pane.ownerDocument;if(!doc.querySelector('link[href*="/chat-media-scale.css?v=97fd912d"]')){const css=doc.createElement('link');css.rel='stylesheet';css.href=new URL('./chat-media-scale.css?v=97fd912d',import.meta.url).href;doc.head.append(css)}
  let value='';const update=e=>{if(e?.type==='storage'&&e.key!==key(uid))return;if(e?.detail&&e.detail.uid!==uid)return;const next=chatMediaSize(uid);if(next===value)return;
   const rect=scroller.getBoundingClientRect(),bottom=scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight<4;
   const rows=list.children;let lo=0,hi=rows.length-1;while(lo<hi){const mid=(lo+hi)>>1;if(rows[mid].getBoundingClientRect().bottom<=rect.top)lo=mid+1;else hi=mid}const anchor=rows[lo],before=anchor?.getBoundingClientRect().top;

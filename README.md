@@ -35,3 +35,7 @@
 公共推荐接口：GET /api/music/playlists/owner 或 friends；POST 对应地址提交 track 字段（本站签发的歌曲 token 字符串）与可选 alternates（token 数组）；DELETE /api/music/playlists/:list/:key 撤回本人推荐。需登录，站长歌单写入另需站长权限，署名由服务端账号决定。站点自有 API 实现与数据库不在本仓库。
 
 本次修改的第三方音乐服务使用 AGPL-3.0，按其许可证提供[对应源码与构建说明](third-party/music-service/README.md)和[源码下载](third-party/music-service/music-pagination-source-20261027.zip)。该目录不适用本站代码的 MIT 授权；各上游许可证保留。源码不含站点 Worker、凭据或用户数据。
+
+## 2026-10-27 老农民气泡适配
+
+对应生产版本 8490bf36-0493-4dcd-998e-85448dd2f71f，客户端 97fd912d。使用固定比例的胡萝卜田、泥土和金币幼苗装饰，边框与消息一体伸缩；装饰保持在消息盒内，正文上下间距保持原值。支持深浅色，历史消息与减少动态效果时停动。称号等级与徽章保留。

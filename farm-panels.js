@@ -1,8 +1,8 @@
-import {cropMatureAt,cropHasPests} from './farm-crop-care.js?v=8f410db6'
-import {el,button,sprite,duration,coin} from '/farm-ui.js?v=8f410db6'
-import {quantityStepper} from '/farm-quantity.js?v=8f410db6'
-import {drawRanchPanel} from '/farm-ranch.js?v=8f410db6'
-import {sortFarmSeeds,farmQuantity} from '/farm-preferences.js?v=8f410db6'
+import {cropMatureAt,cropHasPests} from './farm-crop-care.js?v=97fd912d'
+import {el,button,sprite,duration,coin} from '/farm-ui.js?v=97fd912d'
+import {quantityStepper} from '/farm-quantity.js?v=97fd912d'
+import {drawRanchPanel} from '/farm-ranch.js?v=97fd912d'
+import {sortFarmSeeds,farmQuantity} from '/farm-preferences.js?v=97fd912d'
 export function createFarmPanel({details,session,preferences,getSelection,time,actionButton,chooseSeed}){
  function section(title){const e=el('section','farm-note');e.append(el('h2','',title));details.append(e);return e}
  function countdown(node,end,prefix){node.dataset.countdown=String(end);node.dataset.prefix=prefix;node.textContent=prefix+duration(end-time())}

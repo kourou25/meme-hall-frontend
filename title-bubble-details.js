@@ -1,5 +1,5 @@
-import {installBubbleBursts} from '/title-bubble-bursts.js?v=8f410db6'
-const motifs={oldfarmer:'wheat',newcomer:'leaf',mona:'lotus',lace:'ribbon',giant:'banana',worship:'banana',muscle:'glove',deepseek:'fin',deepseekupgrade:'fin',maid:'ribbon',whalepunch:'glove',nightdevil:'horns',gpt:'dragon',claude:'flower',gemini:'twin',whitedragon:'dragon',rascal:'horns',weirdo:'mask',blacksilk:'ribbon',loli:'bunny',electric:'bolt',railcannon:'cannon',chickengun:'meme',blade:'blade',spear:'spear',sword:'blade',halberd:'halberd',snow:'snow',moon:'moon',wind:'wind',flower:'flower',sun:'sun',star:'star',cloud:'cloud'}
+import {installBubbleBursts} from '/title-bubble-bursts.js?v=97fd912d'
+const motifs={oldfarmer:'garden',newcomer:'leaf',mona:'lotus',lace:'ribbon',giant:'banana',worship:'banana',muscle:'glove',deepseek:'fin',deepseekupgrade:'fin',maid:'ribbon',whalepunch:'glove',nightdevil:'horns',gpt:'dragon',claude:'flower',gemini:'twin',whitedragon:'dragon',rascal:'horns',weirdo:'mask',blacksilk:'ribbon',loli:'bunny',electric:'bolt',railcannon:'cannon',chickengun:'meme',blade:'blade',spear:'spear',sword:'blade',halberd:'halberd',snow:'snow',moon:'moon',wind:'wind',flower:'flower',sun:'sun',star:'star',cloud:'cloud'}
 function ensureWeaponFilter(doc){
  if(doc.getElementById('rt-weapon-ink'))return
  // Inline once per document: external SVG filter references are not reliable
@@ -20,7 +20,8 @@ export function appendBubbleDetail(el){
  const portrait=['gpt','claude','gemini','deepseek','deepseekupgrade','maid','nightdevil','whitedragon'].includes(id)
  el.classList.toggle('rt-portrait',portrait)
  const doc=el.ownerDocument,detail=doc.createElement('span');detail.className='rt-detail rt-detail-'+motifs[id];detail.setAttribute('aria-hidden','true')
- for(const part of ['frame','finish',...(portrait?['portrait-rim','portrait-left','portrait-right']:[]),'spark','spark','spark',...(id==='railcannon'?['cannon','muzzle']:[]),...(id==='chickengun'?['meme']:[])]){
+ const parts=id==='oldfarmer'?['frame','garden','coins']:['frame','finish',...(portrait?['portrait-rim','portrait-left','portrait-right']:[]),'spark','spark','spark',...(id==='railcannon'?['cannon','muzzle']:[]),...(id==='chickengun'?['meme']:[])];
+ for(const part of parts){
   const node=doc.createElement('i');node.className='rt-trim-'+part
   if(part==='spark')node.style.setProperty('--rt-i',String(detail.querySelectorAll('.rt-trim-spark').length))
   detail.append(node)

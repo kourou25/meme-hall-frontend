@@ -1,6 +1,8 @@
 // Append only released changes, newest first. Update with the release report;
 // do not copy unshipped roadmap items into this user-facing history.
 export const RECENT_UPDATES=[
+ {id:'20261027-oldfarmer-garden',date:'2026-10-27',title:'老农民气泡：胡萝卜田与金币',groups:[['优化',['用胡萝卜田、泥土和金币幼苗重绘紧凑装饰，边框随内容伸缩，装饰保持原比例。','修复装饰挤入头像列、长消息右侧被裁切及短消息边框过大的问题，保持原有上下间距。','适配深浅色和手机窄屏；只在最新可见消息中保留轻微金币亮光。']]]},
+
  {id:'20261027-music-lyric-timestamps',date:'2026-10-27',title:'多行歌词重复与缩小按钮修复',groups:[['修复',['逐字时间戳按整行歌词显示，去除重复记录，保留副歌再次出现的时间。','缩成悬浮图标使用独立收拢符号，与上下展开箭头区分。','慢网络下等待音乐样式就绪后显示，避免超大图标与布局闪动。']]]},
 
  {id:'20261027-music-solid-mobile',date:'2026-10-27',title:'音乐纯色主题与手机音乐库调整',groups:[['体验',['移除音乐页与推荐卡片的蓝紫渐变，改为纯色底与独立蓝紫控件。','移除大幅介绍横幅与裁切唱片；手机音乐库改用紧凑歌单入口。']]]},

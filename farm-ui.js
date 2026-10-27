@@ -1,4 +1,4 @@
-import {farmArt} from './farm-assets.js?v=8f410db6'
+import {farmArt} from './farm-assets.js?v=97fd912d'
 export const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 const paths={
   seed:'M12 21v-9M12 15C2 16 2 7 3 4c7-1 11 3 9 8M12 12c0-7 5-10 10-8 1 7-3 10-10 8',
