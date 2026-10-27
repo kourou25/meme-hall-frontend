@@ -1,4 +1,4 @@
-import {coin} from '/farm-ui.js?v=810c43bb'
+import {coin} from '/farm-ui.js?v=8f410db6'
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
 const labels={'title-upgrade':'鲸伴解锁与升级','title-entry':'称号抽奖报名与追加','title-refund':'称号抽奖退款','farm-import':'原农场金币承接','farm-compensation':'改版补偿','farm-action':'农场经营','owner-adjustment':'站长余额调整','packet-send':'发出红包','packet-claim':'领取红包','packet-refund':'红包余款退回'}
 labels['guess-tip-send']='猜词打赏支出';labels['guess-tip-receive']='猜词打赏收入'

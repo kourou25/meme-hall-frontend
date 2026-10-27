@@ -1,5 +1,5 @@
-import {avatarGeometry,paintAvatarImage,avatarImage} from './avatar-view.js?v=810c43bb'
-import {normalizeAnimationFile} from './animation-loop.js?v=810c43bb'
+import {avatarGeometry,paintAvatarImage,avatarImage} from './avatar-view.js?v=8f410db6'
+import {normalizeAnimationFile} from './animation-loop.js?v=8f410db6'
 
 export function createAvatarEditor({h,api,current,name,onSaved,signal}){
  const doc=signal?.ownerDocument||document,win=doc.defaultView

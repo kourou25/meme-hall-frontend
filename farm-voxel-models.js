@@ -2,7 +2,7 @@ import * as T from '/assets/farm/three-0.186.1/three.module.js'
 import {mergeGeometries} from '/assets/farm/three-0.186.1/BufferGeometryUtils.js'
 
 // Models are original editable geometry. Keys are the existing authoritative catalog IDs.
-import {CROP_LOOKS,ANIMAL_LOOKS} from './farm-voxel-catalog.js?v=810c43bb'
+import {CROP_LOOKS,ANIMAL_LOOKS} from './farm-voxel-catalog.js?v=8f410db6'
 export function createModelKit({blocky=false}={}){
  const cube=new T.BoxGeometry(1,1,1),organic=new T.SphereGeometry(1,8,5),mats=new Map()
  const mat=c=>{if(!mats.has(c))mats.set(c,new T.MeshLambertMaterial({color:c}));return mats.get(c)}

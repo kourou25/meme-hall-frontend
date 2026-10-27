@@ -1,5 +1,5 @@
-import {appendBubbleDetail} from '/title-bubble-details.js?v=810c43bb'
-export {installBubbleBursts as initializeTitleEffects} from '/title-bubble-bursts.js?v=810c43bb'
+import {appendBubbleDetail} from '/title-bubble-details.js?v=8f410db6'
+export {installBubbleBursts as initializeTitleEffects} from '/title-bubble-bursts.js?v=8f410db6'
 // Visual identity is independent of ownership, pool availability and level rules.
 const families={court:['lace','blacksilk','whitedragon'],ocean:['deepseek','deepseekupgrade','maid','whalepunch','whalebuddy'],weapon:['blade','spear','sword','halberd','muscle','railcannon','chickengun'],arcane:['gpt','gemini','electric','moon','star'],meadow:['newcomer','mona','claude','snow','wind','flower','sun','cloud'],prank:['giant','worship','nightdevil','rascal','weirdo','loli']}
 const family=id=>Object.entries(families).find(([,ids])=>ids.includes(id))?.[0]||'meadow'

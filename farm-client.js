@@ -1,4 +1,4 @@
-import {farmBatchLimit} from './farm-plot-view.js?v=810c43bb'
+import {farmBatchLimit} from './farm-plot-view.js?v=8f410db6'
 // Keep an exact batch across lost responses. Per-tab storage prevents two tabs
 // from replacing each other's recovery record; the server arbitrates revisions.
 export function createFarmSession({userId,storage,request,onChange,onNotice,onCommit=()=>{},setTimer=setTimeout,clearTimer=clearTimeout}){

@@ -1,6 +1,6 @@
 import * as T from '/assets/farm/three-0.186.1/three.module.js'
 import {OrbitControls} from '/assets/farm/three-0.186.1/OrbitControls.js'
-import {createModelKit} from '/farm-voxel-models.js?v=810c43bb'
+import {createModelKit} from '/farm-voxel-models.js?v=8f410db6'
 
 export function createLeisureWorld(host,{onPond,onPig}){
  const renderer=new T.WebGLRenderer({antialias:false,alpha:false,powerPreference:'low-power'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.25));renderer.setClearColor('#c7d7a1');host.append(renderer.domElement)

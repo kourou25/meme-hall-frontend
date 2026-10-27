@@ -1,4 +1,4 @@
-import {fishAtlas,fishRect} from './farm-fish-art.js?v=810c43bb'
+import {fishAtlas,fishRect} from './farm-fish-art.js?v=8f410db6'
 // Rendering is local; server settlement replays the same bounded input history.
 export function createLeisureWorld(host,{onCast,onHook,onControl,getPlay=()=>null}){
  const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),reduced=matchMedia('(prefers-reduced-motion: reduce)');if(!ctx)throw Error('池塘画布不可用')

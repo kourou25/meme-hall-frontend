@@ -1,8 +1,8 @@
-import {dcoinAmount} from '/dcoin.js?v=810c43bb'
-import {captureChatScroll} from '/chat-scroll-anchor.js?v=810c43bb'
+import {dcoinAmount} from '/dcoin.js?v=8f410db6'
+import {captureChatScroll} from '/chat-scroll-anchor.js?v=8f410db6'
 export function createHuancai({pane,chat,scroller,opener,userId,h,api}){
  const doc=pane.ownerDocument,win=doc.defaultView
- if(!doc.querySelector('link[data-huancai]'))doc.head.append(h('link',{rel:'stylesheet',href:'/huancai.css?v=810c43bb','data-huancai':''}))
+ if(!doc.querySelector('link[data-huancai]'))doc.head.append(h('link',{rel:'stylesheet',href:'/huancai.css?v=8f410db6','data-huancai':''}))
  let opened=false,dead=false,data=null,tab='lotto',busy=false,epoch=0,controller=null,pending=null,cleanup=()=>{},restoreChat=null
  let front=new Set(),back=new Set(),quantity=1,theme='banana',shownOrder=null,randomTickets=null,lastPurchase=null
  const key=`huancai-pending:${userId}`,winKey=`huancai-jackpot-seen:${userId}`,seenRounds=new Set(),btn=(text,fn,attrs={})=>h('button',{type:'button',onclick:fn,...attrs},text),money=n=>dcoinAmount(h,Number(n).toLocaleString('zh-CN'))

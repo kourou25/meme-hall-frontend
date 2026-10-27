@@ -1,18 +1,18 @@
-import {farmSceneState,farmBatchLimit,plotLabel,plotLocked,plotWork,leaseCanPlant,plotTargetValid} from './farm-plot-view.js?v=810c43bb'
-import {cropMatureAt,cropHasPests} from './farm-crop-care.js?v=810c43bb'
-import {createFarmSession} from '/farm-client.js?v=810c43bb'
-import {createFarmWorld} from '/farm-world.js?v=810c43bb'
-import {planFarmBatch,planRanchBatch,ranchFeedCost} from '/farm-management.js?v=810c43bb'
-import {farmBrushAction} from '/farm-brush.js?v=810c43bb'
-import {createFarmSocial} from '/farm-social.js?v=810c43bb'
-import {createFarmWallet} from '/farm-wallet.js?v=810c43bb'
-import {createFarmLeases} from '/farm-leases.js?v=810c43bb'
-import {ranchAnimalStatus} from '/farm-ranch.js?v=810c43bb'
-import {pigStatus,drawPigPanel} from '/farm-pigs.js?v=810c43bb'
-import {drawGuardianPanel} from '/farm-guardian.js?v=810c43bb'
-import {createFarmPanel} from '/farm-panels.js?v=810c43bb'
-import {createFarmPreferences,sortFarmSeeds,farmQuantity} from '/farm-preferences.js?v=810c43bb'
-import {el,button,iconButton,icon,coin,sprite,escape,duration} from '/farm-ui.js?v=810c43bb'
+import {farmSceneState,farmBatchLimit,plotLabel,plotLocked,plotWork,leaseCanPlant,plotTargetValid} from './farm-plot-view.js?v=8f410db6'
+import {cropMatureAt,cropHasPests} from './farm-crop-care.js?v=8f410db6'
+import {createFarmSession} from '/farm-client.js?v=8f410db6'
+import {createFarmWorld} from '/farm-world.js?v=8f410db6'
+import {planFarmBatch,planRanchBatch,ranchFeedCost} from '/farm-management.js?v=8f410db6'
+import {farmBrushAction} from '/farm-brush.js?v=8f410db6'
+import {createFarmSocial} from '/farm-social.js?v=8f410db6'
+import {createFarmWallet} from '/farm-wallet.js?v=8f410db6'
+import {createFarmLeases} from '/farm-leases.js?v=8f410db6'
+import {ranchAnimalStatus} from '/farm-ranch.js?v=8f410db6'
+import {pigStatus,drawPigPanel} from '/farm-pigs.js?v=8f410db6'
+import {drawGuardianPanel} from '/farm-guardian.js?v=8f410db6'
+import {createFarmPanel} from '/farm-panels.js?v=8f410db6'
+import {createFarmPreferences,sortFarmSeeds,farmQuantity} from '/farm-preferences.js?v=8f410db6'
+import {el,button,iconButton,icon,coin,sprite,escape,duration} from '/farm-ui.js?v=8f410db6'
 
 async function request(path,body,{keepalive=false}={}){
  const response=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'content-type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined,keepalive,signal:AbortSignal.timeout(15000)})
@@ -36,16 +36,16 @@ export function mountFarm(root,{userId,onLeave,characters=[]}){
   await social.open()
  },'farm-friends');nav.append(friends)
  const leaseButton=button('租约',async()=>{await session.flush();if(locked())return message('请先确认云存档');leases??=createFarmLeases(shell,{request,userId,getFarm:()=>session.view().data,onChanged:()=>session.load()});await leases.open()});nav.append(leaseButton)
- async function openMarket(){await session.flush();if(locked())return message('请先确认云存档');if(!market){const {createFarmMarket}=await import('/farm-market.js?v=810c43bb');if(disposed)return;market=createFarmMarket(shell,{request,userId,onChanged:()=>session.load()})}market.open()}
+ async function openMarket(){await session.flush();if(locked())return message('请先确认云存档');if(!market){const {createFarmMarket}=await import('/farm-market.js?v=8f410db6');if(disposed)return;market=createFarmMarket(shell,{request,userId,onChanged:()=>session.load()})}market.open()}
  nav.append(button('集市',()=>void openMarket()))
- async function openConflict(){await session.flush();if(locked())return message('请先确认云存档');if(!conflict){const {createFarmConflict}=await import('/farm-conflict.js?v=810c43bb');if(disposed)return;conflict=createFarmConflict(shell,{request,userId,onChanged:()=>session.load()})}conflict.open()}
+ async function openConflict(){await session.flush();if(locked())return message('请先确认云存档');if(!conflict){const {createFarmConflict}=await import('/farm-conflict.js?v=8f410db6');if(disposed)return;conflict=createFarmConflict(shell,{request,userId,onChanged:()=>session.load()})}conflict.open()}
  nav.append(button('货仓攻防',()=>void openConflict()))
  const leisureButton=button('池塘',async()=>{
   if(leisureTask||visiting)return
   await session.flush();if(locked())return message('请先确认云存档')
   visiting=true;world?.destroy();world=null;gameShell.hidden=true;footer.hidden=true
   const closeLeisure=()=>{leisure?.destroy();leisure=null;visiting=false;gameShell.hidden=false;footer.hidden=false;if(!disposed)draw(session.view())}
-  leisureTask=(async()=>{try{await worldTask;if(disposed)return;const {createFarmLeisure}=await import('/farm-leisure.js?v=810c43bb');if(disposed)return;const instance=await createFarmLeisure(shell,{session,now:time,onClose:closeLeisure});if(disposed||!visiting)instance.destroy();else leisure=instance}catch{closeLeisure();message('池塘暂时无法打开，请重试')}finally{leisureTask=null}})();await leisureTask
+  leisureTask=(async()=>{try{await worldTask;if(disposed)return;const {createFarmLeisure}=await import('/farm-leisure.js?v=8f410db6');if(disposed)return;const instance=await createFarmLeisure(shell,{session,now:time,onClose:closeLeisure});if(disposed||!visiting)instance.destroy();else leisure=instance}catch{closeLeisure();message('池塘暂时无法打开，请重试')}finally{leisureTask=null}})();await leisureTask
  });nav.append(leisureButton)
  let brushTool='smart'
  if(new URLSearchParams(location.search).get('farm3d')!=='0'){

@@ -1,6 +1,6 @@
-import {dcoinIcon} from '/dcoin.js?v=810c43bb'
-import {fundingState} from '/packet-funding.js?v=810c43bb'
-import {avatarImage} from '/avatar-view.js?v=810c43bb'
+import {dcoinIcon} from '/dcoin.js?v=8f410db6'
+import {fundingState} from '/packet-funding.js?v=8f410db6'
+import {avatarImage} from '/avatar-view.js?v=8f410db6'
 export function packetAmount(h,value,provider,extra=''){
  return h('span',{class:'rpk-amount '+extra},provider==='coin52'?dcoinIcon(h):null,h('strong',null,provider==='coin52'?String(Number(value)):value),provider==='coin52'?null:h('small',null,'LDC'))
 }

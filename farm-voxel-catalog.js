@@ -1,4 +1,4 @@
-import {THEME_CROP_LOOKS,THEME_ANIMAL_LOOKS} from './farm-theme-looks.js?v=810c43bb'
+import {THEME_CROP_LOOKS,THEME_ANIMAL_LOOKS} from './farm-theme-looks.js?v=8f410db6'
 export const CROP_LOOKS={
  carrot:['root',0xef8e39,0x579049],cabbage:['cabbage',0xa9cd70,0x669348],wheat:['grain',0xe9bf59,0x8e9c45],
  tomato:['fruit',0xd76549,0x4f8d51],corn:['grain',0xf0cf65,0x5d9647],pumpkin:['pumpkin',0xd99446,0x75994a],
