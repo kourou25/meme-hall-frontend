@@ -1,5 +1,6 @@
 // Small theme emblems share one inline box; their paths never affect text layout.
 const paths={
+ oldfarmer:'M15 8C6 5 4 16 3 21c5-1 16-3 13-12ZM8 11l3 2m-5 3 3 1M15 8l1-6 3 4 3-2-1 5-5 1',
  newcomer:'M12 21V11M12 14C3 15 3 6 3 6s9-1 9 8ZM12 11C12 3 21 3 21 3s1 8-9 8Z',
  mona:'M12 18C2 17 3 10 3 10s6 0 9 8Zm0 0c10-1 9-8 9-8s-6 0-9 8ZM12 18C5 11 12 3 12 3s7 8 0 15ZM5 21h14',
  lace:'M5 20c-5-4 0-9 4-7l4 3c6 1 8-5 4-8-3-2-5 2-2 3M5 17l5-2M8 20l4-3M17 8V4l4 1',

@@ -1,7 +1,18 @@
 {
-  "date": "2026-10-26",
-  "workerVersion": "bbea2ed2-c45a-4843-bd99-ae35e64d3589",
-  "clientVersion": "98ddcc7d",
-  "source": "verified production client",
-  "musicBackendConnected": false
+  "date": "2026-10-28",
+  "workerVersion": "8018e6b6-806f-4ba0-a035-bb75376422dd",
+  "clientVersion": "afbdffbc",
+  "source": "verified production frontend increment",
+  "scope": [
+    "farmer perimeter loop",
+    "invitation entry",
+    "random image preview and owner settings",
+    "first-party slime cloud adapter"
+  ],
+  "excludes": [
+    "backend",
+    "user data",
+    "original slime game runtime"
+  ],
+  "musicBackend": "operator-configured; not revalidated in this increment"
 }

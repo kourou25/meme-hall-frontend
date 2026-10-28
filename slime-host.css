@@ -1,0 +1,11 @@
+html,body{height:100%;height:100dvh;margin:0;overflow:hidden;background:#10121d}
+#slime-cloudbar{height:46px;display:flex;align-items:center;gap:8px;padding:0 14px;color:#dedbed;background:#171727;border-bottom:1px solid #3c3653;font:13px/1.3 system-ui,sans-serif}
+#slime-cloudbar strong{white-space:nowrap;color:#f0d39a}#slime-cloudbar a{color:inherit;text-decoration:none;white-space:nowrap}#slime-cloudbar button{font:inherit;background:#27243c;border:1px solid #51496d;color:inherit;padding:6px 9px;border-radius:6px;cursor:pointer}
+#slime-cloud-status{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;color:#bbb4cf}
+#app{height:calc(100dvh - 46px);width:100%;max-width:480px}
+#app::before,#app::after{display:none}
+.slime-loading #app{visibility:hidden}
+#slime-cloud-gate{position:fixed;z-index:20000;inset:46px 0 0;background:#10121df5;color:#e9e5f4;padding:clamp(20px,8vw,100px);font:16px/1.7 system-ui,sans-serif;overflow:auto}
+#slime-cloud-gate[hidden]{display:none}#slime-cloud-gate button,#slime-cloud-gate a{display:inline-block;margin:8px 12px 8px 0;padding:10px 16px;color:#fff;background:#504774;border:1px solid #776b9f;border-radius:6px;text-decoration:none;cursor:pointer}
+@media(max-width:600px){#slime-cloudbar{padding:0 8px;gap:6px;font-size:11px}#slime-cloudbar strong{font-size:12px}#slime-cloudbar button{padding:5px 6px}#slime-farm{display:none}#slime-cloud-status{max-width:110px}#app{max-width:100%;height:calc(100dvh - 46px)}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}

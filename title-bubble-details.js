@@ -1,4 +1,5 @@
-import {installBubbleBursts} from '/title-bubble-bursts.js?v=c8639d55'
+import {installBubbleBursts} from '/title-bubble-bursts.js?v=afbdffbc'
+import {appendFarmerDetail} from '/oldfarmer-details.js?v=afbdffbc'
 const motifs={oldfarmer:'garden',newcomer:'leaf',mona:'lotus',lace:'ribbon',giant:'banana',worship:'banana',muscle:'glove',deepseek:'fin',deepseekupgrade:'fin',maid:'ribbon',whalepunch:'glove',nightdevil:'horns',gpt:'dragon',claude:'flower',gemini:'twin',whitedragon:'dragon',rascal:'horns',weirdo:'mask',blacksilk:'ribbon',loli:'bunny',electric:'bolt',railcannon:'cannon',chickengun:'meme',blade:'blade',spear:'spear',sword:'blade',halberd:'halberd',snow:'snow',moon:'moon',wind:'wind',flower:'flower',sun:'sun',star:'star',cloud:'cloud'}
 function ensureWeaponFilter(doc){
  if(doc.getElementById('rt-weapon-ink'))return
@@ -15,6 +16,7 @@ export function appendBubbleDetail(el){
   return
  }
  if(!el.classList.contains('rt-bubble')||!el.classList.contains('rt-anime')||el.querySelector(':scope > .rt-detail'))return
+ if(el.classList.contains('rt-oldfarmer')){appendFarmerDetail(el);return}
  const id=Object.keys(motifs).find(id=>el.classList.contains('rt-'+id));if(!id)return
  if(id==='chickengun')ensureWeaponFilter(el.ownerDocument)
  const portrait=['gpt','claude','gemini','deepseek','deepseekupgrade','maid','nightdevil','whitedragon'].includes(id)

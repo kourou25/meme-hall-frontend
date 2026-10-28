@@ -1,24 +1,25 @@
-import {attachChatMediaScale,chatMediaScaleSettings} from '/chat-media-scale.js?v=c8639d55';
-import {TITLE_COLLECTION,titleStage,TITLE_MAX_LEVEL,TITLE_STAGES,TITLE_STAGE_NAMES,CHICKENGUN_MIN_SIZE,CHICKENGUN_MAX_SIZE,chickengunSizeLimit,chickengunSize} from '/title-collection.js?v=c8639d55'
-import {titleVisualClass,titleBadgeSource,attachTitleMotion,initializeTitleEffects} from '/title-visuals.js?v=c8639d55'
-import {createChatBubbleVisibility} from '/bubble-visibility.js?v=c8639d55'
-import {titleSymbol} from '/title-symbols.js?v=c8639d55'
+import '/farm-transition.js?v=afbdffbc';
+import {attachChatMediaScale,chatMediaScaleSettings} from '/chat-media-scale.js?v=afbdffbc';
+import {TITLE_COLLECTION,titleStage,TITLE_MAX_LEVEL,TITLE_STAGES,TITLE_STAGE_NAMES,CHICKENGUN_MIN_SIZE,CHICKENGUN_MAX_SIZE,chickengunSizeLimit,chickengunSize} from '/title-collection.js?v=afbdffbc'
+import {titleVisualClass,titleBadgeSource,attachTitleMotion,initializeTitleEffects} from '/title-visuals.js?v=afbdffbc'
+import {createChatBubbleVisibility} from '/bubble-visibility.js?v=afbdffbc'
+import {titleSymbol} from '/title-symbols.js?v=afbdffbc'
 // 尽欢前端：无构建、无框架
-import { settingsSections } from '/settings-sections.js?v=c8639d55'
-import {dcoinIcon} from '/dcoin.js?v=c8639d55'
-import {seenCoverage,seenIntersects,seenPostCoverage} from '/seen-visibility.js?v=c8639d55'
-import {badgeArt} from '/badge-art.js?v=c8639d55'
-import { normalizeAnimationFile } from '/animation-loop.js?v=c8639d55'
-import {avatarImage,refreshAvatar} from '/avatar-view.js?v=c8639d55'
-import { stickerPreviews } from '/sticker-preview.js?v=c8639d55'
-import { onRemoval, windowContent, wakeWindowContent, observeResourceDocument } from '/resource-memory.js?v=c8639d55'
-import {focusChatMessage} from '/chat-scroll-anchor.js?v=c8639d55'
-import {refreshMessageReference} from '/message-reference.js?v=c8639d55'
-import { socialCards } from '/social-preview.js?v=c8639d55'
-import { socialLink,socialLinks,socialMessageText,canSocialPost,isOfficialEmbed } from '/social-links.js?v=c8639d55'
-import { PERSONAL_TITLES as LEGACY_PERSONAL_TITLES } from '/personal-catalog.js?v=c8639d55'
-import { PERSONAL_V2_TITLES } from '/personal-v2-catalog.js?v=c8639d55'
-import {mediaUrl,deferChatImage,beginChatMessageFetch} from '/chat-media-load.js?v=c8639d55'
+import { settingsSections } from '/settings-sections.js?v=afbdffbc'
+import {dcoinIcon} from '/dcoin.js?v=afbdffbc'
+import {seenCoverage,seenIntersects,seenPostCoverage} from '/seen-visibility.js?v=afbdffbc'
+import {badgeArt} from '/badge-art.js?v=afbdffbc'
+import { normalizeAnimationFile } from '/animation-loop.js?v=afbdffbc'
+import {avatarImage,refreshAvatar} from '/avatar-view.js?v=afbdffbc'
+import { stickerPreviews } from '/sticker-preview.js?v=afbdffbc'
+import { onRemoval, windowContent, wakeWindowContent, observeResourceDocument } from '/resource-memory.js?v=afbdffbc'
+import {focusChatMessage} from '/chat-scroll-anchor.js?v=afbdffbc'
+import {refreshMessageReference} from '/message-reference.js?v=afbdffbc'
+import { socialCards } from '/social-preview.js?v=afbdffbc'
+import { socialLink,socialLinks,socialMessageText,canSocialPost,isOfficialEmbed } from '/social-links.js?v=afbdffbc'
+import { PERSONAL_TITLES as LEGACY_PERSONAL_TITLES } from '/personal-catalog.js?v=afbdffbc'
+import { PERSONAL_V2_TITLES } from '/personal-v2-catalog.js?v=afbdffbc'
+import {mediaUrl,deferChatImage,beginChatMessageFetch} from '/chat-media-load.js?v=afbdffbc'
 const PERSONAL_TITLES = { ...LEGACY_PERSONAL_TITLES, ...PERSONAL_V2_TITLES }
 const S = { me: null, emojis: [], minPostTL: 1, bgKey: null, modal: null, wall: null, meSt: null, folders: null, viewer: null }
 const main = document.getElementById('main')
@@ -2653,7 +2654,7 @@ document.documentElement.dataset.mobileNav = localStorage.getItem(MOBILE_NAV_KEY
 function mobilePages(anchor) {
   const cur = document.querySelector('.mobile-nav [data-nav].on')?.dataset.nav
   const pages = [['wall', '图廊', 'image', '/'],
-    ['chat', '群聊', 'chat', '/chat'], ...(S.me ? [['road', '鞭打', 'pen', '/road']] : []), ['farm','农场','sprout','/farm'], ['novels','小说','book','/novels'], ['music','音乐','music','/music'], ['games','游戏','apps','https://cc.52dmeme.com'], ['me', '我的', 'contacts', '/me']]
+    ['chat', '群聊', 'chat', '/chat'], ...(S.me ? [['road', '鞭打', 'pen', '/road']] : []), ...(Date.now()>=Date.parse('2026-10-28T12:00:00+08:00')?[['slime','史莱姆深渊','spark','/slime']]:[['farm','农场','sprout','/farm']]), ['novels','小说','book','/novels'], ['music','音乐','music','/music'], ['games','游戏','apps','https://cc.52dmeme.com'], ['me', '我的', 'contacts', '/me']]
   openPop(anchor, h('nav', { class: 'mobile-more mobile-pages', 'aria-label': '切换页面' }, pages.map(([key, label, ic, path]) =>
     h('button', { class: 'mobile-more-item' + (cur === key ? ' on' : ''), type: 'button',
       'aria-current': cur === key ? 'page' : null, onclick: () => { closePop(); if(path.startsWith('https://'))window.open(path,'_blank','noopener');else navigate(path) } }, icon(ic), label, key === 'chat' && chatBadge()))),
@@ -2871,7 +2872,7 @@ function notifSettings(list, back) {
     h('div', { class: 'row-end' }, h('button', { class: 'btn-text sm', type: 'button', onclick: back }, '返回提醒'))))
   const host=h('div',{class:'device-push-host'})
   list.querySelector('.notif-prefs').append(host)
-  import('/device-push.js?v=c8639d55').then(({devicePushSettings})=>{
+  import('/device-push.js?v=afbdffbc').then(({devicePushSettings})=>{
     if(host.isConnected)host.replaceChildren(devicePushSettings({api,h,userId:S.me.id}))
   }).catch(()=>{if(host.isConnected)host.textContent='设备通知设置加载失败，请重新打开。'})
 }
@@ -4234,10 +4235,12 @@ async function renderMe() {
     entry('账号安全','登录方式、绑定账号与安全设置','lock',{href:'/me/account'}),
     entry('个人猜词 AI','模型、密钥与猜词专用提示词','sparkle',{href:'https://cc.52dmeme.com/me/ai',external:true}),
     entry('LDC 应用与记录','应用连接、余额与发放记录','redpack',{onclick:e=>redpackDialog(e.currentTarget,{accountOnly:true})}),
-    entry('邀请好友','邀请链接、邀请记录与奖励','users',{href:'/me/invites'}),
+    entry('生成邀请码','主站激活邀请码、邀请记录与奖励','users',{href:'/me/invites'}),
     u.linuxdo_username&&entry('linux.do 主页','已绑定 @'+u.linuxdo_username,'ext',{href:`https://linux.do/u/${encodeURIComponent(u.linuxdo_username)}/activity`,external:true}),
     entry('个人设置','资料、外观、AI 小伙伴与消息偏好','gear',{onclick:()=>meSettings()}))
   const administration=h('div',{class:'me-service-list'},
+    (u.is_admin||u.owner)&&entry('生成邀请码','站长和管理员生成、复制、撤销主站邀请码','users',{href:'/me/invites'}),
+    u.owner&&entry('随机图片设置','启用摇图与禁用标签','image',{onclick:async()=>{const {openRandomImageSettings}=await import('/random-image.js?v=afbdffbc');openRandomImageSettings({doc:document})}}),
     u.can_manage_ai&&entry('AI 接入与设置','独立连接、用途分配、思考与流式设置','sparkle',{href:'/admin/ai'}),
     u.is_admin&&entry('公告设置','发布与维护站点公告','bell',{onclick:noticeAdmin}),
     u.is_admin&&entry('成员管理','查找用户、角色与访问限制','users',{onclick:()=>memberAdmin()}))
@@ -4252,7 +4255,7 @@ async function renderMe() {
   },sections:[
     {id:'content',label:'我的内容',keywords:'收藏 喜欢 回应 评论 发布 最近 看过 搜索 收藏夹',nodes:[tabs,h('div',{class:'me-tools'},h('h2',null,TABS.find(([k])=>k===tab)[1],' ',st.totalEl),h('span',{class:'grow'}),sf,sortSel),folderRow,st.feedback,st.list,st.moreBtn]},
     {id:'account',label:'账号与服务',keywords:'安全 登录 绑定 LDC 应用 余额 记录 邀请 设置 外观 退出',nodes:[services,h('div',{class:'me-session'},h('span',{class:'muted sm'},'当前登录：@'+u.username),logout)]},
-    {id:'admin',label:'管理工具',keywords:'AI 接入 模型 参数 公告 成员 用户 权限 限制',available:()=>!!(u.can_manage_ai||u.is_admin),nodes:[administration]},
+    {id:'admin',label:'管理工具',keywords:'AI 接入 模型 参数 公告 成员 用户 权限 限制 邀请码 生成',available:()=>!!(u.can_manage_ai||u.is_admin||u.owner),nodes:[administration]},
   ]})
   main.replaceChildren(h('div',{class:'me-page me-hub'},
     h('section',{class:'me-head'},avatar(u.avatar,u.username,60),
@@ -4816,7 +4819,7 @@ const CIPHER_NAME = { shou: '兽音译者', fo: '与佛论禅', emoji: 'emoji �
   rail: '栅栏密码', vigenere: '维吉尼亚', aes: 'AES', zwsp: '隐形字', stego: '图片藏字',
   base58: 'Base58', base62: 'Base62', base85: 'Ascii85', decimal: '十进制码点', html: 'HTML 实体', rot47: 'ROT47', affine: '仿射密码',
   bacon: '培根密码', polybius: '棋盘密码', qwerty: '键盘密码', autokey: '自动密钥', rc4: 'RC4', xor: 'XOR 异或' }
-const loadCipher = () => import('/cipher.js?v=c8639d55')
+const loadCipher = () => import('/cipher.js?v=afbdffbc')
 
 function rewardView(pz, label) {
   const isLink = pz.reward_type === 'link'
@@ -8198,7 +8201,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
   async function openGuess(mid = 0) {
     sideMode='guess';huancaiPanel?.close();gamePanel?.close()
     try {
-      guessLoading ||= import('/guess-room.js?v=c8639d55').then(({ createGuessRoom }) => {
+      guessLoading ||= import('/guess-room.js?v=afbdffbc').then(({ createGuessRoom }) => {
         if (!st.destroyed) guessPanel = createGuessRoom({ pane: el, chat: chatColumn, scroller, opener: guessOpen, gid: g.id, userId: S.me?.id, h, icon, api, onMode:g.id===1?openGameMode:null,
           create: anchor => redpackDialog(anchor, { group:g, autoGuess:{amount:''}, onSent:()=>{poll();guessPanel?.refresh(true)} }) })
       }).catch(error => { guessLoading = null; throw error })
@@ -8209,7 +8212,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
   async function openHuancai(){
     sideMode='huancai';guessPanel?.close();gamePanel?.close()
     try{
-      huancaiLoading ||= import('/huancai.js?v=c8639d55').then(({createHuancai})=>{if(!st.destroyed)huancaiPanel=createHuancai({pane:el,chat:chatColumn,scroller,opener:huancaiOpen,userId:S.me?.id,h,api})}).catch(error=>{huancaiLoading=null;throw error})
+      huancaiLoading ||= import('/huancai.js?v=afbdffbc').then(({createHuancai})=>{if(!st.destroyed)huancaiPanel=createHuancai({pane:el,chat:chatColumn,scroller,opener:huancaiOpen,userId:S.me?.id,h,api})}).catch(error=>{huancaiLoading=null;throw error})
       await huancaiLoading;if(!st.destroyed&&sideMode==='huancai')huancaiPanel.open()
     }catch(error){if(!st.destroyed)toast(error.message,'err')}
   }
@@ -8218,20 +8221,20 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
     if(g.id!==1)return
     if(mode==='outside'){
       try{
-        vipLoading ||= import('/vip-chat-dock.js?v=c8639d55').then(({createVipChatDock})=>{if(!st.destroyed)vipPanel=createVipChatDock({pane:el,scroller,opener:outsideOpen,api,emojiPicker:(anchor,pick)=>openPop(anchor,emojiBoard(k=>{pick(k);closePop()}),{key:'outside-chat-emoji',cls:'pop-stk'}),renderBody:text=>richBody(text,{md:'lite'})})}).catch(error=>{vipLoading=null;throw error})
+        vipLoading ||= import('/vip-chat-dock.js?v=afbdffbc').then(({createVipChatDock})=>{if(!st.destroyed)vipPanel=createVipChatDock({pane:el,scroller,opener:outsideOpen,api,emojiPicker:(anchor,pick)=>openPop(anchor,emojiBoard(k=>{pick(k);closePop()}),{key:'outside-chat-emoji',cls:'pop-stk'}),renderBody:text=>richBody(text,{md:'lite'})})}).catch(error=>{vipLoading=null;throw error})
         await vipLoading;if(!st.destroyed)vipPanel.open()
       }catch(error){if(!st.destroyed)toast(error.message,'err')}
       return
     }
     sideMode=mode;guessPanel?.close();huancaiPanel?.close()
     try{
-      gameLoading ||= import('/game-panel.js?v=c8639d55').then(({createGamePanel})=>{if(!st.destroyed)gamePanel=createGamePanel({pane:el,chat:chatColumn,scroller,opener:outsideOpen,user:S.me,api,onMode:openGameMode,emojiPicker:(anchor,pick)=>openPop(anchor,emojiBoard(k=>{pick(k);closePop()}),{key:'outside-chat-emoji',cls:'pop-stk'}),renderBody:text=>richBody(text,{md:'lite'})})}).catch(error=>{gameLoading=null;throw error})
+      gameLoading ||= import('/game-panel.js?v=afbdffbc').then(({createGamePanel})=>{if(!st.destroyed)gamePanel=createGamePanel({pane:el,chat:chatColumn,scroller,opener:outsideOpen,user:S.me,api,onMode:openGameMode,emojiPicker:(anchor,pick)=>openPop(anchor,emojiBoard(k=>{pick(k);closePop()}),{key:'outside-chat-emoji',cls:'pop-stk'}),renderBody:text=>richBody(text,{md:'lite'})})}).catch(error=>{gameLoading=null;throw error})
       await gameLoading;if(!st.destroyed&&sideMode===mode)gamePanel.open(mode,roomId)
     }catch(error){if(!st.destroyed)toast(error.message,'err')}
   }
   async function openAi(anchor, mode = 'summary', range = '200') {
     try {
-      aiLoading ||= import('/ai-chat.js?v=c8639d55').then(({ createAiChat }) => {
+      aiLoading ||= import('/ai-chat.js?v=afbdffbc').then(({ createAiChat }) => {
         if (!st.destroyed) aiPanel = createAiChat({ pane: el, gid: g.id, h, icon, api })
       }).catch(error => { aiLoading = null; throw error })
       await aiLoading
@@ -8550,7 +8553,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
     if(where==='live')for(const m of items.filter(m=>m.system_kind==='redpack_due'&&!m.deleted).slice(0,3)){
       drawQueue=drawQueue.then(async()=>{
         if(drawLifetime.signal.aborted||doc.hidden)return
-        const {syncPacketDraw}=await import('/redpacket.js?v=c8639d55')
+        const {syncPacketDraw}=await import('/redpacket.js?v=afbdffbc')
         await syncPacketDraw({id:Number(m.system_ref),api,signal:drawLifetime.signal,onUpdate:update})
       }).catch(()=>{})
     }
@@ -9225,7 +9228,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
   }
   const key = 'cmstk' + g.id
   const favoriteBoard = async anchor => {
-    const {openChatFavorites}=await import('/chat-favorites.js?v=c8639d55')
+    const {openChatFavorites}=await import('/chat-favorites.js?v=afbdffbc')
     if(st.destroyed||!scroller.isConnected)return
     openChatFavorites(anchor,{h,icon,api,openPop,closePop,toast,send:async job=>{
       if(st.destroyed||!scroller.isConnected)throw Error('聊天窗口已关闭')
@@ -9256,6 +9259,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
           closePop();att.add([new File([blob],`表情-${item.message_id}-${item.index}.${blob.type.split('/')[1]}`,{type:blob.type})]);ta.focus({preventScroll:true})
         }}), { key, cls: 'pop-stk', up: true }), { 'data-pop': key }),
         tb('image', '发图片 / 视频', () => att.pick()),
+        tb('image', '随机摇图', async()=>{try{const {openRandomImage}=await import('/random-image.js?v=afbdffbc');if(st.destroyed)return;openRandomImage({doc,groupId:g.id,signal:drawLifetime.signal,onPick:file=>{if(st.destroyed)throw Error('聊天窗口已关闭');if(att.items.length>=MAX_FILES)throw Error('发送框附件已满，请先发送或移除附件');const before=att.items.length;att.add([file]);for(const item of att.items.slice(before))item.blur=true;att.redraw();ta.focus({preventScroll:true});toast('已加入发送框，点击发送即可')}})}catch(e){toast(e.message,'err')}},{class:'cm-ibtn cm-random-image','aria-label':'随机摇图'}),
         tb('bookmark', '消息收藏', e => favoriteBoard(e.currentTarget.closest('.cm-compose')||e.currentTarget).catch(e=>toast(e.message,'err'))),
         tb('redpack', '发红包', (e) => redpackDialog(e.currentTarget.getClientRects().length ? e.currentTarget : compose.querySelector('.cm-mobile-more'), { group: g, onSent: (message) => {
           const follow = st.stick && !st.followPaused && nearBottom() && !histEl
@@ -9405,7 +9409,7 @@ function chatPane(g, { onHead, targetDocument = document } = {}) {
     icon('packetBag','i tiny'),h('span',null,'群红包袋'),h('span',{class:'cm-bag-alert','aria-hidden':'true'},'还有红包'))
   const updatesOpen=h('button',{type:'button',class:'cm-updates-open',title:'最近更新','aria-label':'最近更新',onclick:async e=>{
     const anchor=e.currentTarget;if(anchor.disabled)return;anchor.disabled=true
-    try{const {openRecentUpdates}=await import('/recent-updates.js?v=c8639d55');if(anchor.isConnected)openRecentUpdates(anchor)}
+    try{const {openRecentUpdates}=await import('/recent-updates.js?v=afbdffbc');if(anchor.isConnected)openRecentUpdates(anchor)}
     catch{toast('更新记录加载失败，请重试','err')}finally{anchor.disabled=false}
   }},icon('clock','i tiny'),h('span',null,'最近更新'))
   async function refreshBagBadge(force=false) {
@@ -9574,7 +9578,7 @@ function cmImgBox(w, h, max = 320) {
 async function redpackDialog(anchor, options) {
   try {
     closePop()
-    const { openRedpacket } = await import('/redpacket.js?v=c8639d55')
+    const { openRedpacket } = await import('/redpacket.js?v=afbdffbc')
     if (anchor.isConnected) openRedpacket({ anchor, ...options, userId:S.me?.id, h, icon, api, bagReminderSettings:packetBagReminderSettings, uploadCover: async (file,signal) => {
       const error=checkFile(file)
       if(error || isVid(file))throw Error(error || '封面请选择图片')
@@ -9587,14 +9591,14 @@ async function redpackDialog(anchor, options) {
   } catch (e) { toast(e.message, 'err') }
 }
 async function instantCardDialog(anchor) {
-  try {closePop();const {openInstantCards}=await import('/instant-cards.js?v=c8639d55');openInstantCards({anchor,api,h,dress:id=>meSettings('deco',id),preview:(id,level)=>{const u={deco:{ft:id,fn:level}};return h('div',{class:'ic-actual-preview'},h('div',{class:'ic-identity'},badgeEl(u,'chat',true),titleEl(u,'chat')),h('div',{class:'cm-text'+bubbleCls(u)},h('span',{class:'rt-copy'},'每次相遇，都留有光芒。')))},legacy:()=>titleRaffleDialog(anchor,null,null,true)})}
+  try {closePop();const {openInstantCards}=await import('/instant-cards.js?v=afbdffbc');openInstantCards({anchor,api,h,dress:id=>meSettings('deco',id),preview:(id,level)=>{const u={deco:{ft:id,fn:level}};return h('div',{class:'ic-actual-preview'},h('div',{class:'ic-identity'},badgeEl(u,'chat',true),titleEl(u,'chat')),h('div',{class:'cm-text'+bubbleCls(u)},h('span',{class:'rt-copy'},'每次相遇，都留有光芒。')))},legacy:()=>titleRaffleDialog(anchor,null,null,true)})}
   catch(e){toast(e.message,'err')}
 }
 async function titleRaffleDialog(anchor, packetId = null, raffleId = null, legacy = false) {
   if(!packetId&&!raffleId&&!legacy)return instantCardDialog(anchor)
   try {
     closePop()
-    const { openTitleRaffle } = await import('/title-raffle.js?v=c8639d55')
+    const { openTitleRaffle } = await import('/title-raffle.js?v=afbdffbc')
     openTitleRaffle({ anchor, packetId, raffleId, api, h, icon })
   } catch (e) { toast(e.message, 'err') }
 }
@@ -11835,7 +11839,7 @@ async function renderDmRoute() {
   const path = location.pathname
   main.replaceChildren(loadingBox())
   try {
-    const { renderDmPage } = await import('/dm.js?v=c8639d55')
+    const { renderDmPage } = await import('/dm.js?v=afbdffbc')
     if (seq !== dmRouteSeq || location.pathname !== path) return
     if(S.me)await renderChat(null,{dmPath:path,mountDm:renderDmPage})
     else renderDmPage(main, { path, me: S.me, navigate, onLeave: onPageLeave })
@@ -11850,16 +11854,16 @@ async function renderFarmRoute(){
   onPageLeave(()=>{left=true})
   main.replaceChildren(loadingBox())
   try{
-    const farewell=await api('/farm/farewell'),{farewellPanel}=await import('/farm-farewell.js?v=c8639d55')
+    const farewell=await api('/farm/farewell'),{farewellPanel}=await import('/farm-farewell.js?v=afbdffbc')
     if(left)return
     const farewellBanner=farewellPanel(farewell,{reload:()=>route(),onLeave:onPageLeave})
     if(farewell.closed){main.replaceChildren(farewellBanner);return}
     const css=new Promise((resolve,reject)=>{
       let link=document.getElementById('farm-styles')
       if(link?.sheet){resolve();return}
-      link?.remove();link=h('link',{id:'farm-styles',rel:'stylesheet',href:'/farm.css?v=c8639d55',onload:resolve,onerror:()=>{link.remove();reject(Error('农场样式加载失败'))}});document.head.append(link)
+      link?.remove();link=h('link',{id:'farm-styles',rel:'stylesheet',href:'/farm.css?v=afbdffbc',onload:resolve,onerror:()=>{link.remove();reject(Error('农场样式加载失败'))}});document.head.append(link)
     })
-    const [{mountFarm}]=await Promise.all([import('/farm.js?v=c8639d55'),css])
+    const [{mountFarm}]=await Promise.all([import('/farm.js?v=afbdffbc'),css])
     if(left)return
     mountFarm(main,{userId:S.me.id,onLeave:onPageLeave})
     main.prepend(farewellBanner)
@@ -11869,8 +11873,8 @@ async function renderNovelRoute(){
   let left=false;onPageLeave(()=>{left=true})
   main.replaceChildren(loadingBox())
   try{
-    if(!document.getElementById('novel-styles'))document.head.append(h('link',{id:'novel-styles',rel:'stylesheet',href:'/novels.css?v=c8639d55'}))
-    const {mountNovels}=await import('/novels.js?v=c8639d55');if(left)return
+    if(!document.getElementById('novel-styles'))document.head.append(h('link',{id:'novel-styles',rel:'stylesheet',href:'/novels.css?v=afbdffbc'}))
+    const {mountNovels}=await import('/novels.js?v=afbdffbc');if(left)return
     await mountNovels(main,{user:S.me,api,onLeave:onPageLeave,navigate})
   }catch(e){if(!left)main.replaceChildren(emptyState('书房暂时无法打开',e.message,h('button',{class:'btn',onclick:renderNovelRoute},'重试')))}
 }
@@ -11879,11 +11883,11 @@ function renderNsfw(){
 }
 async function renderResourceRoute(){
   let left=false;onPageLeave(()=>{left=true});main.replaceChildren(loadingBox())
-  try{if(!document.getElementById('resource-styles'))document.head.append(h('link',{id:'resource-styles',rel:'stylesheet',href:'/resources.css?v=c8639d55'}));const {mountResources}=await import('/resources.js?v=c8639d55');if(!left)await mountResources(main,{user:S.me,api,h,onLeave:onPageLeave,navigate,mediaTray,toast,icon})}catch(e){if(!left)main.replaceChildren(emptyState('资源社区暂时无法打开',e.message,h('button',{class:'btn',onclick:renderResourceRoute},'重试')))}
+  try{if(!document.getElementById('resource-styles'))document.head.append(h('link',{id:'resource-styles',rel:'stylesheet',href:'/resources.css?v=afbdffbc'}));const {mountResources}=await import('/resources.js?v=afbdffbc');if(!left)await mountResources(main,{user:S.me,api,h,onLeave:onPageLeave,navigate,mediaTray,toast,icon})}catch(e){if(!left)main.replaceChildren(emptyState('资源社区暂时无法打开',e.message,h('button',{class:'btn',onclick:renderResourceRoute},'重试')))}
 }
 async function renderMusicRoute(){
  let left=false;onPageLeave(()=>{left=true});main.replaceChildren(loadingBox())
- try{const {mountMusic}=await import('/music.js?v=c8639d55');if(!left)await mountMusic(main,{user:S.me,onLeave:onPageLeave})}catch(e){if(!left)main.replaceChildren(emptyState('音乐暂时无法打开',e.message,h('button',{class:'btn',onclick:renderMusicRoute},'重试')))}
+ try{const {mountMusic}=await import('/music.js?v=afbdffbc');if(!left)await mountMusic(main,{user:S.me,onLeave:onPageLeave})}catch(e){if(!left)main.replaceChildren(emptyState('音乐暂时无法打开',e.message,h('button',{class:'btn',onclick:renderMusicRoute},'重试')))}
 }
 const ROUTES = [
   [/^\/music$/, () => renderMusicRoute()],
@@ -11910,6 +11914,7 @@ function navigate(path, { replace = false } = {}) {
 }
 
 function route() {
+  if(location.pathname==='/slime'){location.replace('/slime');return}
   document.dispatchEvent(new Event('bubbleeffectreset'))
   dockSync()
   if ((location.pathname.startsWith('/dm') || location.pathname==='/farm') && S.skin) {
@@ -12490,8 +12495,8 @@ function meSettings(section, initialTrial=null) {
     ;(S.modal.clean??=[]).push(()=>controller.abort())
     avatarHost.querySelector('button').disabled=true
     try{
-      if(!document.querySelector('link[data-avatar-editor]'))document.head.append(h('link',{rel:'stylesheet',href:'/avatar-editor.css?v=c8639d55','data-avatar-editor':'1'}))
-      const {createAvatarEditor}=await import('/avatar-editor.js?v=c8639d55')
+      if(!document.querySelector('link[data-avatar-editor]'))document.head.append(h('link',{rel:'stylesheet',href:'/avatar-editor.css?v=afbdffbc','data-avatar-editor':'1'}))
+      const {createAvatarEditor}=await import('/avatar-editor.js?v=afbdffbc')
       if(controller.signal.aborted)return
       const editor=createAvatarEditor({h,api,current:S.me.avatar,name:S.me.name||S.me.username,signal:controller.signal,onSaved:url=>{
         const old=S.me.avatar;S.me.avatar=url;USERS.delete(S.me.username);refreshAvatar(h,old,url,S.me.name||S.me.username)
